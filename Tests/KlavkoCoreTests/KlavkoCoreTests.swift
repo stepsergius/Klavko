@@ -144,6 +144,44 @@ final class ShortcutTests: XCTestCase {
         let decoded = try JSONDecoder().decode([String: Shortcut?].self, from: JSONEncoder().encode(stored))
         XCTAssertEqual(decoded, stored)
     }
+
+    func testShortcutsSavedBeforeSidesStillLoad() throws {
+        let old = #"{"voice":{"modifierTap":{"modifiers":["option"],"double":false}},"#
+            + #""clipboard":{"combo":{"keyCode":9,"modifiers":["option","command"]}}}"#
+        let decoded = try JSONDecoder().decode([String: Shortcut?].self, from: Data(old.utf8))
+        XCTAssertEqual(decoded["voice"], Shortcut(modifiers: [.option], double: false))
+        XCTAssertEqual(decoded["clipboard"], Shortcut(keyCode: 9, modifiers: [.option, .command]))
+        let right = Shortcut(modifiers: [.option], double: false, sides: [.option: .right])
+        XCTAssertEqual(try JSONDecoder().decode(Shortcut.self, from: JSONEncoder().encode(right)), right)
+    }
+
+    func testSidesFromEventFlags() {
+        // Right ⌥ (0x40) with left ⌘ (0x08), plus the device-independent bits.
+        XCTAssertEqual(ModifierSide.held(in: 0x0010_0000 | 0x0008_0000 | 0x40 | 0x08),
+                       [.option: [.right], .command: [.left]])
+    }
+
+    func testASidedShortcutFiresOnlyFromThatKey() {
+        let right = Shortcut(modifiers: [.option], double: false, sides: [.option: .right])
+        XCTAssertTrue(right.matches(.single([.option], sides: [.option: [.right]])))
+        XCTAssertFalse(right.matches(.single([.option], sides: [.option: [.left]])))
+        XCTAssertFalse(right.matches(.single([.option])))
+        // Without a side, either key works, as before.
+        XCTAssertTrue(Shortcut(modifiers: [.option], double: false).matches(.single([.option], sides: [.option: [.left]])))
+        let combo = Shortcut(keyCode: 9, modifiers: [.command], sides: [.command: .left])
+        XCTAssertTrue(combo.matches(keyCode: 9, modifiers: [.command], held: [.command: [.left]]))
+        XCTAssertFalse(combo.matches(keyCode: 9, modifiers: [.command], held: [.command: [.right]]))
+        AppLanguage.current = .english
+        XCTAssertEqual(right.parts(layout: nil), ["right ⌥"])
+        AppLanguage.current = .ukrainian
+    }
+
+    func testRecordedSidesKeepOnlyOneSidedModifiers() {
+        XCTAssertEqual(Shortcut.sides([.command: [.right], .shift: [.left, .right]]), [.command: .right])
+        // A side for a modifier the shortcut doesn't use is dropped.
+        XCTAssertEqual(Shortcut(modifiers: [.command], double: false, sides: [.option: .left]),
+                       Shortcut(modifiers: [.command], double: false))
+    }
 }
 
 final class ModifierTapDetectorTests: XCTestCase {
@@ -183,6 +221,15 @@ final class ModifierTapDetectorTests: XCTestCase {
         var detector = ModifierTapDetector()
         _ = tap(&detector, [.shift], at: 0)
         XCTAssertEqual(tap(&detector, [.option], at: 0.2), [.single([.option])])
+    }
+
+    func testADoubleTapKeepsOnlyTheSidePressedBothTimes() {
+        var detector = ModifierTapDetector()
+        XCTAssertEqual(detector.modifiersChanged([.command], sides: [.command: [.left]], at: 0), [])
+        XCTAssertEqual(detector.modifiersChanged([], at: 0.1), [.single([.command], sides: [.command: [.left]])])
+        XCTAssertEqual(detector.modifiersChanged([.command], sides: [.command: [.right]], at: 0.2), [])
+        XCTAssertEqual(detector.modifiersChanged([], at: 0.3), [.single([.command], sides: [.command: [.right]]),
+                                                                 .double([.command], sides: [:])])
     }
 }
 

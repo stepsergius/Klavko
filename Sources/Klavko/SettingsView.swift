@@ -477,6 +477,11 @@ struct SettingsView: View {
                         ForEach(HotkeyAction.allCases, id: \.self) { action in
                             shortcutRow(action)
                         }
+                        Toggle(tr("Розрізняти лівий і правий ⌃ ⌥ ⇧ ⌘", "Tell left and right ⌃ ⌥ ⇧ ⌘ apart"), isOn: $settings.modifierSides)
+                            .help(tr("Нова комбінація запам'ятовує, яку з двох клавіш натиснуто: «правий ⌘» не спрацює від лівого. "
+                                     + "Уже задані комбінації не змінюються, їх треба записати знову.",
+                                     "A new shortcut remembers which of the two keys was pressed: “right ⌘” won’t fire from the left one. "
+                                     + "Shortcuts already set stay as they are until recorded again."))
                         Button(tr("Відновити стандартні", "Restore Defaults")) { settings.resetShortcuts() }
                     } header: {
                         Text(tr("Гарячі клавіші", "Hotkeys"))
@@ -534,7 +539,7 @@ struct SettingsView: View {
                 if recorder.recording == action {
                     recorder.stop()
                 } else {
-                    recorder.start(action) { settings.setShortcut($0, for: action) }
+                    recorder.start(action, recordsSides: settings.modifierSides) { settings.setShortcut($0, for: action) }
                 }
             } label: {
                 if recorder.recording == action {

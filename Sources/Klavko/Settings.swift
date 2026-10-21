@@ -15,6 +15,7 @@ final class Settings: ObservableObject {
         static let soundName = "soundName"
         static let excludedApps = "excludedApps"
         static let shortcuts = "shortcuts.v2"
+        static let modifierSides = "modifierSides"
         static let loginItemConfigured = "loginItemConfigured"
         static let loginItemPath = "loginItemPath"
         static let convertAbbreviations = "convertAbbreviations"
@@ -288,6 +289,11 @@ final class Settings: ObservableObject {
         didSet { saveShortcuts(); onChange?() }
     }
 
+    /// New shortcuts remember the side of each modifier ("right ⌘"). Off by default.
+    @Published var modifierSides: Bool {
+        didSet { defaults.set(modifierSides, forKey: Key.modifierSides) }
+    }
+
     /// Lives in macOS (System Settings → General → Login Items), not in UserDefaults.
     @Published var launchAtLogin: Bool {
         didSet {
@@ -395,6 +401,7 @@ final class Settings: ObservableObject {
         copySoundName = defaults.string(forKey: Key.copySoundName) ?? "Tink"
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         shortcuts = Self.loadShortcuts(defaults.data(forKey: Key.shortcuts))
+        modifierSides = defaults.bool(forKey: Key.modifierSides)
         launchAtLogin = SMAppService.mainApp.status == .enabled
 
         // Autostart is on by default, but only from an installed copy: a build folder may move or vanish.

@@ -666,7 +666,13 @@ final class SwitchEngine {
     private func comboAction(keyCode: UInt16, flags: CGEventFlags) -> HotkeyAction? {
         let modifiers = Self.modifiers(flags)
         guard !modifiers.isEmpty else { return nil }
-        return config.shortcuts.first { $0.value.matches(keyCode: keyCode, modifiers: modifiers) }?.key
+        let held = ModifierSide.held(in: flags.rawValue)
+        return shortcutsBySide.first { $0.value.matches(keyCode: keyCode, modifiers: modifiers, held: held) }?.key
+    }
+
+    /// Shortcuts that name a side first: "right ⌘" wins over a plain "⌘" pressed with the right key.
+    private var shortcutsBySide: [(key: HotkeyAction, value: Shortcut)] {
+        config.shortcuts.sorted { $0.value.sides.count > $1.value.sides.count }
     }
 
     private func handleFlagsChanged(_ event: CGEvent) {
@@ -679,9 +685,10 @@ final class SwitchEngine {
         var held = Self.modifiers(event.flags)
         // Fn counts only as a key of its own here: arrow and function keys carry its flag too.
         if event.flags.contains(.maskSecondaryFn) { held.insert(.function) }
-        let taps = modifierTaps.modifiersChanged(held, at: ProcessInfo.processInfo.systemUptime)
+        let taps = modifierTaps.modifiersChanged(held, sides: ModifierSide.held(in: event.flags.rawValue),
+                                                 at: ProcessInfo.processInfo.systemUptime)
         for tap in taps {
-            if let action = config.shortcuts.first(where: { $0.value.matches(tap) })?.key {
+            if let action = shortcutsBySide.first(where: { $0.value.matches(tap) })?.key {
                 perform(action)
             }
         }
