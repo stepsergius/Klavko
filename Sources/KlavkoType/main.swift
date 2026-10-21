@@ -3,6 +3,7 @@
 //   klavko-type keys en "ghbdsn "      press the keys that type "ghbdsn " in the English layout
 //   klavko-type keys uk "руддщ "       press the keys that type "руддщ " in the Ukrainian layout
 //   klavko-type tap option,command     press and release modifiers together (a ⌥⌘ chord)
+//   klavko-type double rightcommand    the right-hand key (rightshift, rightcontrol, rightoption, rightcommand)
 //   klavko-type double shift           tap Shift twice quickly (⇧⇧)
 //   klavko-type combo control 47       a key with modifiers, by key code (⌃. here)
 //   klavko-type key 51                 one key by key code (51 = Backspace, 36 = Return, 123–126 = arrows)
@@ -38,14 +39,21 @@ func press(_ keyCode: CGKeyCode, flags: CGEventFlags = []) {
     usleep(keyDelay)
 }
 
+/// Each modifier with its device-dependent bit, as a real keyboard sends it: that bit tells the left key from the right one.
 let modifierKeys: [String: (code: CGKeyCode, flag: CGEventFlags)] = [
-    "shift": (56, .maskShift), "control": (59, .maskControl),
-    "option": (58, .maskAlternate), "command": (55, .maskCommand),
+    "shift": (56, side(.maskShift, 0x0002)), "control": (59, side(.maskControl, 0x0001)),
+    "option": (58, side(.maskAlternate, 0x0020)), "command": (55, side(.maskCommand, 0x0008)),
+    "rightshift": (60, side(.maskShift, 0x0004)), "rightcontrol": (62, side(.maskControl, 0x2000)),
+    "rightoption": (61, side(.maskAlternate, 0x0040)), "rightcommand": (54, side(.maskCommand, 0x0010)),
 ]
+
+func side(_ flag: CGEventFlags, _ deviceBit: UInt64) -> CGEventFlags {
+    CGEventFlags(rawValue: flag.rawValue | deviceBit)
+}
 
 func modifiers(_ list: String) -> [(code: CGKeyCode, flag: CGEventFlags)] {
     list.split(separator: ",").map { name in
-        guard let key = modifierKeys[String(name)] else { fail("Unknown modifier \(name): use shift, control, option, command") }
+        guard let key = modifierKeys[String(name)] else { fail("Unknown modifier \(name): use shift, control, option, command, or rightshift… rightcommand") }
         return key
     }
 }
