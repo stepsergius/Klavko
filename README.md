@@ -20,12 +20,15 @@ Requirements: macOS 14 or later (translation needs macOS 15), at least two keybo
 - Hotkeys to switch the layout of the word, the selection or everything just typed, and to change case (lower → Title → UPPER).
 - Undo a fix with Backspace right after it, or by pressing the hotkey again.
 - **Exceptions** — words Klavko never changes. Undo the fix of the same word twice and Klavko offers to add it.
-- The current layout’s flag (🇺🇦, 🇺🇸, 🇩🇪…) in the menu bar and a soft sound after switching (can be changed or turned off).
+- The current layout’s flag (🇺🇦, 🇺🇸, 🇩🇪…) in the menu bar and a soft sound after switching (can be changed or turned off). The menu lists the layouts with their flags: a click switches by hand.
+- A word you went back into with Backspace (or retyped after deleting Klavko’s fix) is left as you write it.
 - Off by default in terminals and code editors; any app can be excluded from the menu.
 
 ### Layout languages
 - Switching works between any enabled macOS layouts of 13 languages, including Ukrainian, English, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Greek, Hebrew and Arabic.
 - With more than two layouts, Klavko checks the word against each language’s dictionary and picks the one where it is a real word. On a tie, a layout with a different alphabet comes first (Latin ↔ Cyrillic), then the one you used last.
+- **Only by hand:** with three or more layouts, mark a language you rarely write in (for example Ukrainian next to Russian, where many words are the same). Klavko then never switches into it by itself; the hotkey still does.
+- The text before the word helps decide: a typo at the start of a word doesn’t switch the layout in the middle of a sentence in the same language.
 - Chinese, Japanese and Korean are typed with input methods rather than layouts, so they aren’t supported.
 
 ### Typos and formatting
@@ -77,7 +80,7 @@ All can be changed in Settings (Hotkeys tab).
 | Clipboard history | ⌥⌘V |
 | Voice input | fn |
 
-A hotkey can be a key with modifiers (⌃⇧Space), modifiers alone together (⌥⌘) or a double press (⇧⇧).
+A hotkey can be a key with modifiers (⌃⇧Space), modifiers alone together (⌥⌘) or a double press (⇧⇧). With “Tell left and right ⌃ ⌥ ⇧ ⌘ apart” on, a hotkey can use one side only, for example “twice right ⌘”.
 
 ## Privacy
 
