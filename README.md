@@ -114,5 +114,6 @@ Log (without the typed text):
 
 - Voice input: the [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) model (CC-BY-4.0), Parakeet Ultra version, in Core ML format via [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
 - Translation, spell checking and fallback speech recognition — built-in macOS features.
+- Some of the sounds (Bubble Pop, Click, Pen Click and others): [Pixabay](https://pixabay.com/sound-effects/), under the [Pixabay Content License](https://pixabay.com/service/license-summary/).
 
 © 2026 Serhii Stepaniuk
