@@ -23,6 +23,8 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Klavko" "$APP/Contents/MacOS/Klavko"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Klavko's own sounds, offered after the macOS ones.
+[ -d Resources/Sounds ] && cp -R Resources/Sounds "$APP/Contents/Resources/Sounds"
 # Resource bundles of dependencies (FluidAudio's), found by Bundle.module in Contents/Resources.
 for bundle in "$BIN_DIR"/*.bundle; do
     [ -e "$bundle" ] && cp -R "$bundle" "$APP/Contents/Resources/"
