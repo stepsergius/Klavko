@@ -365,7 +365,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
-        menu.addItem(disabledItem("Klavko"))
+        // The layouts, as in the macOS input menu but with Klavko's flags: a click switches to one by hand.
+        let layouts = SystemLayouts.allLayouts()
+        let currentLayout = SystemLayouts.currentLayoutID()
+        for layout in layouts {
+            let mark = layout.language.flatMap { Self.flag(language: $0, layoutID: layout.id) }
+                ?? layout.language?.uppercased() ?? "⌨︎"
+            let entry = item(mark + "  " + layout.name, #selector(selectLayout(_:)))
+            entry.representedObject = layout.id
+            entry.state = layout.id == currentLayout ? .on : .off
+            menu.addItem(entry)
+        }
+        if layouts.isEmpty { menu.addItem(disabledItem("Klavko")) }
 
         if monitor?.isRunning != true {
             menu.addItem(.separator())
@@ -415,7 +426,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(settingsItem)
         menu.addItem(.separator())
+        if AboutInfo.donateURL != nil {
+            let thanks = item(tr("Подякувати", "Say Thanks"), #selector(openDonate))
+            thanks.image = NSImage(systemSymbolName: "heart", accessibilityDescription: nil)
+            menu.addItem(thanks)
+        }
         menu.addItem(quitItem)
+    }
+
+    @objc private func selectLayout(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              let layout = SystemLayouts.allLayouts().first(where: { $0.id == id }) else { return }
+        SystemLayouts.select(layout.source)
+        // Switched by hand: what was typed so far stays as it is.
+        engine.reset()
+        updateIcon()
+    }
+
+    @objc private func openDonate() {
+        if let donate = AboutInfo.donateURL { NSWorkspace.shared.open(donate) }
     }
 
     /// Puts each shortcut at the right edge of its item, in grey, all in one column. (Real key equivalents

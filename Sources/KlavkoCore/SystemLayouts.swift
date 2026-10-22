@@ -22,6 +22,20 @@ public enum SystemLayouts {
         }
     }
 
+    /// Every enabled keyboard layout, of any language, as the macOS input menu lists them: for switching by hand.
+    /// `name` is how macOS shows it ("ABC", "Ukrainian"); `language` is its two-letter primary language.
+    public static func allLayouts() -> [(source: TISInputSource, id: String, name: String, language: String?)] {
+        let filter = [kTISPropertyInputSourceType as String: kTISTypeKeyboardLayout as String] as CFDictionary
+        guard let list = TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource] else {
+            return []
+        }
+        return list.compactMap { source in
+            guard let id = stringProperty(source, kTISPropertyInputSourceID) else { return nil }
+            let name = stringProperty(source, kTISPropertyLocalizedName) ?? id
+            return (source, id, name, primaryLanguage(source))
+        }
+    }
+
     public static func currentLayoutID() -> String? {
         guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
         return stringProperty(source, kTISPropertyInputSourceID)
