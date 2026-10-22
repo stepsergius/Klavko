@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let clipboard = ClipboardManager()
     private let updater = Updater()
     private let updatePrompt = UpdatePrompt()
+    private let supportWindow = SupportWindow()
     private lazy var clipboardWindow = ClipboardWindow(manager: clipboard)
     private let translator = Translator()
     private let screenText = ScreenTextCapture()
@@ -94,6 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                               onSkip: { [unowned self] in settings.skippedUpdateVersion = release.version })
         }
         updater.start()
+        showThanksAfterUpdate()
         clipboard.start()
         engine.onClipboard = { [unowned self] in
             MainActor.assumeIsolated { clipboardWindow.toggle() }
@@ -233,6 +235,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 try? result.write(to: out, atomically: true, encoding: .utf8)
                 NSApp.terminate(nil)
             }
+        }
+        // Developer check of the window shown after an update: --snapshot-support <file.png>, or --show-support.
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot-support"), index + 1 < CommandLine.arguments.count {
+            SupportWindow.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]), version: updater.currentVersion)
+        }
+        if CommandLine.arguments.contains("--show-support") {
+            supportWindow.show(version: updater.currentVersion)
         }
         // Developer check of the update prompt: --snapshot-update <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-update"), index + 1 < CommandLine.arguments.count {
@@ -452,6 +461,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func toggleExcluded(_ sender: NSMenuItem) {
         guard let bundleID = sender.representedObject as? String else { return }
         settings.toggleExcluded(bundleID)
+    }
+
+    /// The first launch of a newer version: thank the user and show how to support Klavko, once.
+    /// Not after a first install, and not when started for a developer check.
+    private func showThanksAfterUpdate() {
+        guard !CommandLine.arguments.dropFirst().contains(where: { $0.hasPrefix("--") }) else { return }
+        let current = updater.currentVersion
+        if UpdateThanks.shouldShow(lastRunVersion: settings.lastRunVersion, current: current, usedBefore: settings.usedBefore) {
+            // A moment after launch, so it doesn't come up together with the permission prompts.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.supportWindow.show(version: current)
+            }
+        }
+        settings.lastRunVersion = current
     }
 
     @objc private func showSettings() {

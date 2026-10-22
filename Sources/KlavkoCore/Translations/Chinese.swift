@@ -225,5 +225,12 @@ extension Translations {
         "The exception is Google AI recognition, if you turn it on in the Voice settings: then recordings are sent to Google.": "例外是 Google AI 识别：如果你在“语音”设置中开启它，录音会发送给 Google。",
         "The recording is too long for Google AI.": "录音太长，Google AI 无法处理。",
         "Couldn’t save the key in the Keychain.": "无法将密钥存入钥匙串（Keychain）。",
+        "Klavko has been updated to %@": "Klavko 已更新到 %@",
+        "Help Klavko grow": "帮助 Klavko 成长",
+        "Klavko stays free and runs only on your Mac, with no ads or tracking. If it helps you, you can support its development through a Monobank jar.": "Klavko 始终免费，只在你的 Mac 上运行，没有广告，也不追踪。如果它对你有帮助，可以通过 Monobank 储蓄罐支持开发。",
+        "Support via Monobank": "通过 Monobank 支持",
+        "A star on GitHub also helps people find Klavko.": "在 GitHub 上点个星，也能帮助更多人发现 Klavko。",
+        "Thank you for being here.": "感谢你的陪伴。",
+        "Done": "完成",
     ]
 }

@@ -937,3 +937,18 @@ final class ContextRuleTests: XCTestCase {
                                              alternativeLanguage: "uk", context: ukrainian, sameScript: true))
     }
 }
+
+final class UpdateThanksTests: XCTestCase {
+    func testShownOnceAfterAnUpdate() {
+        XCTAssertTrue(UpdateThanks.shouldShow(lastRunVersion: "0.14.0", current: "0.15.0", usedBefore: true))
+        // The same version again (a reinstall, or the next launch) or an older one: no.
+        XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: "0.15.0", current: "0.15.0", usedBefore: true))
+        XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: "0.15.0", current: "0.14.0", usedBefore: true))
+    }
+
+    func testVersionsBeforeRememberingIt() {
+        // 0.13 didn't remember its version: settings saved before mean an update, none mean a first install.
+        XCTAssertTrue(UpdateThanks.shouldShow(lastRunVersion: nil, current: "0.14.0", usedBefore: true))
+        XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: nil, current: "0.14.0", usedBefore: false))
+    }
+}

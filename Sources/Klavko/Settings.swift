@@ -17,6 +17,7 @@ final class Settings: ObservableObject {
         static let shortcuts = "shortcuts.v2"
         static let modifierSides = "modifierSides"
         static let loginItemConfigured = "loginItemConfigured"
+        static let lastRunVersion = "lastRunVersion"
         static let loginItemPath = "loginItemPath"
         static let convertAbbreviations = "convertAbbreviations"
         static let manualLanguages = "manualLanguages"
@@ -311,7 +312,17 @@ final class Settings: ObservableObject {
         }
     }
 
+    /// Klavko had settings saved before this launch: not a first install.
+    let usedBefore: Bool
+
+    /// The version Klavko last ran as (remembered since 0.14), to tell an update from a first launch.
+    var lastRunVersion: String? {
+        get { defaults.string(forKey: Key.lastRunVersion) }
+        set { defaults.set(newValue, forKey: Key.lastRunVersion) }
+    }
+
     init() {
+        usedBefore = !(UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "app.klavko.Klavko") ?? [:]).isEmpty
         let oldTypography = defaults.object(forKey: Key.typography) as? Bool ?? true
         defaults.register(defaults: [
             Key.enabled: true,

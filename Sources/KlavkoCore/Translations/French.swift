@@ -225,5 +225,12 @@ extension Translations {
         "The exception is Google AI recognition, if you turn it on in the Voice settings: then recordings are sent to Google.": "Seule exception : la reconnaissance par Google AI, si vous l’activez dans les réglages Voix ; les enregistrements sont alors envoyés à Google.",
         "The recording is too long for Google AI.": "L’enregistrement est trop long pour Google AI.",
         "Couldn’t save the key in the Keychain.": "Impossible d’enregistrer la clé dans le trousseau (Keychain).",
+        "Klavko has been updated to %@": "Klavko a été mis à jour vers %@",
+        "Help Klavko grow": "Aidez Klavko à grandir",
+        "Klavko stays free and runs only on your Mac, with no ads or tracking. If it helps you, you can support its development through a Monobank jar.": "Klavko reste gratuit et fonctionne uniquement sur votre Mac, sans publicité ni pistage. S’il vous est utile, vous pouvez soutenir son développement via une cagnotte Monobank.",
+        "Support via Monobank": "Soutenir via Monobank",
+        "A star on GitHub also helps people find Klavko.": "Une étoile sur GitHub aide aussi d’autres personnes à découvrir Klavko.",
+        "Thank you for being here.": "Merci d’être là.",
+        "Done": "Terminé",
     ]
 }
