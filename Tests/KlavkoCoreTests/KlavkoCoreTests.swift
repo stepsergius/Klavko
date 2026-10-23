@@ -952,3 +952,36 @@ final class UpdateThanksTests: XCTestCase {
         XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: nil, current: "0.14.0", usedBefore: false))
     }
 }
+
+final class VoiceHistoryTests: XCTestCase {
+    func testNewestFirstAndEmptyIgnored() {
+        var history = VoiceHistory()
+        history.add("Перший запис")
+        history.add("  ")
+        history.add(" Другий запис \n")
+        XCTAssertEqual(history.entries.map(\.text), ["Другий запис", "Перший запис"])
+    }
+
+    func testRemoveAndClear() {
+        var history = VoiceHistory()
+        history.add("a"); history.add("b"); history.add("c")
+        history.remove(history.entries[1].id)
+        XCTAssertEqual(history.entries.map(\.text), ["c", "a"])
+        history.clear()
+        XCTAssertTrue(history.entries.isEmpty)
+    }
+
+    func testKeepsTheNewestWithinTheLimit() {
+        var history = VoiceHistory()
+        for index in 0...VoiceHistory.limit { history.add("\(index)") }
+        XCTAssertEqual(history.entries.count, VoiceHistory.limit)
+        XCTAssertEqual(history.entries.first?.text, "\(VoiceHistory.limit)")
+        XCTAssertEqual(history.entries.last?.text, "1")
+    }
+
+    func testRoundTrip() throws {
+        var history = VoiceHistory()
+        history.add("Привіт", at: Date(timeIntervalSince1970: 1_800_000_000))
+        XCTAssertEqual(try JSONDecoder().decode(VoiceHistory.self, from: JSONEncoder().encode(history)), history)
+    }
+}

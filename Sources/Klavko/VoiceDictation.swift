@@ -38,6 +38,10 @@ final class VoiceDictation: ObservableObject {
     var vocabulary: () -> [Replacement] = { [] }
     /// Called with the text after it was typed (key tracking starts afresh; corrections get watched).
     var onInserted: (String) -> Void = { _ in }
+    /// The microphone to record from (a device UID); nil: the one chosen in macOS.
+    var microphone: () -> String? = { nil }
+    /// While listening, other sound is turned down to this share of its volume; nil: left alone.
+    var duckLevel: () -> Double? = { nil }
 
     var isActive: Bool { stage == .listening || stage == .finishing }
 
@@ -45,6 +49,7 @@ final class VoiceDictation: ObservableObject {
     let meter = VoiceMeter()
 
     private let audio = AVAudioEngine()
+    private let ducker = SoundDucker()
     private let fanout = AudioFanout()
     private let spellChecker = MacSpellChecker()
     private var live: Recognition?
@@ -154,6 +159,7 @@ final class VoiceDictation: ObservableObject {
         fanout.onLevel = { level in
             DispatchQueue.main.async { MainActor.assumeIsolated { meter.push(level) } }
         }
+        Self.use(microphone(), for: audio.inputNode)
         Self.feed(audio.inputNode, into: fanout)
         recognition.startSegment()
         audio.prepare()
@@ -165,6 +171,7 @@ final class VoiceDictation: ObservableObject {
         }
         insertOnFinish = true
         stage = .listening
+        if let level = duckLevel() { ducker.duck(to: level) }
         schedulePreview(after: 1.0)
         Log.engine.notice("Voice input started (\(code, privacy: .public))")
     }
@@ -413,6 +420,7 @@ final class VoiceDictation: ObservableObject {
     }
 
     private func stopAudio() {
+        ducker.restore()
         if audio.isRunning { audio.stop() }
         audio.inputNode.removeTap(onBus: 0)
         fanout.onLevel = nil
@@ -477,6 +485,15 @@ final class VoiceDictation: ObservableObject {
     }
 
     // Audio and recognition callbacks come on background threads, so they're built outside the main actor.
+
+    /// Records from the chosen microphone, or from the one chosen in macOS when it's unset or unplugged.
+    private static func use(_ uid: String?, for input: AVAudioInputNode) {
+        guard let unit = input.audioUnit else { return }
+        guard var device = uid.flatMap(AudioDevices.deviceID(uid:)) ?? AudioDevices.defaultInput else { return }
+        let status = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0,
+                                          &device, UInt32(MemoryLayout<AudioDeviceID>.size))
+        if status != noErr { Log.engine.error("Microphone not set: \(status)") }
+    }
 
     /// Sends the microphone's audio to the running recognition (and the recording).
     private nonisolated static func feed(_ input: AVAudioInputNode, into fanout: AudioFanout) {
