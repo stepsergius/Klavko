@@ -55,10 +55,10 @@ final class Settings: ObservableObject {
         static let declinedExceptions = "declinedExceptions"
     }
 
-    /// Short, soft macOS system sounds that suit a quick fix.
-    /// macOS system sounds (/System/Library/Sounds).
+    /// Short, soft macOS system sounds that suit a quick fix (/System/Library/Sounds), then Klavko's own
+    /// (Contents/Resources/Sounds/*.mp3, named by file: "bubble-pop").
     static let sounds = ["Pop", "Tink", "Purr", "Bottle", "Morse", "Frog", "Glass", "Ping", "Blow", "Funk", "Hero",
-                         "Submarine", "Basso", "Sosumi"]
+                         "Submarine", "Basso", "Sosumi"] + SoundPlayer.bundledSounds
 
     private let defaults = UserDefaults.standard
 

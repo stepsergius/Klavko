@@ -114,5 +114,6 @@ scripts/check-translations.py  # чи всі тексти інтерфейсу �
 
 - Голосовий ввід: модель [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) (CC-BY-4.0), версія Parakeet Ultra, у форматі Core ML через [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
 - Переклад, перевірка орфографії й запасне розпізнавання мовлення — вбудовані можливості macOS.
+- Частина звуків (Bubble Pop, Click, Pen Click та інші): [Pixabay](https://pixabay.com/sound-effects/), за [ліцензією Pixabay](https://pixabay.com/service/license-summary/).
 
 © 2026 Serhii Stepaniuk

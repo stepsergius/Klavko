@@ -513,7 +513,7 @@ struct SettingsView: View {
             Text(title)
             Spacer()
             Picker("", selection: sound) {
-                ForEach(Settings.sounds, id: \.self) { Text($0).tag($0) }
+                ForEach(Settings.sounds, id: \.self) { Text(SoundPlayer.title($0)).tag($0) }
             }
             .labelsHidden()
             .frame(width: 100)

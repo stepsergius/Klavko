@@ -24,10 +24,26 @@ final class SoundPlayer {
         queue.async { [self] in _ = player(for: name) }
     }
 
+    /// Klavko's own sounds, by file name ("bubble-pop"), A–Z.
+    static let bundledSounds: [String] = {
+        guard let folder = Bundle.main.resourceURL?.appendingPathComponent("Sounds"),
+              let files = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return [] }
+        return files.filter { $0.hasSuffix(".mp3") }.map { String($0.dropLast(4)) }.sorted()
+    }()
+
+    /// How the picker shows a sound: "bubble-pop" → "Bubble Pop"; system sounds as they are. One of Klavko's
+    /// named like a system sound gets a number ("pop" → "Pop 2"), so the list never shows the same name twice.
+    static func title(_ name: String) -> String {
+        guard bundledSounds.contains(name) else { return name }
+        let title = name.split(separator: "-").map { $0.capitalized }.joined(separator: " ")
+        return Settings.sounds.contains(title) ? title + " 2" : title
+    }
+
     /// Only on `queue`.
     private func player(for name: String) -> AVAudioPlayer? {
         if let player = players[name] { return player }
-        let url = URL(fileURLWithPath: "/System/Library/Sounds/\(name).aiff")
+        let url = Bundle.main.url(forResource: name, withExtension: "mp3", subdirectory: "Sounds")
+            ?? URL(fileURLWithPath: "/System/Library/Sounds/\(name).aiff")
         guard let player = try? AVAudioPlayer(contentsOf: url) else {
             Log.engine.error("Sound \(name, privacy: .public) couldn't be loaded")
             return nil
