@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let clipboard = ClipboardManager()
     private let updater = Updater()
     private let updatePrompt = UpdatePrompt()
+    private let capsLight = CapsLockLight()
     private let supportWindow = SupportWindow()
     private lazy var clipboardWindow = ClipboardWindow(manager: clipboard)
     private let translator = Translator()
@@ -173,7 +174,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
             object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.refreshFlag() }
+                MainActor.assumeIsolated {
+                    self?.refreshFlag()
+                    self?.refreshCapsLight()
+                }
             }
         // Typing in another app starts from scratch.
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -185,7 +189,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let pass = engine.handle(type, event)
             // The layout notification sometimes doesn't arrive; layout shortcuts are key events, so check after them.
             if type == .keyDown || type == .flagsChanged {
-                DispatchQueue.main.async { MainActor.assumeIsolated { self?.refreshFlag() } }
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        self?.refreshFlag()
+                        // Pressing Caps Lock makes macOS set the light itself: put the language back on it.
+                        self?.refreshCapsLight(force: type == .flagsChanged)
+                    }
+                }
             }
             return pass
         }
@@ -277,11 +287,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         // Layout changed by the mouse (Input menu) or another app: no key event to catch it.
         flagTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshFlag() }
+            MainActor.assumeIsolated {
+                self?.refreshFlag()
+                self?.refreshCapsLight()
+            }
+        }
+        // After sleep the keyboard's light starts over.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshCapsLight(force: true) }
         }
     }
 
+    /// The Caps Lock light shows the language, if that's on in Settings; otherwise it's left to Caps Lock.
+    private func refreshCapsLight(force: Bool = false) {
+        guard settings.capsLockShowsLanguage else {
+            if capsLight.isRunning { capsLight.stop() }
+            return
+        }
+        if !capsLight.isRunning { capsLight.start() }
+        capsLight.show(SystemLayouts.currentLanguage() == settings.capsLockLanguage, force: force)
+    }
+
     private func applySettings() {
+        refreshCapsLight(force: true)
         settingsWindow?.title = tr("Klavko — Налаштування", "Klavko Settings")
         engine.config = SwitchEngine.Config(shortcuts: settings.shortcuts,
                                             autoSwitch: settings.isEnabled,
