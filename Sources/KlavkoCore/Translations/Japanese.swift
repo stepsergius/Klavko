@@ -255,7 +255,6 @@ extension Translations {
         "What you dictate will appear here.": "音声入力した内容がここに表示されます。",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "音声入力中は音楽や動画の音が小さくなり（0% で消音）、終わると元の音量に戻ります。",
         "You have the latest version of Klavko": "Klavko は最新バージョンです",
-        "Lit for the language": "点灯する言語",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "選んだ言語のときに点灯し、ほかの言語では消灯します。Caps Lock 自体がオンのときは通常どおり点灯します。",
         "The Caps Lock light shows the language": "Caps Lock のランプで言語を表示",
     ]

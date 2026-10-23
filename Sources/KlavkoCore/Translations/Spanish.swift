@@ -255,7 +255,6 @@ extension Translations {
         "What you dictate will appear here.": "Lo que dictes aparecerá aquí.",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "Mientras dictas, la música y los vídeos suenan más bajo (0 % los silencia) y después el volumen vuelve.",
         "You have the latest version of Klavko": "Tienes la última versión de Klavko",
-        "Lit for the language": "Encendido para el idioma",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Encendido con el idioma elegido, apagado con cualquier otro. Con Bloq Mayús activado, el indicador se enciende como siempre.",
         "The Caps Lock light shows the language": "La luz de Bloq Mayús muestra el idioma",
     ]
