@@ -274,6 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // The volume comes back over two seconds: note it on the way.
             for seconds in [0.5, 1.0, 1.5, 2.5] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                    _ = ducker  // kept alive until the fade is over
                     report += "after \(seconds) s: \(volume())\n"
                     if seconds == 2.5 {
                         try? report.write(to: out, atomically: true, encoding: .utf8)
