@@ -261,6 +261,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             QRCodePanel.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]),
                                  payload: index + 2 < CommandLine.arguments.count ? CommandLine.arguments[index + 2] : "")
         }
+        // Developer check of turning sound down while dictating: --duck-check <out.txt> notes the output volume
+        // before, while turned down to 20 % and after, then quits.
+        if let index = CommandLine.arguments.firstIndex(of: "--duck-check"), index + 1 < CommandLine.arguments.count {
+            let out = URL(fileURLWithPath: CommandLine.arguments[index + 1])
+            let ducker = SoundDucker()
+            func volume() -> String { AudioDevices.defaultOutput.map { "\(AudioDevices.volume(of: $0))" } ?? "no output" }
+            var report = "microphones: \(AudioDevices.microphones().map(\.name))\nbefore: \(volume())\n"
+            ducker.duck(to: 0.2)
+            report += "ducked: \(volume())\n"
+            ducker.restore()
+            report += "after: \(volume())\n"
+            try? report.write(to: out, atomically: true, encoding: .utf8)
+            NSApp.terminate(nil)
+        }
         // Developer check of the update prompt: --snapshot-update <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-update"), index + 1 < CommandLine.arguments.count {
             UpdatePrompt.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
