@@ -255,5 +255,8 @@ extension Translations {
         "What you dictate will appear here.": "你口述的内容将显示在这里。",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "口述时，音乐和视频会变小声（0% 为静音），结束后音量恢复。",
         "You have the latest version of Klavko": "你使用的是最新版本的 Klavko",
+        "Lit for the language": "亮灯的语言",
+        "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "选中的语言时亮灯，其他语言时熄灭。打开大写锁定时，指示灯照常亮起。",
+        "The Caps Lock light shows the language": "大写锁定指示灯显示语言",
     ]
 }

@@ -255,5 +255,8 @@ extension Translations {
         "What you dictate will appear here.": "Ce que vous dictez apparaîtra ici.",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "Pendant la dictée, la musique et les vidéos jouent plus bas (0 % les coupe), puis le volume revient.",
         "You have the latest version of Klavko": "Vous avez la dernière version de Klavko",
+        "Lit for the language": "Allumé pour la langue",
+        "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Allumé quand la langue choisie est active, éteint pour toute autre. Quand le verrouillage des majuscules est activé, le voyant s’allume comme d’habitude.",
+        "The Caps Lock light shows the language": "Le voyant de verrouillage des majuscules indique la langue",
     ]
 }

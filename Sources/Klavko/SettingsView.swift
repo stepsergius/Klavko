@@ -117,6 +117,18 @@ struct SettingsView: View {
                         }
                         Toggle(tr("Запускати під час входу в систему", "Open at login"), isOn: $settings.launchAtLogin)
                         Toggle(tr("Показувати прапор розкладки в меню", "Show the layout flag in the menu bar"), isOn: $settings.showFlag)
+                        Toggle(isOn: $settings.capsLockShowsLanguage) {
+                            Text(tr("Лампочка Caps Lock показує мову", "The Caps Lock light shows the language"))
+                            Text(tr("Світиться, коли ввімкнена вибрана мова; не світиться — інша. Коли ввімкнено сам Caps Lock, лампочка світиться, як завжди.",
+                                    "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual."))
+                        }
+                        if settings.capsLockShowsLanguage {
+                            Picker(tr("Світиться для мови", "Lit for the language"), selection: $settings.capsLockLanguage) {
+                                ForEach(Translator.ordered(Array(Set(SystemLayouts.enabledLayouts().map(\.map.language)))), id: \.self) { code in
+                                    Text(Translator.plainName(code)).tag(code)
+                                }
+                            }
+                        }
                         soundRow(tr("Звук під час зміни розкладки", "Sound when the layout is fixed"), isOn: $settings.playSound, sound: $settings.soundName)
                         soundRow(tr("Звук під час виправлення помилок", "Sound when a typo is fixed"), isOn: $settings.playSpellingSound,
                                  sound: $settings.spellingSoundName)

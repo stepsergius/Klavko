@@ -11,6 +11,8 @@ final class Settings: ObservableObject {
         static let triggers = "triggers"
         static let backspaceUndo = "backspaceUndo"
         static let showFlag = "showFlag"
+        static let capsLockShowsLanguage = "capsLockShowsLanguage"
+        static let capsLockLanguage = "capsLockLanguage"
         static let playSound = "playSound"
         static let soundName = "soundName"
         static let excludedApps = "excludedApps"
@@ -276,6 +278,15 @@ final class Settings: ObservableObject {
         didSet { defaults.set(exceptions, forKey: Key.exceptions); onChange?() }
     }
 
+    /// The Caps Lock light shows the layout's language: lit for `capsLockLanguage`. Off by default.
+    @Published var capsLockShowsLanguage: Bool {
+        didSet { defaults.set(capsLockShowsLanguage, forKey: Key.capsLockShowsLanguage); onChange?() }
+    }
+
+    @Published var capsLockLanguage: String {
+        didSet { defaults.set(capsLockLanguage, forKey: Key.capsLockLanguage); onChange?() }
+    }
+
     @Published var showFlag: Bool {
         didSet { defaults.set(showFlag, forKey: Key.showFlag); onChange?() }
     }
@@ -362,6 +373,8 @@ final class Settings: ObservableObject {
             Key.symbols: oldTypography,
             Key.listContinuation: true,
             Key.showFlag: true,
+            Key.capsLockShowsLanguage: false,
+            Key.capsLockLanguage: "en",
             Key.playSound: true,
             Key.soundName: "Pop",
             Key.playSpellingSound: true,
@@ -433,6 +446,8 @@ final class Settings: ObservableObject {
             .flatMap { try? JSONDecoder().decode([Replacement].self, from: $0) } ?? []
         replacements = defaults.data(forKey: Key.replacements)
             .flatMap { try? JSONDecoder().decode([Replacement].self, from: $0) } ?? []
+        capsLockShowsLanguage = defaults.bool(forKey: Key.capsLockShowsLanguage)
+        capsLockLanguage = defaults.string(forKey: Key.capsLockLanguage) ?? "en"
         showFlag = defaults.bool(forKey: Key.showFlag)
         playSound = defaults.bool(forKey: Key.playSound)
         soundName = defaults.string(forKey: Key.soundName) ?? "Pop"

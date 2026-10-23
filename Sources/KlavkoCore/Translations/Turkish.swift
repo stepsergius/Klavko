@@ -255,5 +255,8 @@ extension Translations {
         "What you dictate will appear here.": "Dikte ettikleriniz burada görünecek.",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "Siz dikte ederken müzik ve videolar daha kısık çalar (%0 sessize alır), sonra ses düzeyi geri gelir.",
         "You have the latest version of Klavko": "Klavko’nun en son sürümüne sahipsiniz",
+        "Lit for the language": "Şu dilde yanar",
+        "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Seçilen dil açıkken yanar, diğerlerinde söner. Caps Lock açıkken ışık her zamanki gibi yanar.",
+        "The Caps Lock light shows the language": "Caps Lock ışığı dili gösterir",
     ]
 }
