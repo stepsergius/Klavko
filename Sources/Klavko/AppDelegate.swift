@@ -246,10 +246,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if CommandLine.arguments.contains("--show-support") {
             supportWindow.show(version: updater.currentVersion)
         }
-        // Developer checks of QR codes: --qr-check <image> <out.txt>; --snapshot-qr <file.png> [payload].
+        // Developer checks of QR codes: --qr-check <image> <out.txt>; --snapshot-qr <file.png> [payload]; --show-qr <payload>.
         if let index = CommandLine.arguments.firstIndex(of: "--qr-check"), index + 2 < CommandLine.arguments.count {
             ScreenTextCapture.checkCodes(URL(fileURLWithPath: CommandLine.arguments[index + 1]),
                                          writeTo: URL(fileURLWithPath: CommandLine.arguments[index + 2]))
+        }
+        // --show-qr <payload> (or "" for the unreadable note): the real panel at the mouse, to try its keys.
+        if let index = CommandLine.arguments.firstIndex(of: "--show-qr"), index + 1 < CommandLine.arguments.count {
+            let payload = CommandLine.arguments[index + 1]
+            if payload.isEmpty { qrPanel.showUnreadable(at: NSEvent.mouseLocation) } else { qrPanel.show([payload], at: NSEvent.mouseLocation) }
         }
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-qr"), index + 1 < CommandLine.arguments.count {
             QRCodePanel.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]),
