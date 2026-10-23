@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var clipboardWindow = ClipboardWindow(manager: clipboard)
     private let translator = Translator()
     private let screenText = ScreenTextCapture()
+    private let qrPanel = QRCodePanel()
     private let dictation = VoiceDictation()
     private let parakeet = ParakeetEngine()
     private let google = GeminiTranscriber()
@@ -105,6 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         screenText.onText = { [unowned self] text, point in translator.show(screenText: text, at: point) }
         screenText.onProblem = { [unowned self] message, point in translator.showProblem(message, at: point) }
+        screenText.onCodes = { [unowned self] payloads, point in translator.close(); qrPanel.show(payloads, at: point) }
+        screenText.onUnreadableCode = { [unowned self] point in translator.close(); qrPanel.showUnreadable(at: point) }
         engine.onScreenText = { [unowned self] in
             MainActor.assumeIsolated { screenText.start() }
         }
@@ -242,6 +245,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         if CommandLine.arguments.contains("--show-support") {
             supportWindow.show(version: updater.currentVersion)
+        }
+        // Developer checks of QR codes: --qr-check <image> <out.txt>; --snapshot-qr <file.png> [payload].
+        if let index = CommandLine.arguments.firstIndex(of: "--qr-check"), index + 2 < CommandLine.arguments.count {
+            ScreenTextCapture.checkCodes(URL(fileURLWithPath: CommandLine.arguments[index + 1]),
+                                         writeTo: URL(fileURLWithPath: CommandLine.arguments[index + 2]))
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot-qr"), index + 1 < CommandLine.arguments.count {
+            QRCodePanel.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]),
+                                 payload: index + 2 < CommandLine.arguments.count ? CommandLine.arguments[index + 2] : "")
         }
         // Developer check of the update prompt: --snapshot-update <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-update"), index + 1 < CommandLine.arguments.count {

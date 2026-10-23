@@ -4,12 +4,17 @@ import Vision
 
 /// "Text from the screen": you drag over an area of the screen (the macOS screenshot crosshair, Esc
 /// cancels), Klavko reads the text in it on this Mac (Vision) and hands it on to be translated.
+/// A QR code in the area is read instead: its content (a link or text) goes to `onCodes`.
 /// Nothing is saved: the picture is a temporary file, deleted right after.
 @MainActor
 final class ScreenTextCapture {
     /// The text read (maybe empty) and the point where the area ended, for the panel.
     var onText: (String, NSPoint) -> Void = { _, _ in }
     var onProblem: (String, NSPoint) -> Void = { _, _ in }
+    /// What the QR codes in the area hold, top first.
+    var onCodes: ([String], NSPoint) -> Void = { _, _ in }
+    /// The area has a QR code, but it couldn't be read (too small, blurred, cut off).
+    var onUnreadableCode: (NSPoint) -> Void = { _ in }
     /// Languages to expect (the translation pair and the keyboard layouts').
     var languages: () -> [String] = { ["uk", "en"] }
 
@@ -40,6 +45,18 @@ final class ScreenTextCapture {
                 let point = NSEvent.mouseLocation
                 // No file: the user pressed Esc.
                 guard FileManager.default.fileExists(atPath: file.path) else { return }
+                switch await Self.readCodes(file) {
+                case .found(let payloads):
+                    try? FileManager.default.removeItem(at: file)
+                    Log.engine.notice("Screen QR codes: \(payloads.count)")
+                    return onCodes(payloads, point)
+                case .unreadable:
+                    try? FileManager.default.removeItem(at: file)
+                    Log.engine.notice("Screen QR code not readable")
+                    return onUnreadableCode(point)
+                case .none:
+                    break
+                }
                 let text = await Self.recognize(file, languages: candidates)
                 try? FileManager.default.removeItem(at: file)
                 Log.engine.notice("Screen text: \(text.count) chars")
@@ -93,6 +110,39 @@ final class ScreenTextCapture {
             return lines.map { $0.sorted { $0.box.minX < $1.box.minX }.map(\.text).joined(separator: " ") }
                 .joined(separator: "\n")
         }.value
+    }
+
+    enum Codes: Equatable { case none, unreadable, found([String]) }
+
+    /// The QR codes in the picture, top first (each once).
+    nonisolated static func readCodes(_ file: URL) async -> Codes {
+        await Task.detached(priority: .userInitiated) {
+            let request = VNDetectBarcodesRequest()
+            request.symbologies = [.qr, .microQR]
+            let handler = VNImageRequestHandler(url: file)
+            guard (try? handler.perform([request])) != nil, let observations = request.results, !observations.isEmpty else {
+                return .none
+            }
+            var payloads: [String] = []
+            for observation in observations.sorted(by: { $0.boundingBox.midY > $1.boundingBox.midY }) {
+                if let text = observation.payloadStringValue, !text.isEmpty, !payloads.contains(text) { payloads.append(text) }
+            }
+            return payloads.isEmpty ? .unreadable : .found(payloads)
+        }.value
+    }
+
+    /// Developer check: --qr-check <image> <out.txt> writes what the QR codes in it hold.
+    static func checkCodes(_ image: URL, writeTo out: URL) {
+        Task { @MainActor in
+            let result: String
+            switch await readCodes(image) {
+            case .none: result = "none"
+            case .unreadable: result = "unreadable"
+            case .found(let payloads): result = payloads.joined(separator: "\n---\n")
+            }
+            try? result.write(to: out, atomically: true, encoding: .utf8)
+            NSApp.terminate(nil)
+        }
     }
 
     /// Developer check: --ocr-check <image> <out.txt>.

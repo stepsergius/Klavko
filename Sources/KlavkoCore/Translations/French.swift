@@ -6,7 +6,6 @@ extension Translations {
         "All changes on GitHub": "Tous les changements sur GitHub",
         "Text from the Screen…": "Texte à l’écran…",
         "Allow Klavko to record the screen: System Settings → Privacy & Security → Screen & System Audio Recording. Then restart Klavko and try again.": "Autorisez Klavko à enregistrer l’écran : Réglages Système → Confidentialité et sécurité → Enregistrement de l’écran et de l’audio du système. Puis relancez Klavko et réessayez.",
-        "No text found in the selected area.": "Aucun texte trouvé dans la zone sélectionnée.",
         "Original": "Original",
         "Text from the screen": "Texte à l’écran",
         "Recognized on this Mac": "Reconnu sur ce Mac",
@@ -232,5 +231,12 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "Une étoile sur GitHub aide aussi d’autres personnes à découvrir Klavko.",
         "Thank you for being here.": "Merci d’être là.",
         "Done": "Terminé",
+        "Couldn’t read the QR code. Try selecting it larger, sharper or whole.": "Impossible de lire le code QR. Essayez de le sélectionner plus grand, plus net ou en entier.",
+        "No text or QR code found in the selected area.": "Aucun texte ni code QR trouvé dans la zone sélectionnée.",
+        "Open": "Ouvrir",
+        "QR code": "Code QR",
+        "QR codes: %@": "Codes QR : %@",
+        "Read on this Mac": "Lu sur ce Mac",
+        "Return — open the link": "Entrée — ouvrir le lien",
     ]
 }

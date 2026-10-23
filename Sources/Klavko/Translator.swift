@@ -82,7 +82,7 @@ final class Translator: ObservableObject {
         anchor = point
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             job = nil
-            stage = .failed(tr("У вибраній області не знайдено тексту.", "No text found in the selected area."))
+            stage = .failed(tr("У вибраній області не знайдено ні тексту, ні QR-коду.", "No text or QR code found in the selected area."))
         } else {
             translate(text, direction(for: text))
         }

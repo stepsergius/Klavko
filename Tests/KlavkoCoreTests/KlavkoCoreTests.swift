@@ -952,3 +952,19 @@ final class UpdateThanksTests: XCTestCase {
         XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: nil, current: "0.14.0", usedBefore: false))
     }
 }
+
+final class QRContentTests: XCTestCase {
+    func testLinks() {
+        XCTAssertEqual(QRContent("https://send.monobank.ua/jar/2CKJVz8jam"), .link(URL(string: "https://send.monobank.ua/jar/2CKJVz8jam")!))
+        XCTAssertEqual(QRContent(" http://example.com/a?b=1 \n"), .link(URL(string: "http://example.com/a?b=1")!))
+        XCTAssertEqual(QRContent("www.example.com"), .link(URL(string: "https://www.example.com")!))
+    }
+
+    func testEverythingElseIsText() {
+        XCTAssertEqual(QRContent("Привіт, світе"), .text("Привіт, світе"))
+        XCTAssertEqual(QRContent("WIFI:S:Home;T:WPA;P:secret;;"), .text("WIFI:S:Home;T:WPA;P:secret;;"))
+        XCTAssertEqual(QRContent("mailto:someone@example.com"), .text("mailto:someone@example.com"))
+        XCTAssertEqual(QRContent("https://example.com is the site"), .text("https://example.com is the site"))
+        XCTAssertEqual(QRContent("http://localhost"), .text("http://localhost"))
+    }
+}
