@@ -146,7 +146,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         engine.onFix = { [unowned self] kind in
-            MainActor.assumeIsolated { playFixSound(kind) }
+            MainActor.assumeIsolated {
+                playFixSound(kind)
+                // Klavko retypes the word with key events of its own, after which macOS puts the Caps Lock light
+                // back to Caps Lock's state: show the language again once the retyping is done.
+                for delay in [0.25, 0.8] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.refreshCapsLight(force: true) }
+                }
+            }
         }
         engine.onRevert = { [unowned self] word in
             MainActor.assumeIsolated {
@@ -329,7 +336,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         flagTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.refreshFlag()
-                self?.refreshCapsLight()
+                // Sent every time: macOS may have set the light back to Caps Lock's state in between.
+                self?.refreshCapsLight(force: true)
             }
         }
         // After sleep the keyboard's light starts over.
