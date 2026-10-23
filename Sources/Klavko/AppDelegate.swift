@@ -16,6 +16,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let clipboard = ClipboardManager()
     private let updater = Updater()
     private let updatePrompt = UpdatePrompt()
+    let voiceHistory = VoiceHistoryStore()
+    private let voiceHistoryWindow = VoiceHistoryWindow()
     private let supportWindow = SupportWindow()
     private lazy var clipboardWindow = ClipboardWindow(manager: clipboard)
     private let translator = Translator()
@@ -59,8 +61,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Between two plausible results, the one in the layout's language.
         dictation.preferredLanguage = { SystemLayouts.currentLanguage() ?? "uk" }
         dictation.vocabulary = { [unowned self] in settings.voiceRules }
+        dictation.microphone = { [unowned self] in settings.microphoneUID }
+        dictation.duckLevel = { [unowned self] in settings.duckSound ? settings.duckLevel : nil }
         dictation.onInserted = { [unowned self] text in
             engine.reset()
+            if settings.saveVoiceHistory { voiceHistory.add(text) }
             if settings.offerVoiceCorrections { correctionWatcher.watch(inserted: text) }
         }
         // A dictated word fixed by hand: offer to spell it that way from now on.
@@ -90,11 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clipboard.prune()
         updater.autoCheck = { [unowned self] in settings.checkForUpdates }
         updater.skippedVersion = { [unowned self] in settings.skippedUpdateVersion }
-        updater.onAvailable = { [unowned self] release in
-            updatePrompt.show(release, current: updater.currentVersion,
-                              onUpdate: { [unowned self] in updater.install() },
-                              onSkip: { [unowned self] in settings.skippedUpdateVersion = release.version })
-        }
+        updater.onAvailable = { [unowned self] release in offerUpdate(release) }
         updater.start()
         showThanksAfterUpdate()
         clipboard.start()
@@ -422,25 +423,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        if let release = updater.available {
-            menu.addItem(item(trFormat("⬆︎ Оновити Klavko до %@", "⬆︎ Update Klavko to %@", release.version),
-                              #selector(installUpdate)))
-            menu.addItem(.separator())
-        }
-        // Each action with its hotkey as set in Settings, so a changed shortcut shows here too.
-        let keyLayout = englishLayout()
-        func hotkey(_ action: HotkeyAction) -> String? { settings.shortcuts[action]?.displayName(layout: keyLayout) }
-        let actions: [(NSMenuItem, String?)] = [
-            (item(tr("Голосовий ввід", "Voice Input"), #selector(toggleVoice)), hotkey(.voice)),
-            (item(tr("Перекласти виділене", "Translate Selection"), #selector(startTranslation)), hotkey(.translate)),
-            (item(tr("Текст з екрана…", "Text from the Screen…"), #selector(captureScreenText)), hotkey(.screenText)),
-            (item(tr("Історія буфера обміну", "Clipboard History"), #selector(showClipboard)), hotkey(.clipboard)),
-        ]
+        // The actions themselves are on their hotkeys; the menu keeps only what has no hotkey.
+        let updateItem = updater.available.map {
+            item(trFormat("⬆︎ Оновити Klavko до %@", "⬆︎ Update Klavko to %@", $0.version), #selector(installUpdate))
+        } ?? item(tr("Перевірити оновлення…", "Check for Updates…"), #selector(checkForUpdates))
         let settingsItem = item(tr("Налаштування…", "Settings…"), #selector(showSettings))
         let quitItem = item(tr("Вийти з Klavko", "Quit Klavko"), #selector(quit))
-        Self.showShortcuts(actions + [(settingsItem, "⌘,"), (quitItem, "⌘Q")])
-        actions.forEach { menu.addItem($0.0) }
-        menu.addItem(.separator())
+        Self.showShortcuts([(updateItem, nil), (settingsItem, "⌘,"), (quitItem, "⌘Q")])
+        menu.addItem(updateItem)
         menu.addItem(settingsItem)
         menu.addItem(.separator())
         if AboutInfo.donateURL != nil {
@@ -526,6 +516,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func showSettings() {
         if settingsWindow == nil {
             let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
+                                    voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     keyLayout: englishLayout(),
                                     previewSound: { [weak self] name in self?.playSound(named: name) })
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
@@ -543,6 +534,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func snapshotSettings(to url: URL, tabs: [SettingsTab] = SettingsTab.allCases) {
         guard let tab = tabs.first else { return NSApp.terminate(nil) }
         var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
+                                    voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     keyLayout: englishLayout(),
                                 previewSound: { _ in })
         view.initialTab = tab
@@ -570,6 +562,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func installUpdate() {
         updater.install()
+    }
+
+    private func offerUpdate(_ release: Updater.Release) {
+        updatePrompt.show(release, current: updater.currentVersion,
+                          onUpdate: { [unowned self] in updater.install() },
+                          onSkip: { [unowned self] in settings.skippedUpdateVersion = release.version })
+    }
+
+    /// From the menu: checks now and says what it found (a newer version is offered as usual).
+    @objc private func checkForUpdates() {
+        Task { @MainActor in
+            await updater.check(userInitiated: true)
+            let alert = NSAlert()
+            switch updater.state {
+            case .available(let release):
+                return offerUpdate(release)
+            case .upToDate:
+                alert.messageText = tr("У вас остання версія Klavko", "You have the latest version of Klavko")
+                alert.informativeText = tr("Версія", "Version") + " " + updater.currentVersion
+            case .failed(let message):
+                alert.messageText = tr("Не вдалося перевірити оновлення", "Couldn’t check for updates")
+                alert.informativeText = message
+            default:
+                return
+            }
+            NSApp.activate(ignoringOtherApps: true)
+            alert.runModal()
+        }
+    }
+
+    func showVoiceHistory() {
+        voiceHistoryWindow.show(voiceHistory)
     }
 
     @objc private func captureScreenText() {

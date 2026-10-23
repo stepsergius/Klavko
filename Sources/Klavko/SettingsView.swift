@@ -8,6 +8,8 @@ struct SettingsView: View {
     @ObservedObject var parakeet: ParakeetEngine
     @ObservedObject var clipboard: ClipboardManager
     @ObservedObject var updater: Updater
+    @ObservedObject var voiceHistory: VoiceHistoryStore
+    let showVoiceHistory: () -> Void
     /// English layout, used to name letter keys in shortcuts.
     let keyLayout: LayoutMap?
     let previewSound: (String) -> Void
@@ -102,8 +104,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            SettingsTabBar(selection: $tab)
+        HStack(spacing: 0) {
+            SettingsSidebar(selection: $tab)
             Divider()
             Form {
                 switch tab {
@@ -434,6 +436,50 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    Section {
+                        Picker(tr("Мікрофон", "Microphone"), selection: $settings.microphoneUID) {
+                            Text(tr("Як у macOS", "As set in macOS")).tag(String?.none)
+                            ForEach(AudioDevices.microphones(), id: \.uid) { microphone in
+                                Text(microphone.name).tag(String?.some(microphone.uid))
+                            }
+                        }
+                        Toggle(tr("Приглушувати інші звуки під час диктування", "Turn other sound down while dictating"),
+                               isOn: $settings.duckSound)
+                        HStack {
+                            Text(tr("Гучність під час диктування", "Volume while dictating"))
+                            Slider(value: $settings.duckLevel, in: 0...1, step: 0.05)
+                            Text("\(Int((settings.duckLevel * 100).rounded())) %")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                                .frame(width: 44, alignment: .trailing)
+                        }
+                        .disabled(!settings.duckSound)
+                    } header: {
+                        Text(tr("Мікрофон і звук", "Microphone and sound"))
+                    } footer: {
+                        Text(tr("Поки ви диктуєте, музика й відео звучать тихіше (0 % — без звуку), а потім гучність повертається.",
+                                "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Toggle(tr("Зберігати історію голосового вводу", "Keep voice input history"), isOn: $settings.saveVoiceHistory)
+                        HStack {
+                            Text(trFormat("Записів: %@", "Entries: %@", String(voiceHistory.history.entries.count)))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button(tr("Подивитися історію", "View History"), action: showVoiceHistory)
+                        }
+                    } header: {
+                        Text(tr("Історія голосового вводу", "Voice input history"))
+                    } footer: {
+                        Text(tr("Надиктований текст із датою й часом. Зберігається лише на цьому Mac.",
+                                "Dictated text with its date and time. Kept on this Mac only."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                 case .clipboard:
                     Section {
                         Toggle(tr("Зберігати історію буфера обміну", "Keep clipboard history"), isOn: $settings.clipboardEnabled)
@@ -498,11 +544,17 @@ struct SettingsView: View {
 
                 case .about:
                     AboutSection(settings: settings, updater: updater)
+
+                case .thanks:
+                    ThanksSection()
+
+                case .whatsNew:
+                    WhatsNewSection()
                 }
             }
             .formStyle(.grouped)
         }
-        .frame(width: 600, height: height)
+        .frame(width: 790, height: height)
         .onAppear { tab = initialTab }
         .onDisappear { recorder.stop() }
     }
@@ -602,7 +654,10 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String, CaseIterable {
-    case general, layout, text, voice, clipboard, hotkeys, about
+    case general, layout, text, voice, clipboard, hotkeys, about, thanks, whatsNew
+
+    /// Listed apart, at the bottom of the sidebar.
+    var isExtra: Bool { self == .thanks || self == .whatsNew }
 
     var title: String {
         switch self {
@@ -613,6 +668,8 @@ enum SettingsTab: String, CaseIterable {
         case .clipboard: tr("Буфер", "Clipboard")
         case .about: tr("Про Klavko", "About")
         case .hotkeys: tr("Клавіші", "Hotkeys")
+        case .thanks: tr("Подякувати", "Say Thanks")
+        case .whatsNew: tr("Що нового", "What’s New")
         }
     }
 
@@ -625,39 +682,49 @@ enum SettingsTab: String, CaseIterable {
         case .clipboard: "doc.on.clipboard"
         case .about: "info.circle"
         case .hotkeys: "command"
+        case .thanks: "heart"
+        case .whatsNew: "sparkles"
         }
     }
 }
 
-/// Icons with titles in a row at the top, like the tabs of macOS settings windows.
-private struct SettingsTabBar: View {
+/// The tabs listed down the left side, each an icon beside its title, like System Settings;
+/// "Say Thanks" and "What's New" apart at the bottom.
+private struct SettingsSidebar: View {
     @Binding var selection: SettingsTab
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(SettingsTab.allCases, id: \.self) { tab in
-                Button {
-                    selection = tab
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: tab.symbol)
-                            .font(.system(size: 18, weight: .regular))
-                            .frame(height: 22)
-                        Text(tab.title)
-                            .font(.system(size: 11))
-                    }
-                    .frame(width: 78, height: 50)
-                    .foregroundStyle(selection == tab ? Color.accentColor : Color.secondary)
-                    .background(RoundedRectangle(cornerRadius: 8)
-                        .fill(selection == tab ? Color.primary.opacity(0.08) : .clear))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(SettingsTab.allCases.filter { !$0.isExtra }, id: \.self, content: row)
+            Spacer()
+            Divider().padding(.vertical, 6)
+            ForEach(SettingsTab.allCases.filter(\.isExtra), id: \.self, content: row)
         }
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
+        .padding(10)
+        .frame(width: 190)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func row(_ tab: SettingsTab) -> some View {
+        Button {
+            selection = tab
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: tab.symbol)
+                    .font(.system(size: 14))
+                    .frame(width: 20)
+                    .foregroundStyle(selection == tab ? Color.white : (tab == .thanks ? Color.pink : Color.accentColor))
+                Text(tab.title)
+                    .font(.system(size: 13))
+                    .foregroundStyle(selection == tab ? Color.white : Color.primary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 7).fill(selection == tab ? Color.accentColor : .clear))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

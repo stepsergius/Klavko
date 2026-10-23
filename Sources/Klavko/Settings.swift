@@ -37,6 +37,10 @@ final class Settings: ObservableObject {
         static let checkForUpdates = "checkForUpdates"
         static let skippedUpdateVersion = "skippedUpdateVersion"
         static let offerVoiceCorrections = "offerVoiceCorrections"
+        static let saveVoiceHistory = "saveVoiceHistory"
+        static let microphoneUID = "microphoneUID"
+        static let duckSound = "duckSound"
+        static let duckLevel = "duckLevel"
         static let clipboardEnabled = "clipboardEnabled"
         static let clipboardKeepDays = "clipboardKeepDays"
         static let clipboardIgnoredApps = "clipboardIgnoredApps"
@@ -206,6 +210,25 @@ final class Settings: ObservableObject {
     }
 
     /// After a dictated word is fixed by hand, offer to remember the spelling.
+    /// Keep what was dictated in the voice history (this Mac only).
+    @Published var saveVoiceHistory: Bool {
+        didSet { defaults.set(saveVoiceHistory, forKey: Key.saveVoiceHistory) }
+    }
+
+    /// The microphone for voice input, by its device UID; nil: the one chosen in macOS.
+    @Published var microphoneUID: String? {
+        didSet { defaults.set(microphoneUID, forKey: Key.microphoneUID) }
+    }
+
+    /// Turn other sound (music, videos) down while dictating, to `duckLevel` of its volume (0: silent).
+    @Published var duckSound: Bool {
+        didSet { defaults.set(duckSound, forKey: Key.duckSound) }
+    }
+
+    @Published var duckLevel: Double {
+        didSet { defaults.set(duckLevel, forKey: Key.duckLevel) }
+    }
+
     @Published var offerVoiceCorrections: Bool {
         didSet { defaults.set(offerVoiceCorrections, forKey: Key.offerVoiceCorrections) }
     }
@@ -348,6 +371,9 @@ final class Settings: ObservableObject {
             // Terminals: words there are mostly commands, not natural language.
             // Code editors: "...", quotes and capitals mean something else in code.
             Key.offerVoiceCorrections: true,
+            Key.saveVoiceHistory: true,
+            Key.duckSound: true,
+            Key.duckLevel: 0.2,
             Key.voiceEngine: "local",
             Key.googleSmart: true,
             Key.checkForUpdates: true,
@@ -395,6 +421,10 @@ final class Settings: ObservableObject {
         defaults.removeObject(forKey: "aiModel")
         defaults.removeObject(forKey: "aiActions")
         offerVoiceCorrections = defaults.bool(forKey: Key.offerVoiceCorrections)
+        saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
+        microphoneUID = defaults.string(forKey: Key.microphoneUID)
+        duckSound = defaults.bool(forKey: Key.duckSound)
+        duckLevel = defaults.double(forKey: Key.duckLevel)
         checkForUpdates = defaults.bool(forKey: Key.checkForUpdates)
         clipboardEnabled = defaults.bool(forKey: Key.clipboardEnabled)
         clipboardKeepDays = defaults.integer(forKey: Key.clipboardKeepDays)
