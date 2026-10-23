@@ -1,3 +1,4 @@
+import AppKit
 import CoreAudio
 import Foundation
 
@@ -93,21 +94,67 @@ enum AudioDevices {
     }
 }
 
-/// Turns the sound output down while dictating (music, videos) and back to where it was afterwards.
+/// Turns the sound output down while dictating (music, videos) and, afterwards, brings it back to where it was
+/// gradually, over `fadeDuration`.
 @MainActor
 final class SoundDucker {
-    private var saved: (device: AudioDeviceID, volumes: [UInt32: Float32])?
+    static let fadeDuration: TimeInterval = 2
+    private static let steps = 40
 
-    /// `level`: the share of the current volume to keep, 0…1 (0 mutes).
-    func duck(to level: Double) {
-        guard saved == nil, let device = AudioDevices.defaultOutput else { return }
-        let volumes = AudioDevices.volume(of: device)
-        guard !volumes.isEmpty else { return }
-        saved = (device, volumes)
-        AudioDevices.setVolume(volumes.mapValues { $0 * Float32(level) }, of: device)
+    /// The volumes before turning down; kept until the fade back has finished.
+    private var saved: (device: AudioDeviceID, volumes: [UInt32: Float32])?
+    private var fade: Timer?
+    private var quitObserver: NSObjectProtocol?
+
+    init() {
+        // Quitting in the middle of a fade: the volume goes straight back.
+        quitObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification,
+                                                              object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.restoreNow() }
+        }
     }
 
+    /// `level`: the share of the volume to keep, 0…1 (0 mutes). Dictating again while the sound is still
+    /// coming back turns it down from where it was before, not from the half-restored volume.
+    func duck(to level: Double) {
+        fade?.invalidate()
+        fade = nil
+        if saved == nil {
+            guard let device = AudioDevices.defaultOutput else { return }
+            let volumes = AudioDevices.volume(of: device)
+            guard !volumes.isEmpty else { return }
+            saved = (device, volumes)
+        }
+        guard let saved else { return }
+        AudioDevices.setVolume(saved.volumes.mapValues { $0 * Float32(level) }, of: saved.device)
+    }
+
+    /// Brings the volume back over `fadeDuration`.
     func restore() {
+        guard let saved, fade == nil else { return }
+        let start = AudioDevices.volume(of: saved.device)
+        var step = 0
+        fade = Timer.scheduledTimer(withTimeInterval: Self.fadeDuration / Double(Self.steps), repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self else { return timer.invalidate() }
+                step += 1
+                // Ease out: quicker at first, gentle at the end.
+                let t = Float32(step) / Float32(Self.steps)
+                let eased = 1 - (1 - t) * (1 - t)
+                let volumes = saved.volumes.reduce(into: [UInt32: Float32]()) { result, entry in
+                    let from = start[entry.key] ?? entry.value
+                    result[entry.key] = from + (entry.value - from) * eased
+                }
+                AudioDevices.setVolume(volumes, of: saved.device)
+                if step >= Self.steps { self.restoreNow() }
+            }
+        }
+    }
+
+    /// Straight back to the volume before turning down.
+    func restoreNow() {
+        fade?.invalidate()
+        fade = nil
         guard let saved else { return }
         self.saved = nil
         AudioDevices.setVolume(saved.volumes, of: saved.device)
