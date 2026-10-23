@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import KlavkoCore
 import SwiftUI
 
@@ -24,6 +25,8 @@ struct SettingsView: View {
     @State private var checkingGoogleKey = false
     private static let googleCheck = GeminiTranscriber()
     @State private var tab: SettingsTab = .general
+    /// The languages of the enabled layouts (all of them, not only those Klavko switches between), kept up to date.
+    @State private var layoutLanguages: [String] = []
     /// The tab shown first (for snapshots).
     var initialTab: SettingsTab = .general
 
@@ -115,17 +118,28 @@ struct SettingsView: View {
                         }
                         Toggle(tr("Запускати під час входу в систему", "Open at login"), isOn: $settings.launchAtLogin)
                         Toggle(tr("Показувати прапор розкладки в меню", "Show the layout flag in the menu bar"), isOn: $settings.showFlag)
-                        Toggle(isOn: $settings.capsLockShowsLanguage) {
-                            Text(tr("Лампочка Caps Lock показує мову", "The Caps Lock light shows the language"))
-                            Text(tr("Світиться, коли ввімкнена вибрана мова; не світиться — інша. Коли ввімкнено сам Caps Lock, лампочка світиться, як завжди.",
-                                    "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual."))
-                        }
-                        if settings.capsLockShowsLanguage {
-                            Picker(tr("Світиться для мови", "Lit for the language"), selection: $settings.capsLockLanguage) {
-                                ForEach(Translator.ordered(Array(Set(SystemLayouts.enabledLayouts().map(\.map.language)))), id: \.self) { code in
+                        // One setting, in one row: what the light shows, for which language, and on/off.
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(tr("Лампочка Caps Lock показує мову", "The Caps Lock light shows the language"))
+                                Text(tr("Світиться, коли ввімкнена вибрана мова; не світиться — інша. Коли ввімкнено сам Caps Lock, лампочка світиться, як завжди.",
+                                        "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual."))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer()
+                            Picker("", selection: $settings.capsLockLanguage) {
+                                ForEach(capsLockLanguages, id: \.self) { code in
                                     Text(Translator.plainName(code)).tag(code)
                                 }
                             }
+                            .labelsHidden()
+                            .frame(width: 140)
+                            .disabled(!settings.capsLockShowsLanguage)
+                            Toggle("", isOn: $settings.capsLockShowsLanguage)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
                         }
                         soundRow(tr("Звук під час зміни розкладки", "Sound when the layout is fixed"), isOn: $settings.playSound, sound: $settings.soundName)
                         soundRow(tr("Звук під час виправлення помилок", "Sound when a typo is fixed"), isOn: $settings.playSpellingSound,
@@ -515,8 +529,22 @@ struct SettingsView: View {
             .formStyle(.grouped)
         }
         .frame(width: 600, height: height)
-        .onAppear { tab = initialTab }
+        .onAppear {
+            tab = initialTab
+            loadLayoutLanguages()
+        }
+        .onReceive(DistributedNotificationCenter.default().publisher(
+            for: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String))) { _ in loadLayoutLanguages() }
         .onDisappear { recorder.stop() }
+    }
+
+    private func loadLayoutLanguages() {
+        layoutLanguages = Translator.ordered(Array(Set(SystemLayouts.allLayouts().compactMap(\.language))))
+    }
+
+    /// The layouts' languages, and the chosen one even if its layout was removed.
+    private var capsLockLanguages: [String] {
+        layoutLanguages.contains(settings.capsLockLanguage) ? layoutLanguages : layoutLanguages + [settings.capsLockLanguage]
     }
 
     private func soundRow(_ title: String, isOn: Binding<Bool>, sound: Binding<String>) -> some View {

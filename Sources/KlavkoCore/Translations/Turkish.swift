@@ -232,7 +232,6 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "GitHub’da bir yıldız da insanların Klavko’yu bulmasına yardımcı olur.",
         "Thank you for being here.": "Burada olduğunuz için teşekkürler.",
         "Done": "Bitti",
-        "Lit for the language": "Şu dilde yanar",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Seçilen dil açıkken yanar, diğerlerinde söner. Caps Lock açıkken ışık her zamanki gibi yanar.",
         "The Caps Lock light shows the language": "Caps Lock ışığı dili gösterir",
     ]

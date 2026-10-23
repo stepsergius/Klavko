@@ -232,7 +232,6 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "在 GitHub 上点个星，也能帮助更多人发现 Klavko。",
         "Thank you for being here.": "感谢你的陪伴。",
         "Done": "完成",
-        "Lit for the language": "亮灯的语言",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "选中的语言时亮灯，其他语言时熄灭。打开大写锁定时，指示灯照常亮起。",
         "The Caps Lock light shows the language": "大写锁定指示灯显示语言",
     ]

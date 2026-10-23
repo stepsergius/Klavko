@@ -232,7 +232,6 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "Ein Stern auf GitHub hilft auch anderen, Klavko zu finden.",
         "Thank you for being here.": "Danke, dass du da bist.",
         "Done": "Fertig",
-        "Lit for the language": "Leuchtet für die Sprache",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Leuchtet, wenn die gewählte Sprache aktiv ist, sonst nicht. Ist die Feststelltaste selbst aktiv, leuchtet das Licht wie gewohnt.",
         "The Caps Lock light shows the language": "Das Licht der Feststelltaste zeigt die Sprache",
     ]

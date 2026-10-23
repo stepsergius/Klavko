@@ -232,7 +232,6 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "GitHub에서 별을 눌러 주시면 더 많은 사람이 Klavko를 알게 됩니다.",
         "Thank you for being here.": "함께해 주셔서 감사합니다.",
         "Done": "완료",
-        "Lit for the language": "켜지는 언어",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "선택한 언어일 때 켜지고 다른 언어에서는 꺼집니다. Caps Lock이 켜져 있으면 평소처럼 켜집니다.",
         "The Caps Lock light shows the language": "Caps Lock 표시등으로 언어 표시",
     ]

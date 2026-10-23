@@ -232,7 +232,6 @@ extension Translations {
         "A star on GitHub also helps people find Klavko.": "Una estrella en GitHub también ayuda a que más gente descubra Klavko.",
         "Thank you for being here.": "Gracias por estar aquí.",
         "Done": "Listo",
-        "Lit for the language": "Encendido para el idioma",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Encendido con el idioma elegido, apagado con cualquier otro. Con Bloq Mayús activado, el indicador se enciende como siempre.",
         "The Caps Lock light shows the language": "La luz de Bloq Mayús muestra el idioma",
     ]
