@@ -245,7 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             supportWindow.show(version: updater.currentVersion)
         }
         // Developer check of turning sound down while dictating: --duck-check <out.txt> notes the output volume
-        // before, while turned down to 20 % and after, then quits.
+        // before, while turned down to 20 % and while it comes back, then quits.
         if let index = CommandLine.arguments.firstIndex(of: "--duck-check"), index + 1 < CommandLine.arguments.count {
             let out = URL(fileURLWithPath: CommandLine.arguments[index + 1])
             let ducker = SoundDucker()
@@ -254,9 +254,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ducker.duck(to: 0.2)
             report += "ducked: \(volume())\n"
             ducker.restore()
-            report += "after: \(volume())\n"
-            try? report.write(to: out, atomically: true, encoding: .utf8)
-            NSApp.terminate(nil)
+            // The volume comes back over two seconds: note it on the way.
+            for seconds in [0.5, 1.0, 1.5, 2.5] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                    report += "after \(seconds) s: \(volume())\n"
+                    if seconds == 2.5 {
+                        try? report.write(to: out, atomically: true, encoding: .utf8)
+                        NSApp.terminate(nil)
+                    }
+                }
+            }
         }
         // Developer check of the update prompt: --snapshot-update <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-update"), index + 1 < CommandLine.arguments.count {
