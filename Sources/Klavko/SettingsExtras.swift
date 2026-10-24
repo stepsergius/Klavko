@@ -61,14 +61,16 @@ struct WhatsNewSection: View {
             "**Історія голосового вводу:** надиктоване зберігається з датою й часом (лише на цьому Mac); кожен запис можна скопіювати чи видалити.",
             "**Вибір мікрофона** для голосового вводу.",
             "**Тихіше під час диктування:** музика й відео приглушуються, поки ви говорите; гучність налаштовується.",
-            "**Нові звуки** для перемикання розкладки, виправлень і копіювання.",
+            "**Лампочка Caps Lock показує мову** (за бажанням): світиться для вибраної мови.",
+            "**Нові звуки** для перемикання розкладки, виправлень і копіювання; посилання в тексті з буфера клікабельні; пошук в історії голосу.",
             "Налаштування з бічною панеллю, «Подякувати» й «Що нового»; у меню — «Перевірити оновлення».",
         ], en: [
             "**QR codes** in Text from the Screen (⌃Q): select a QR code and Klavko shows what it holds; a link opens with Return.",
             "**Voice input history:** what you dictate is kept with its date and time (on this Mac only); copy or delete each entry.",
             "**Choose the microphone** for voice input.",
             "**Quieter while dictating:** music and videos are turned down while you speak; the volume is adjustable.",
-            "**New sounds** for layout switching, fixes and copying.",
+            "**The Caps Lock light shows the language** (optional): lit for the language you choose.",
+            "**New sounds** for layout switching, fixes and copying; clickable links in copied text; search in the voice history.",
             "Settings with a sidebar, Say Thanks and What’s New; Check for Updates in the menu.",
         ]),
         Version(number: "0.14.0", uk: [

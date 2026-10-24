@@ -23,6 +23,7 @@ Requirements: macOS 14 or later (translation needs macOS 15), at least two keybo
 - The current layout’s flag (🇺🇦, 🇺🇸, 🇩🇪…) in the menu bar and a soft sound after switching (can be changed or turned off). The menu lists the layouts with their flags: a click switches by hand.
 - A word you went back into with Backspace (or retyped after deleting Klavko’s fix) is left as you write it.
 - Off by default in terminals and code editors; any app can be excluded from the menu.
+- **The Caps Lock light can show the language** (optional): lit for the language you choose, off for the others.
 
 ### Layout languages
 - Switching works between any enabled macOS layouts of 13 languages, including Ukrainian, English, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Greek, Hebrew and Arabic.
@@ -43,6 +44,8 @@ Requirements: macOS 14 or later (translation needs macOS 15), at least two keybo
 - Speech is recognized by the NVIDIA Parakeet Ultra model right on your Mac — with punctuation and automatic language detection. The model (~600 MB) is downloaded once; until then the built-in macOS recognition is used. Languages not chosen in “I speak” are never inserted. Turkish, Hebrew and Arabic are recognized by macOS.
 - **Google AI (optional):** in the voice settings you can choose “Google AI” and paste your own key from [aistudio.google.com](https://aistudio.google.com/apikey). The recording is then sent to Google when you finish and any language is recognized; the “smart” mode removes fillers and self-corrections. The key is kept in the Keychain. If Google can’t be reached, your Mac recognizes the text.
 - **Vocabulary:** fix a dictated word by hand and Klavko offers to remember how you write it. Your replacements apply to voice input too.
+- **History:** what you dictate is kept with its date and time (on your Mac only, can be turned off) — search it, copy or delete each entry.
+- Choose the microphone; music and videos are turned down while you dictate (to a volume you set) and come back gradually.
 
 ### Translation
 - Select text anywhere and press **⌘** twice — the translation appears in a panel: Return replaces the selection, ⌘C copies.
@@ -53,15 +56,17 @@ Requirements: macOS 14 or later (translation needs macOS 15), at least two keybo
 ### Text from the screen
 - Press **⌃Q** and select an area of the screen — Klavko reads the text in it (even in a picture or where it can’t be selected) and translates it with your language pair.
 - The Translation / Original switch in the same panel shows the recognized text without translation; Copy takes what is shown.
+- **QR codes:** select a QR code and Klavko shows what it holds; a link opens with Return.
 - Recognition runs on your Mac, offline. It needs the Screen Recording permission (macOS asks once).
 
 ### Clipboard history
 - **⌥⌘V** shows everything you copied: text, links, pictures, files — with search and preview.
-- Return pastes into the app you came from; ⌘P pins, ⌘⌫ deletes, ⌘1…⌘9 paste right away.
+- Return pastes into the app you came from; ⌘P pins, ⌘⌫ deletes, ⌘1…⌘9 paste right away. Links in copied text are clickable.
 - Kept on your Mac only (30 days by default). Passwords from password managers are never recorded. The copy sound can be changed or turned off.
 
 ### Interface and updates
-- Settings in tabs: General, Layout, Text, Voice, Clipboard, Hotkeys, About.
+- Settings with a sidebar: General, Layout, Text, Voice, Clipboard, Hotkeys, About — and Say Thanks and What’s New at the bottom.
+- The menu: the layouts with their flags, the main switches, Check for Updates, Settings.
 - Klavko tells you about a new version and updates with one “Update” button — nothing to download or install by hand.
 - Interface languages: Українська, English, español, français, Deutsch, italiano, português, polski, Türkçe, 简体中文, 日本語 and 한국어.
 

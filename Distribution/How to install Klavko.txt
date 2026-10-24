@@ -64,6 +64,8 @@ Hotkeys (can be changed in Settings):
 Voice input:
 • On the first recording macOS asks for access to the microphone and to
   speech recognition — allow it.
+• The microphone, turning music down while dictating and the history of
+  what you dictated (with search) are on the Voice tab in Settings.
 • So that the fn (🌐) key does nothing else:
   System Settings → Keyboard → “Press 🌐 key to” → “Do Nothing”.
 • For much better quality (punctuation, automatic language detection):
@@ -88,6 +90,8 @@ Text from the screen:
   Klavko reads the text in it and translates it. The Translation /
   Original switch shows the recognized text without translation; Copy takes
   it.
+• A QR code: select it the same way — Klavko shows what it holds; if it is
+  a link, Return opens it in the browser.
 • The first time, macOS asks for the Screen Recording permission:
   System Settings → Privacy & Security → Screen & System Audio Recording →
   turn on Klavko, then restart it.
