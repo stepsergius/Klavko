@@ -952,3 +952,17 @@ final class UpdateThanksTests: XCTestCase {
         XCTAssertFalse(UpdateThanks.shouldShow(lastRunVersion: nil, current: "0.14.0", usedBefore: false))
     }
 }
+
+final class TextLinksTests: XCTestCase {
+    func testFindsAddressesInsideText() {
+        let text = "Ось посилання: https://send.monobank.ua/jar/2CKJVz8jam — і ще www.example.com, пишіть на a@b.ua."
+        let found = TextLinks.find(in: text)
+        XCTAssertEqual(found.map { String(text[$0.range]) }, ["https://send.monobank.ua/jar/2CKJVz8jam", "www.example.com", "a@b.ua"])
+        XCTAssertEqual(found[0].url.absoluteString, "https://send.monobank.ua/jar/2CKJVz8jam")
+        XCTAssertEqual(found[2].url.scheme, "mailto")
+    }
+
+    func testPlainTextHasNone() {
+        XCTAssertTrue(TextLinks.find(in: "Просто текст без адрес.").isEmpty)
+    }
+}

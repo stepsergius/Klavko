@@ -263,13 +263,18 @@ private struct ClipboardView: View {
             }
         case .text:
             ScrollView {
-                Text(item.text)
+                Text(Self.withLinks(item.text))
                     .font(.system(size: 13))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(item.kind == .link ? Color.accentColor : Color.primary)
                     .padding(14)
             }
+            // A link in the text opens in the browser, and the history closes, as for a copied link.
+            .environment(\.openURL, OpenURLAction { url in
+                window.close()
+                NSWorkspace.shared.open(url)
+                return .handled
+            })
         case .image:
             if let url = manager.imageURL(for: item), let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
@@ -383,6 +388,20 @@ private struct ClipboardView: View {
                 .padding(.vertical, 1)
                 .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.1)))
         }
+    }
+}
+
+extension ClipboardView {
+    /// The text with every web or mail address in it as a link (in the accent colour, clickable).
+    static func withLinks(_ text: String) -> AttributedString {
+        var result = AttributedString(text)
+        for found in TextLinks.find(in: text) {
+            guard let lower = AttributedString.Index(found.range.lowerBound, within: result),
+                  let upper = AttributedString.Index(found.range.upperBound, within: result) else { continue }
+            result[lower..<upper].link = found.url
+            result[lower..<upper].foregroundColor = .accentColor
+        }
+        return result
     }
 }
 
