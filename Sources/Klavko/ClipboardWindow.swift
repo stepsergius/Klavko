@@ -262,19 +262,11 @@ private struct ClipboardView: View {
                     .padding(14)
             }
         case .text:
-            ScrollView {
-                Text(Self.withLinks(item.text))
-                    .font(.system(size: 13))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(14)
-            }
             // A link in the text opens in the browser, and the history closes, as for a copied link.
-            .environment(\.openURL, OpenURLAction { url in
+            LinkedTextView(text: item.text) { url in
                 window.close()
                 NSWorkspace.shared.open(url)
-                return .handled
-            })
+            }
         case .image:
             if let url = manager.imageURL(for: item), let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
@@ -391,17 +383,63 @@ private struct ClipboardView: View {
     }
 }
 
-extension ClipboardView {
-    /// The text with every web or mail address in it as a link (in the accent colour, clickable).
-    static func withLinks(_ text: String) -> AttributedString {
-        var result = AttributedString(text)
+/// Copied text in a native, selectable text view: every web or mail address in it is a real link —
+/// a pointing hand over it, a click opens it (SwiftUI's selectable Text doesn't show the hand and often
+/// takes the click for the start of a selection).
+private struct LinkedTextView: NSViewRepresentable {
+    let text: String
+    let onOpen: (URL) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onOpen: onOpen) }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSTextView.scrollableTextView()
+        scroll.drawsBackground = false
+        scroll.hasVerticalScroller = true
+        guard let view = scroll.documentView as? NSTextView else { return scroll }
+        view.isEditable = false
+        view.isSelectable = true
+        view.drawsBackground = false
+        view.textContainerInset = NSSize(width: 9, height: 14)
+        view.delegate = context.coordinator
+        view.linkTextAttributes = [
+            .foregroundColor: NSColor.controlAccentColor,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .cursor: NSCursor.pointingHand,
+        ]
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        context.coordinator.onOpen = onOpen
+        guard let view = scroll.documentView as? NSTextView, context.coordinator.shown != text else { return }
+        context.coordinator.shown = text
+        view.textStorage?.setAttributedString(Self.withLinks(text))
+        view.scroll(.zero)
+    }
+
+    /// The text with every web or mail address in it as a link.
+    static func withLinks(_ text: String) -> NSAttributedString {
+        let result = NSMutableAttributedString(string: text, attributes: [
+            .font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.labelColor,
+        ])
         for found in TextLinks.find(in: text) {
-            guard let lower = AttributedString.Index(found.range.lowerBound, within: result),
-                  let upper = AttributedString.Index(found.range.upperBound, within: result) else { continue }
-            result[lower..<upper].link = found.url
-            result[lower..<upper].foregroundColor = .accentColor
+            result.addAttribute(.link, value: found.url, range: NSRange(found.range, in: text))
         }
         return result
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var onOpen: (URL) -> Void
+        var shown: String?
+
+        init(onOpen: @escaping (URL) -> Void) { self.onOpen = onOpen }
+
+        func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+            guard let url = link as? URL ?? (link as? String).flatMap(URL.init(string:)) else { return false }
+            onOpen(url)
+            return true
+        }
     }
 }
 
