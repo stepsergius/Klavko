@@ -257,5 +257,8 @@ extension Translations {
         "You have the latest version of Klavko": "Klavko は最新バージョンです",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "選んだ言語のときに点灯し、ほかの言語では消灯します。Caps Lock 自体がオンのときは通常どおり点灯します。",
         "The Caps Lock light shows the language": "Caps Lock のランプで言語を表示",
+        "Clear search": "検索をクリア",
+        "Found %1$@ of %2$@": "%2$@ 件中 %1$@ 件",
+        "Search the history": "履歴を検索",
     ]
 }

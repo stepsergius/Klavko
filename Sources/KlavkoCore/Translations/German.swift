@@ -257,5 +257,8 @@ extension Translations {
         "You have the latest version of Klavko": "Du hast die neueste Version von Klavko",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Leuchtet, wenn die gewählte Sprache aktiv ist, sonst nicht. Ist die Feststelltaste selbst aktiv, leuchtet das Licht wie gewohnt.",
         "The Caps Lock light shows the language": "Das Licht der Feststelltaste zeigt die Sprache",
+        "Clear search": "Suche löschen",
+        "Found %1$@ of %2$@": "%1$@ von %2$@ gefunden",
+        "Search the history": "Im Verlauf suchen",
     ]
 }

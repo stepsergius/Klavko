@@ -257,5 +257,8 @@ extension Translations {
         "You have the latest version of Klavko": "你使用的是最新版本的 Klavko",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "选中的语言时亮灯，其他语言时熄灭。打开大写锁定时，指示灯照常亮起。",
         "The Caps Lock light shows the language": "大写锁定指示灯显示语言",
+        "Clear search": "清除搜索",
+        "Found %1$@ of %2$@": "找到 %1$@ 条，共 %2$@ 条",
+        "Search the history": "搜索历史记录",
     ]
 }

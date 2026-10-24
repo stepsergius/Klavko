@@ -35,4 +35,13 @@ public struct VoiceHistory: Codable, Equatable, Sendable {
     public mutating func clear() {
         entries = []
     }
+
+    /// Entries with every word of `query` in them, ignoring case and accents; all of them for an empty query.
+    public func search(_ query: String) -> [Entry] {
+        let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard !words.isEmpty else { return entries }
+        return entries.filter { entry in
+            words.allSatisfy { entry.text.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        }
+    }
 }

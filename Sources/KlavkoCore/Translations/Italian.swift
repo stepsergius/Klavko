@@ -257,5 +257,8 @@ extension Translations {
         "You have the latest version of Klavko": "Hai l’ultima versione di Klavko",
         "Lit when the chosen language is on, off for any other. With Caps Lock itself on, the light is lit as usual.": "Acceso quando è attiva la lingua scelta, spento per qualsiasi altra. Con il Bloc Maiusc attivo, la spia si accende come al solito.",
         "The Caps Lock light shows the language": "La spia del Bloc Maiusc mostra la lingua",
+        "Clear search": "Cancella ricerca",
+        "Found %1$@ of %2$@": "Trovati %1$@ su %2$@",
+        "Search the history": "Cerca nella cronologia",
     ]
 }
