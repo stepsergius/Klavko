@@ -27,6 +27,9 @@ private struct VoiceHistoryView: View {
     @ObservedObject var store: VoiceHistoryStore
     @State private var copied: UUID?
     @State private var confirmingClear = false
+    @State private var query = ""
+
+    private var shown: [VoiceHistory.Entry] { store.history.search(query) }
 
     private static let dateFormat: DateFormatter = {
         let formatter = DateFormatter()
@@ -37,6 +40,19 @@ private struct VoiceHistoryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField(tr("Пошук в історії", "Search the history"), text: $query)
+                    .textFieldStyle(.plain)
+                if !query.isEmpty {
+                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                        .buttonStyle(.plain)
+                        .help(tr("Очистити пошук", "Clear search"))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            Divider()
             if store.history.entries.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "waveform").font(.system(size: 34)).foregroundStyle(.tertiary)
@@ -44,9 +60,13 @@ private struct VoiceHistoryView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if shown.isEmpty {
+                Text(tr("Нічого не знайдено", "Nothing found"))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(store.history.entries) { entry in
+                    ForEach(shown) { entry in
                         row(entry)
                     }
                 }
@@ -54,7 +74,9 @@ private struct VoiceHistoryView: View {
             }
             Divider()
             HStack {
-                Text(trFormat("Записів: %@", "Entries: %@", String(store.history.entries.count)))
+                Text(query.isEmpty
+                     ? trFormat("Записів: %@", "Entries: %@", String(store.history.entries.count))
+                     : trFormat("Знайдено %1$@ з %2$@", "Found %1$@ of %2$@", String(shown.count), String(store.history.entries.count)))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Spacer()

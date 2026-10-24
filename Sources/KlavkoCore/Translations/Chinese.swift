@@ -249,5 +249,8 @@ extension Translations {
         "What you dictate will appear here.": "你口述的内容将显示在这里。",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "口述时，音乐和视频会变小声（0% 为静音），结束后音量恢复。",
         "You have the latest version of Klavko": "你使用的是最新版本的 Klavko",
+        "Clear search": "清除搜索",
+        "Found %1$@ of %2$@": "找到 %1$@ 条，共 %2$@ 条",
+        "Search the history": "搜索历史记录",
     ]
 }

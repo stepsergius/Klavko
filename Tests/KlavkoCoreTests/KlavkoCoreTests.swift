@@ -979,6 +979,17 @@ final class VoiceHistoryTests: XCTestCase {
         XCTAssertEqual(history.entries.last?.text, "1")
     }
 
+    func testSearchMatchesEveryWordInAnyCase() {
+        var history = VoiceHistory()
+        history.add("Зустріч у понеділок о десятій")
+        history.add("Купити хліб і молоко")
+        history.add("Понеділок: подзвонити Олегу")
+        XCTAssertEqual(history.search("понеділок").map(\.text), ["Понеділок: подзвонити Олегу", "Зустріч у понеділок о десятій"])
+        XCTAssertEqual(history.search("ПОНЕДІЛОК десятій").map(\.text), ["Зустріч у понеділок о десятій"])
+        XCTAssertEqual(history.search("  ").count, 3)
+        XCTAssertTrue(history.search("вівторок").isEmpty)
+    }
+
     func testRoundTrip() throws {
         var history = VoiceHistory()
         history.add("Привіт", at: Date(timeIntervalSince1970: 1_800_000_000))

@@ -249,5 +249,8 @@ extension Translations {
         "What you dictate will appear here.": "Ce que vous dictez apparaîtra ici.",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "Pendant la dictée, la musique et les vidéos jouent plus bas (0 % les coupe), puis le volume revient.",
         "You have the latest version of Klavko": "Vous avez la dernière version de Klavko",
+        "Clear search": "Effacer la recherche",
+        "Found %1$@ of %2$@": "%1$@ sur %2$@ trouvés",
+        "Search the history": "Rechercher dans l’historique",
     ]
 }

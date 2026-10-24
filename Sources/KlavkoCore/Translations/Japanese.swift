@@ -249,5 +249,8 @@ extension Translations {
         "What you dictate will appear here.": "音声入力した内容がここに表示されます。",
         "While you dictate, music and videos play quieter (0 % mutes them), and the volume comes back afterwards.": "音声入力中は音楽や動画の音が小さくなり（0% で消音）、終わると元の音量に戻ります。",
         "You have the latest version of Klavko": "Klavko は最新バージョンです",
+        "Clear search": "検索をクリア",
+        "Found %1$@ of %2$@": "%2$@ 件中 %1$@ 件",
+        "Search the history": "履歴を検索",
     ]
 }
