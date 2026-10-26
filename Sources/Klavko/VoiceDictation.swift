@@ -535,6 +535,7 @@ final class VoiceDictation: ObservableObject {
         for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
         shownLook = look()
         if shownLook.style == .island || shownLook.style == .hidden { notch = Self.notch(of: NSScreen.main) }
+        islandOut = true
         let view = NSHostingView(rootView: VoicePanelView(dictation: self, meter: meter)
             .background(Color(white: 0.9)))
         view.frame = NSRect(origin: .zero, size: view.fittingSize)
@@ -620,6 +621,8 @@ final class VoiceDictation: ObservableObject {
     static func notch(of screen: NSScreen?) -> CGSize {
         guard let screen else { return CGSize(width: 0, height: 24) }
         let barHeight = max(screen.frame.maxY - screen.visibleFrame.maxY, NSStatusBar.system.thickness)
+        // Developer check of a screen without a notch on one with it: --no-notch.
+        if CommandLine.arguments.contains("--no-notch") { return CGSize(width: 0, height: barHeight) }
         if screen.safeAreaInsets.top > 0, let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
             return CGSize(width: max(right.minX - left.maxX, 0), height: screen.safeAreaInsets.top)
         }
@@ -940,7 +943,8 @@ private struct NotchMarks: View {
     private var notch: CGSize { dictation.notch }
     private static let mark: CGFloat = 14
     private static let flare: CGFloat = 8
-    private var width: CGFloat { notch.width + 2 * (Self.mark + 12) + 2 * Self.flare }
+    /// Without a notch, a small island of its own in the middle of the menu bar, with room between the marks.
+    private var width: CGFloat { max(notch.width, 20) + 2 * (Self.mark + 12) + 2 * Self.flare }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -969,8 +973,10 @@ private struct NotchMarks: View {
 
     private func mark(_ kind: VoiceButton.Kind) -> some View {
         VoiceButton(kind: kind, size: Self.mark, symbol: 6.5, dictation: dictation)
-            .scaleEffect(pulse && dictation.stage == .listening ? 1.1 : 0.92)
-            .shadow(color: Neon.sky.opacity(pulse && dictation.stage == .listening ? 0.7 : 0.1), radius: 3)
+            .scaleEffect(pulse && dictation.stage == .listening ? 1.22 : 0.84)
+            .opacity(pulse || dictation.stage != .listening ? 1 : 0.7)
+            .shadow(color: (kind == .insert ? Neon.sky : .white).opacity(pulse && dictation.stage == .listening ? 0.9 : 0),
+                    radius: 5)
     }
 }
 
