@@ -22,6 +22,8 @@ struct SettingsView: View {
     @State private var newException = ""
     @State private var newReplacementFrom = ""
     @State private var newReplacementTo = ""
+    /// The Quick Actions row a dragged row is over.
+    @State private var quickActionDropTarget: QuickAction?
     @State private var newSpellingHeard = ""
     @State private var newSpellingWritten = ""
     @State private var googleKey = GeminiKey.load() ?? ""
@@ -120,14 +122,28 @@ struct SettingsView: View {
         }
 
         Section {
-            ForEach(Array(settings.quickActionOrder.enumerated()), id: \.element) { index, action in
-                quickActionRow(action, index: index)
+            ForEach(settings.quickActionOrder, id: \.self) { action in
+                quickActionRow(action)
+                    .contentShape(Rectangle())
+                    .draggable(action.rawValue) { Text(action.title).padding(6) }
+                    .dropDestination(for: String.self) { items, _ in
+                        quickActionDropTarget = nil
+                        return moveQuickAction(items.first, onto: action)
+                    } isTargeted: { over in
+                        if over { quickActionDropTarget = action } else if quickActionDropTarget == action { quickActionDropTarget = nil }
+                    }
+                    // Where the row will land.
+                    .overlay(alignment: .top) {
+                        if quickActionDropTarget == action {
+                            Rectangle().fill(Color.accentColor).frame(height: 2).offset(y: -5)
+                        }
+                    }
             }
         } header: {
             Text(tr("Дії на панельці", "Actions on the bar"))
         } footer: {
-            Text(tr("Стрілками змініть порядок. «Відкрити посилання» з’являється лише для посилання і завжди першою. Дії, що змінюють текст, видно лише там, де його можна редагувати; «Сума чисел» — коли виділено щонайменше два числа.",
-                    "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected."))
+            Text(tr("Перетягніть рядок, щоб змінити порядок. «Відкрити посилання» з’являється лише для посилання і завжди першою. Дії, що змінюють текст, видно лише там, де його можна редагувати; «Сума чисел» — коли виділено щонайменше два числа.",
+                    "Drag a row to change the order. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -163,41 +179,43 @@ struct SettingsView: View {
         }
     }
 
-    private func quickActionRow(_ action: QuickAction, index: Int) -> some View {
+    private func quickActionRow(_ action: QuickAction) -> some View {
         HStack(spacing: 10) {
-            Toggle(isOn: Binding(
+            // Only the box is the checkbox: the rest of the row is for dragging.
+            Toggle(action.title, isOn: Binding(
                 get: { !settings.quickActionsOff.contains(action) },
                 set: { on in
                     if on { settings.quickActionsOff.remove(action) } else { settings.quickActionsOff.insert(action) }
-                })) {
-                HStack(spacing: 8) {
-                    Group {
-                        if let symbol = action.symbol {
-                            Image(systemName: symbol)
-                        } else {
-                            Text(action.label).font(.system(size: 11, weight: .semibold, design: .rounded)).lineLimit(1)
-                        }
+                }))
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+            HStack(spacing: 8) {
+                Group {
+                    if let symbol = action.symbol {
+                        Image(systemName: symbol)
+                    } else {
+                        Text(action.label).font(.system(size: 11, weight: .semibold, design: .rounded)).lineLimit(1)
                     }
-                    .frame(width: 58, alignment: .center)
-                    .foregroundStyle(.secondary)
-                    Text(action.title)
                 }
+                .frame(width: 58, alignment: .center)
+                .foregroundStyle(.secondary)
+                Text(action.title)
             }
-            .toggleStyle(.checkbox)
             Spacer()
-            Button { moveQuickAction(index, by: -1) } label: { Image(systemName: "chevron.up") }
-                .buttonStyle(.borderless)
-                .disabled(index == 0)
-            Button { moveQuickAction(index, by: 1) } label: { Image(systemName: "chevron.down") }
-                .buttonStyle(.borderless)
-                .disabled(index == settings.quickActionOrder.count - 1)
+            // The handle shows the row can be dragged (it can be taken anywhere outside the checkbox).
+            Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary)
         }
     }
 
-    private func moveQuickAction(_ index: Int, by step: Int) {
-        let target = index + step
-        guard settings.quickActionOrder.indices.contains(target) else { return }
-        settings.quickActionOrder.swapAt(index, target)
+    /// The dragged action takes the place of the one it was dropped on (that one moves down).
+    private func moveQuickAction(_ raw: String?, onto target: QuickAction) -> Bool {
+        guard let raw, let moved = QuickAction(rawValue: raw), moved != target,
+              let from = settings.quickActionOrder.firstIndex(of: moved),
+              let to = settings.quickActionOrder.firstIndex(of: target) else { return false }
+        withAnimation(.easeOut(duration: 0.15)) {
+            settings.quickActionOrder.move(fromOffsets: [from], toOffset: to)
+        }
+        return true
     }
 
     private func addReplacement() {

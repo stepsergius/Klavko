@@ -305,7 +305,7 @@ extension Translations {
         "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.": "マウスでテキストを選択する（または単語をダブルクリックする）と、その上にアクションバーが表示されます。ほかの場所をクリックするかキーを押すと隠れます。キーボードで選択したテキストには、「キー」タブで「選択範囲のクイックアクション」のショートカットを設定してください。",
         "Hold the mouse button down in a text field and “Paste” appears.": "テキストフィールドでマウスボタンを押し続けると「ペースト」が表示されます。",
         "Actions on the bar": "バーのアクション",
-        "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected.": "矢印で順序を変更します。「リンクを開く」はリンクを選択したときだけ、常に先頭に表示されます。テキストを変更するアクションは編集できる場所でのみ表示され、「数値の合計」は 2 つ以上の数値を選択したときに表示されます。",
+        "Drag a row to change the order. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected.": "行をドラッグして順序を変更します。「リンクを開く」はリンクを選択したときだけ、常に先頭に表示されます。テキストを変更するアクションは編集できる場所でのみ表示され、「数値の合計」は 2 つ以上の数値を選択したときに表示されます。",
         "Search the web with": "Web 検索に使う",
         "Open in AI": "AI で開く",
         "If the AI’s app is on this Mac (Claude, ChatGPT, Perplexity), the selection is pasted into it; otherwise its website opens with the text. With several chosen, the bar offers a choice.": "この Mac に AI のアプリ（Claude、ChatGPT、Perplexity）があれば、選択したテキストをそこに貼り付けます。なければ、テキスト付きで Web サイトを開きます。複数選んだ場合はバーで選べます。",

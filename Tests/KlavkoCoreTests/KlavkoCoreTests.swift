@@ -1119,6 +1119,7 @@ final class QuickTextTests: XCTestCase {
                        "https://www.google.com/search?q=%D0%BA%D1%96%D1%82%20%26%20%D0%BF%D0%B5%D1%81")
         XCTAssertTrue(AIService.claude.webURL(for: "hi").carriesText)
         XCTAssertFalse(AIService.gemini.webURL(for: "hi").carriesText)
+        XCTAssertFalse(AIService.perplexity.webURL(for: "hi").carriesText)
         XCTAssertEqual(AIService.claude.appLink(for: "a & b")?.absoluteString, "claude://claude.ai/new?q=a%20%26%20b&surface=chat")
         XCTAssertNil(AIService.chatGPT.appLink(for: "hi"))
         XCTAssertTrue(AIService.chatGPT.isApp(named: "ChatGPT"))

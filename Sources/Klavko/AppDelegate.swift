@@ -261,6 +261,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // with --show-voice-stats and/or --show-milestone <words>.
         if CommandLine.arguments.contains("--sample-voice-stats") { voiceStats.fillWithSample() }
         if CommandLine.arguments.contains("--show-voice-stats") { showVoiceStats() }
+        if CommandLine.arguments.contains("--show-settings") { showSettings() }
         if let index = CommandLine.arguments.firstIndex(of: "--show-milestone"), index + 1 < CommandLine.arguments.count,
            let words = Int(CommandLine.arguments[index + 1]) {
             milestoneWindow.show(words: words, store: voiceStats) { [weak self] in self?.showVoiceStats() }

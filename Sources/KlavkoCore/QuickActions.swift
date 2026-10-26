@@ -173,7 +173,8 @@ public enum AIService: String, Codable, CaseIterable, Identifiable, Sendable {
         case .claude: return (URL(string: "https://claude.ai/new?q=" + query)!, true)
         case .chatGPT: return (URL(string: "https://chatgpt.com/?q=" + query)!, true)
         case .gemini: return (URL(string: "https://gemini.google.com/app")!, false)
-        case .perplexity: return (URL(string: "https://www.perplexity.ai/search?q=" + query)!, true)
+        // Its address sends the question at once: the text is pasted instead, to be sent by the user.
+        case .perplexity: return (URL(string: "https://www.perplexity.ai/")!, false)
         }
     }
 
