@@ -553,8 +553,8 @@ final class VoiceDictation: ObservableObject {
         showPanel()
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
             self?.stage = .idle
-            self?.text = ""
             self?.hidePanel()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self?.text = "" }
         }
     }
 
@@ -583,6 +583,7 @@ final class VoiceDictation: ObservableObject {
             panel.hasShadow = false  // the capsule and the bubble draw their own
             panel.level = .statusBar
             panel.hidesOnDeactivate = false
+            panel.animationBehavior = .none  // the island animates itself; no system fade on top
             panel.isReleasedWhenClosed = false
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             self.panel = panel
@@ -887,16 +888,23 @@ private struct IslandIndicator: View {
             }
         }
         .padding(.horizontal, Self.flare)
-        .frame(width: width)
-        .background(IslandShape(flare: Self.flare, corner: 18).fill(.black))
-        .animation(.spring(duration: 0.3), value: showsText)
-        // Out of the notch and back: from its size at the top edge, gently, like the system's own island.
-        .scaleEffect(x: dictation.islandOut ? 1 : max(notch.width, 120) / width,
-                     y: dictation.islandOut ? 1 : 0.35, anchor: .top)
+        // The content comes in once the island has room for it and goes before it shrinks.
         .opacity(dictation.islandOut ? 1 : 0)
-        .blur(radius: dictation.islandOut ? 0 : 4)
-        .animation(dictation.islandOut ? .spring(duration: 0.5, bounce: 0.18) : .easeIn(duration: Self.closing),
+        .scaleEffect(dictation.islandOut ? 1 : 0.92, anchor: .top)
+        .animation(dictation.islandOut ? .easeOut(duration: 0.25).delay(0.12) : .easeIn(duration: 0.12),
                    value: dictation.islandOut)
+        .frame(width: width)
+        .background(
+            // The island itself stays solid black: it grows out of the notch and shrinks back into it.
+            // Without a notch it comes down from the top edge.
+            IslandShape(flare: Self.flare, corner: 18).fill(.black)
+                .scaleEffect(x: dictation.islandOut ? 1 : notch.width > 0 ? notch.width / width : 0.4,
+                             y: dictation.islandOut ? 1 : notch.width > 0 ? (showsText ? 0.3 : 1) : 0.01,
+                             anchor: .top)
+                .animation(dictation.islandOut ? .spring(duration: 0.5, bounce: 0.18) : .easeIn(duration: Self.closing),
+                           value: dictation.islandOut)
+        )
+        .animation(.spring(duration: 0.3), value: showsText)
     }
 }
 
