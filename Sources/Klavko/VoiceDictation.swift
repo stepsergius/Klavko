@@ -534,7 +534,7 @@ final class VoiceDictation: ObservableObject {
         text = "Привіт, я диктую цей текст голосом, а Klavko вставить його туди, де стоїть курсор."
         for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
         shownLook = look()
-        if shownLook.style == .island { notch = Self.notch(of: NSScreen.main) }
+        if shownLook.style == .island || shownLook.style == .hidden { notch = Self.notch(of: NSScreen.main) }
         let view = NSHostingView(rootView: VoicePanelView(dictation: self, meter: meter)
             .background(Color(white: 0.9)))
         view.frame = NSRect(origin: .zero, size: view.fittingSize)
@@ -572,9 +572,10 @@ final class VoiceDictation: ObservableObject {
         return false
     }
 
+    /// At the very top by the camera notch: the island, or the marks beside the notch with "no window".
+    private var atNotch: Bool { (shownLook.style == .island || shownLook.style == .hidden) && !isFailed }
+
     private func showPanel() {
-        // "No window": nothing on screen while dictating (a problem is still shown).
-        guard shownLook.style != .hidden || isFailed else { return hidePanel() }
         if panel == nil {
             let hosting = NSHostingController(rootView: VoicePanelView(dictation: self, meter: meter))
             hosting.sizingOptions = [.preferredContentSize]
@@ -597,9 +598,9 @@ final class VoiceDictation: ObservableObject {
             }
         }
         // The island sits over the menu bar, under the notch; the windows stay below it.
-        panel?.level = shownLook.style == .island && !isFailed ? NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1) : .statusBar
+        panel?.level = atNotch ? NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1) : .statusBar
         if let screen = targetScreen() { notch = Self.notch(of: screen) }
-        (panel as? IndicatorPanel)?.keepsTop = (shownLook.style == .island && !isFailed) || shownLook.position == .top
+        (panel as? IndicatorPanel)?.keepsTop = atNotch || shownLook.position == .top
         placePanel()
         // Never takes the keyboard: typing goes on in the app where the text will be inserted.
         islandHide?.cancel()
@@ -633,7 +634,7 @@ final class VoiceDictation: ObservableObject {
         // The capsule 42 pt above the bottom of the screen's free area, or 24 pt below its top (the glow's margin
         // around it is transparent).
         var origin = NSPoint(x: (frame.midX - panel.frame.width / 2).rounded(), y: frame.minY + 42 - VoiceIndicator.glowRoom)
-        if shownLook.style == .island && !isFailed {
+        if atNotch {
             var centre = screen.frame.midX
             if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea, screen.safeAreaInsets.top > 0 {
                 centre = screen.frame.minX + (left.maxX + right.minX) / 2
@@ -718,6 +719,8 @@ private struct VoicePanelView: View {
     var body: some View {
         if dictation.shownLook.style == .island, !isFailed {
             IslandIndicator(dictation: dictation, meter: meter)
+        } else if dictation.shownLook.style == .hidden, !isFailed {
+            NotchMarks(dictation: dictation)
         } else {
             VoiceIndicator(dictation: dictation, meter: meter,
                            metrics: dictation.shownLook.style == .large ? .large : .small,
@@ -925,6 +928,38 @@ private struct IslandIndicator: View {
                            value: dictation.islandOut)
         )
         .animation(.spring(duration: 0.3), value: showsText)
+    }
+}
+
+/// "No window": only ✕ and ✓ on either side of the camera notch (side by side at the top without one), gently
+/// pulsing while recording so it's clear the microphone is on.
+private struct NotchMarks: View {
+    @ObservedObject var dictation: VoiceDictation
+    @State private var pulse = false
+
+    private var notch: CGSize { dictation.notch }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            mark(.cancel)
+            Color.clear.frame(width: notch.width + 12)
+            mark(.insert)
+                .opacity(dictation.stage == .listening ? 1 : 0.4)
+        }
+        .padding(.horizontal, 2)
+        .frame(width: notch.width + 12 + 2 * 22 + 4, height: notch.height)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { pulse = true }
+        }
+    }
+
+    private func mark(_ kind: VoiceButton.Kind) -> some View {
+        VoiceButton(kind: kind, size: 18, symbol: 8, dictation: dictation)
+            // On a black disc, so it shows over any menu bar.
+            .frame(width: 22, height: 22)
+            .background(Circle().fill(.black))
+            .scaleEffect(pulse && dictation.stage == .listening ? 1.08 : 0.94)
+            .shadow(color: Neon.sky.opacity(pulse && dictation.stage == .listening ? 0.7 : 0.15), radius: 4)
     }
 }
 
