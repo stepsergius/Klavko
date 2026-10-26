@@ -544,7 +544,8 @@ final class VoiceDictation: ObservableObject {
     func demo(seconds: Double = 8) {
         shownLook = look()
         stage = .listening
-        text = "Привіт, я диктую цей текст голосом, а Klavko вставить його туди, де стоїть курсор."
+        text = "Привіт, я диктую цей текст голосом, а Klavko вставить його туди, де стоїть курсор. "
+            + "Коли тексту багато, перші рядки ховаються вгорі, а видно останні — те, що ви щойно сказали."
         for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
         showPanel()
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
@@ -764,15 +765,9 @@ private struct VoiceIndicator: View {
                     .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.55))
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                Text(dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text)
-                    .font(.system(size: metrics.text))
-                    .foregroundStyle(.white.opacity(dictation.text.isEmpty ? 0.55 : 0.96))
-                    .lineLimit(metrics.lines)
-                    .truncationMode(.head)
-                    // Takes the height its lines need, so the panel grows with them.
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .animation(.easeOut(duration: 0.15), value: dictation.text)
+                LastLinesText(text: dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text,
+                              size: metrics.text, width: metrics.width - 2 * metrics.padding, lines: metrics.lines,
+                              opacity: dictation.text.isEmpty ? 0.55 : 0.96)
                 if metrics.showsHint {
                     Text(hint)
                         .font(.system(size: metrics.hint))
@@ -836,6 +831,10 @@ private struct IslandIndicator: View {
     private var notch: CGSize { dictation.notch }
     /// What fits on each side of the notch.
     private static let side: CGFloat = 88
+    /// How far the top corners curve out into the top edge of the screen, like the notch's own.
+    private static let flare: CGFloat = 10
+
+    private var width: CGFloat { notch.width + 2 * Self.side + (showsText ? 60 : 0) + 2 * Self.flare }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -858,23 +857,81 @@ private struct IslandIndicator: View {
             .padding(.horizontal, 10)
             .frame(height: notch.height)
             if showsText {
-                Text(dictation.stage == .finishing ? tr("Розпізнаю…", "Recognizing…")
-                     : dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(.white.opacity(dictation.text.isEmpty || dictation.stage == .finishing ? 0.55 : 0.95))
-                    .lineLimit(3)
-                    .truncationMode(.head)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                LastLinesText(text: dictation.stage == .finishing ? tr("Розпізнаю…", "Recognizing…")
+                              : dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text,
+                              size: 12.5, width: width - 2 * Self.flare - 32, lines: 3,
+                              opacity: dictation.text.isEmpty || dictation.stage == .finishing ? 0.55 : 0.95)
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
                     .padding(.bottom, 12)
-                    .animation(.easeOut(duration: 0.15), value: dictation.text)
             }
         }
-        .frame(width: notch.width + 2 * Self.side + (showsText ? 60 : 0))
-        .background(UnevenRoundedRectangle(bottomLeadingRadius: 18, bottomTrailingRadius: 18, style: .continuous).fill(.black))
+        .padding(.horizontal, Self.flare)
+        .frame(width: width)
+        .background(IslandShape(flare: Self.flare, corner: 18).fill(.black))
         .animation(.spring(duration: 0.3), value: showsText)
+    }
+}
+
+/// The island's outline: the top corners curve outwards into the top edge of the screen (no right angles
+/// where it meets the menu bar), the bottom corners are rounded.
+private struct IslandShape: Shape {
+    let flare: CGFloat
+    let corner: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width, h = rect.height
+        let r = min(corner, (h - flare) / 2)
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addQuadCurve(to: CGPoint(x: flare, y: flare), control: CGPoint(x: flare, y: 0))
+        path.addLine(to: CGPoint(x: flare, y: h - r))
+        path.addQuadCurve(to: CGPoint(x: flare + r, y: h), control: CGPoint(x: flare, y: h))
+        path.addLine(to: CGPoint(x: w - flare - r, y: h))
+        path.addQuadCurve(to: CGPoint(x: w - flare, y: h - r), control: CGPoint(x: w - flare, y: h))
+        path.addLine(to: CGPoint(x: w - flare, y: flare))
+        path.addQuadCurve(to: CGPoint(x: w, y: 0), control: CGPoint(x: w - flare, y: 0))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The text heard so far, at most `lines` lines: when there is more, the latest lines show and the earlier
+/// ones move up out of sight, fading at the top.
+private struct LastLinesText: View {
+    let text: String
+    let size: CGFloat
+    let width: CGFloat
+    let lines: Int
+    let opacity: Double
+
+    private var font: NSFont { .systemFont(ofSize: size) }
+    private var lineHeight: CGFloat { ceil(NSLayoutManager().defaultLineHeight(for: font)) }
+    private var fullHeight: CGFloat {
+        ceil((text as NSString).boundingRect(with: NSSize(width: width, height: .greatestFiniteMagnitude),
+                                             options: [.usesLineFragmentOrigin, .usesFontLeading],
+                                             attributes: [.font: font]).height)
+    }
+
+    var body: some View {
+        let limit = lineHeight * CGFloat(lines)
+        let overflows = fullHeight > limit + 1
+        Text(text)
+            .font(.system(size: size))
+            .foregroundStyle(.white.opacity(opacity))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(width: width, alignment: .leading)
+            // Pinned to the bottom: what doesn't fit goes off the top.
+            .frame(height: overflows ? limit : fullHeight + 2, alignment: .bottom)
+            .clipped()
+            .mask {
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [.black.opacity(overflows ? 0 : 1), .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: lineHeight * 0.8)
+                    Color.black
+                }
+            }
+            .animation(.easeOut(duration: 0.15), value: text)
     }
 }
 
