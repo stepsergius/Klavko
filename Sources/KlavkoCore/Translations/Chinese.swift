@@ -303,6 +303,7 @@ extension Translations {
         "Show after selecting text with the mouse": "用鼠标选中文字后显示",
         "Quick Actions": "快捷操作",
         "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.": "用鼠标选中文字（或双击一个词），上方会出现一个操作栏。点按别处或按任意键即可隐藏。对于用键盘选中的文字，请在“按键”标签页设置“对所选内容的快捷操作”快捷键。",
+        "Hold the mouse button down in a text field and “Paste” appears.": "在文本框中按住鼠标按钮，会出现“粘贴”。",
         "Actions on the bar": "操作栏中的操作",
         "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected.": "用箭头调整顺序。“打开链接”只在选中链接时出现，并且总在第一位。修改文字的操作只在可编辑的地方显示；选中至少两个数字时显示“数字求和”。",
         "Search the web with": "网页搜索使用",

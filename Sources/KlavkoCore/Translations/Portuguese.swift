@@ -303,6 +303,7 @@ extension Translations {
         "Show after selecting text with the mouse": "Mostrar ao selecionar texto com o mouse",
         "Quick Actions": "Ações rápidas",
         "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.": "Selecione texto com o mouse (ou clique duas vezes numa palavra) e uma barra de ações aparece acima dele. Um clique em outro lugar ou qualquer tecla a esconde. Para texto selecionado pelo teclado, defina o atalho “Ações rápidas para a seleção” na aba Teclas.",
+        "Hold the mouse button down in a text field and “Paste” appears.": "Mantenha o botão do mouse pressionado num campo de texto e aparece “Colar”.",
         "Actions on the bar": "Ações da barra",
         "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected.": "Mude a ordem com as setas. “Abrir link” aparece só para um link, e sempre primeiro. Ações que alteram o texto aparecem só onde ele é editável; “Soma dos números” quando pelo menos dois números estão selecionados.",
         "Search the web with": "Pesquisar na web com",

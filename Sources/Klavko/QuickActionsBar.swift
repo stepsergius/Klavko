@@ -5,7 +5,9 @@ import NaturalLanguage
 import SwiftUI
 
 /// Quick Actions: after text is selected with the mouse (a drag, a double or triple click), a small dark bar
-/// appears over or under it with what can be done to the text. Any click elsewhere, a key or scrolling hides it.
+/// appears over or under it with what can be done to the text; holding the mouse down in a text field brings
+/// it up with just "Paste". The second button sits right at the mouse, the first to its left, the rest to its
+/// right. Any click elsewhere, a key or scrolling hides it.
 /// The bar never takes the focus: the app with the selection stays in front, so copy and paste go to it.
 @MainActor
 final class QuickActionsBar {
@@ -18,9 +20,11 @@ final class QuickActionsBar {
     private var monitors: [Any] = []
     private var downPoint: NSPoint?
     private var pending: DispatchWorkItem?
+    /// A long press in a text field: "Paste" once the mouse has been held still long enough.
+    private var holding: DispatchWorkItem?
     private let speech = AVSpeechSynthesizer()
-    /// The middle of the bar, kept when it changes width (a submenu, an answer).
-    private var centreX: CGFloat = 0
+    /// Where the second button goes (the mouse), kept when the bar changes width (a submenu, an answer).
+    private var anchorX: CGFloat = 0
 
     func start() {
         guard monitors.isEmpty else { return }
@@ -47,10 +51,21 @@ final class QuickActionsBar {
     private func handle(_ event: NSEvent) {
         switch event.type {
         case .leftMouseDown:
-            downPoint = NSEvent.mouseLocation
+            let down = NSEvent.mouseLocation
+            downPoint = down
             pending?.cancel()
+            holding?.cancel()
             hide()
+            let work = DispatchWorkItem { [weak self] in
+                // Still held, and where it went down (a drag selects instead).
+                let now = NSEvent.mouseLocation
+                guard NSEvent.pressedMouseButtons & 1 != 0, hypot(now.x - down.x, now.y - down.y) <= 6 else { return }
+                self?.lookAtField(at: down)
+            }
+            holding = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
         case .leftMouseUp:
+            holding?.cancel()
             let up = NSEvent.mouseLocation
             let dragged = downPoint.map { hypot($0.x - up.x, $0.y - up.y) > 6 } ?? false
             // A drag, a double click (word) or triple click (line), or ⇧-click extending the selection.
@@ -62,8 +77,28 @@ final class QuickActionsBar {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
         default:
             pending?.cancel()
+            holding?.cancel()
             hide()
         }
+    }
+
+    /// A long press: "Paste" when the mouse is in a text field and there is text to paste.
+    private func lookAtField(at point: NSPoint) {
+        guard let settings = settings(), settings.quickActionsEnabled,
+              let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier != Bundle.main.bundleIdentifier,
+              !settings.quickActionsIgnoredApps.contains(app.bundleIdentifier ?? ""),
+              NSPasteboard.general.string(forType: .string)?.isEmpty == false else { return }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetAttributeValue(appElement, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        var focused: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+              let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return }
+        let field = focused as! AXUIElement
+        guard Self.details(of: field).editable else { return }
+        // The field with the focus is the one under the mouse (when the app tells where it is).
+        if let frame = Self.frame(of: field), !frame.insetBy(dx: -4, dy: -4).contains(point) { return }
+        show(text: "", selection: nil, editable: true, around: Self.rect(from: point, to: point), settings: settings,
+             only: [.paste, .plainPaste])
     }
 
     /// From the hotkey: the bar for text selected with the keyboard too.
@@ -125,6 +160,21 @@ final class QuickActionsBar {
         return (flipped, editable)
     }
 
+    /// Where an element is on screen, in AppKit coordinates.
+    private static func frame(of element: AXUIElement) -> NSRect? {
+        var positionValue: CFTypeRef?
+        var sizeValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionValue) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success,
+              let positionValue, let sizeValue, let mainHeight = NSScreen.screens.first?.frame.height else { return nil }
+        var position = CGPoint.zero
+        var size = CGSize.zero
+        AXValueGetValue(positionValue as! AXValue, .cgPoint, &position)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+        guard size.width > 0, size.height > 0 else { return nil }
+        return NSRect(x: position.x, y: mainHeight - position.y - size.height, width: size.width, height: size.height)
+    }
+
     /// The line the mouse went over, about one line high.
     private static func rect(from: NSPoint, to: NSPoint) -> NSRect {
         NSRect(x: min(from.x, to.x), y: min(from.y, to.y) - 6,
@@ -134,10 +184,11 @@ final class QuickActionsBar {
     // MARK: The bar
 
     private func show(text: String, selection: SelectionConverter.Selection?, editable: Bool, around rect: NSRect,
-                      settings: Settings) {
+                      settings: Settings, only: Set<QuickAction>? = nil) {
         let links = TextLinks.find(in: text)
         let hasClipboardText = NSPasteboard.general.string(forType: .string)?.isEmpty == false
         var actions = settings.quickActions.filter { action in
+            if let only, !only.contains(action) { return false }
             if action.needsEditable && !editable { return false }
             switch action {
             case .openLink: return false  // placed first below, only for a link
@@ -163,6 +214,7 @@ final class QuickActionsBar {
         model.wrap = { [weak self] open, close in self?.replace { QuickText.wrapped($0, open: open, close: close) } }
         model.ask = { [weak self] service in self?.hide(); self?.open(in: service) }
         model.close = { [weak self] in self?.hide() }
+        model.anchorMoved = { [weak self] in self?.keepAnchored() }
         present(around: rect, position: settings.quickActionsPosition)
     }
 
@@ -184,7 +236,7 @@ final class QuickActionsBar {
             panel.animationBehavior = .utilityWindow
             self.panel = panel
             NotificationCenter.default.addObserver(forName: NSWindow.didResizeNotification, object: panel, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.keepCentred() }
+                MainActor.assumeIsolated { self?.keepAnchored() }
             }
         }
         guard let panel else { return }
@@ -193,10 +245,10 @@ final class QuickActionsBar {
         panel.setContentSize(size)
         let screen = NSScreen.screens.first { $0.frame.intersects(rect) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? rect
-        // Centred on the mouse along the selection, over (or under) its top (bottom) line.
+        // The second button at the mouse (kept along the selection), over (or under) its top (bottom) line.
         let mouseX = NSEvent.mouseLocation.x
-        let centre = rect.width > 0 ? min(max(mouseX, rect.minX), rect.maxX) : rect.midX
-        var origin = NSPoint(x: centre - size.width / 2,
+        anchorX = rect.width > 0 ? min(max(mouseX, rect.minX), rect.maxX) : rect.midX
+        var origin = NSPoint(x: anchorX - (model.anchorOffset ?? size.width / 2),
                              y: position == .above ? rect.maxY + 6 : rect.minY - 6 - size.height)
         // Where there is no room, the other side.
         if origin.y + size.height > visible.maxY { origin.y = rect.minY - 6 - size.height }
@@ -204,13 +256,14 @@ final class QuickActionsBar {
         origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
         origin.y = min(max(origin.y, visible.minY + 4), visible.maxY - size.height - 4)
         panel.setFrameOrigin(origin)
-        centreX = origin.x + size.width / 2
         panel.orderFrontRegardless()
     }
 
-    private func keepCentred() {
+    /// The second button back at the mouse once the bar has measured where it is.
+    private func keepAnchored() {
         guard let panel, let visible = panel.screen?.visibleFrame else { return }
-        let x = min(max(centreX - panel.frame.width / 2, visible.minX + 4), visible.maxX - panel.frame.width - 4)
+        let offset = model.anchorOffset ?? panel.frame.width / 2
+        let x = min(max(anchorX - offset, visible.minX + 4), visible.maxX - panel.frame.width - 4)
         if panel.frame.minX != x { panel.setFrameOrigin(NSPoint(x: x, y: panel.frame.minY)) }
     }
 
@@ -368,6 +421,25 @@ fileprivate final class QuickActionsModel: ObservableObject {
     var wrap: (String, String) -> Void = { _, _ in }
     var ask: (AIService) -> Void = { _ in }
     var close: () -> Void = {}
+    /// How far from the bar's left edge the middle of its second button is (the first when it's alone).
+    var anchorOffset: CGFloat?
+    var anchorMoved: () -> Void = {}
+}
+
+/// The middle of the button that goes at the mouse.
+private struct BarAnchorKey: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) { value = value ?? nextValue() }
+}
+
+private extension View {
+    @ViewBuilder func barAnchor(_ isAnchor: Bool) -> some View {
+        if isAnchor {
+            background(GeometryReader { Color.clear.preference(key: BarAnchorKey.self, value: $0.frame(in: .named("bar")).midX) })
+        } else {
+            self
+        }
+    }
 }
 
 private struct QuickActionsView: View {
@@ -382,6 +454,7 @@ private struct QuickActionsView: View {
                     if index > 0 { separator }
                     BarButton(help: action == .ai && model.aiServices.count == 1 ? model.aiServices[0].title : action.title,
                               action: { model.run(action) }) { label(action) }
+                        .barAnchor(index == min(1, model.actions.count - 1))
                 }
             case .brackets:
                 back
@@ -390,6 +463,7 @@ private struct QuickActionsView: View {
                     BarButton(help: pair.open + "…" + pair.close, action: { model.wrap(pair.open, pair.close) }) {
                         Text(pair.open + " " + pair.close).font(.system(size: 14, weight: .medium, design: .monospaced))
                     }
+                    .barAnchor(pair.open == QuickText.brackets[0].open)
                 }
             case .ai:
                 back
@@ -398,6 +472,7 @@ private struct QuickActionsView: View {
                     BarButton(help: trFormat("Відкрити в %@", "Open in %@", service.title), action: { model.ask(service) }) {
                         Text(service.title).font(.system(size: 13))
                     }
+                    .barAnchor(service == model.aiServices.first)
                 }
             case .result(let text, let copy):
                 back
@@ -416,6 +491,7 @@ private struct QuickActionsView: View {
                         }
                     }
                 }
+                .barAnchor(true)
             }
         }
         .padding(.horizontal, 3)
@@ -423,6 +499,13 @@ private struct QuickActionsView: View {
         .background(RoundedRectangle(cornerRadius: 9).fill(Color(white: 0.13).opacity(0.97)))
         .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
         .environment(\.colorScheme, .dark)
+        .coordinateSpace(name: "bar")
+        .onPreferenceChange(BarAnchorKey.self) { offset in
+            MainActor.assumeIsolated {
+                model.anchorOffset = offset
+                model.anchorMoved()
+            }
+        }
         .onChange(of: model.page) { copied = false }
     }
 

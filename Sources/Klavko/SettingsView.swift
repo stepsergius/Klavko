@@ -113,7 +113,8 @@ struct SettingsView: View {
             Text(tr("Швидкі дії", "Quick Actions"))
         } footer: {
             Text(tr("Виділіть текст мишкою (або двічі клацніть слово) — над ним з’явиться панелька з діями. Клік деінде чи будь-яка клавіша її ховає. Для тексту, виділеного з клавіатури, задайте гарячу клавішу «Швидкі дії для виділеного» на вкладці «Клавіші».",
-                    "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab."))
+                    "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.") + " " + tr("Утримайте кнопку миші в полі для тексту — з’явиться «Вставити».",
+                       "Hold the mouse button down in a text field and “Paste” appears."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

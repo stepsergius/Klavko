@@ -303,6 +303,7 @@ extension Translations {
         "Show after selecting text with the mouse": "Fareyle metin seçince göster",
         "Quick Actions": "Hızlı Eylemler",
         "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.": "Fareyle metin seçin (ya da bir kelimeye çift tıklayın), üstünde eylem çubuğu belirir. Başka bir yere tıklamak ya da herhangi bir tuş onu gizler. Klavyeyle seçilen metin için Tuşlar sekmesinde “Seçim için Hızlı Eylemler” kısayolunu ayarlayın.",
+        "Hold the mouse button down in a text field and “Paste” appears.": "Bir metin alanında fare düğmesini basılı tutun, “Yapıştır” görünür.",
         "Actions on the bar": "Çubuktaki eylemler",
         "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected.": "Sırayı oklarla değiştirin. “Bağlantıyı Aç” yalnızca bir bağlantı için ve her zaman ilk sırada görünür. Metni değiştiren eylemler yalnızca düzenlenebilir yerlerde görünür; “Sayıların Toplamı” en az iki sayı seçildiğinde.",
         "Search the web with": "Web’de şununla ara",
