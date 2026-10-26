@@ -157,6 +157,9 @@ public enum AIService: String, Codable, CaseIterable, Identifiable, Sendable {
         self != .chatGPT || name.hasPrefix("ChatGPT")
     }
 
+    /// The Mac app opens a new chat on ⌘N (ChatGPT and ChatGPT Classic): pressed before the text is pasted.
+    public var newChatWithCommandN: Bool { self == .chatGPT }
+
     /// A link that opens a new chat in the Mac app with the text already in its message box, when the app has one.
     public func appLink(for text: String) -> URL? {
         switch self {

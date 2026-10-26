@@ -279,7 +279,7 @@ final class QuickActionsBar {
 
     // MARK: Actions
 
-    private static let keyB: CGKeyCode = 11, keyC: CGKeyCode = 8, keyI: CGKeyCode = 34, keyU: CGKeyCode = 32,
+    private static let keyB: CGKeyCode = 11, keyC: CGKeyCode = 8, keyI: CGKeyCode = 34, keyN: CGKeyCode = 45, keyU: CGKeyCode = 32,
                        keyV: CGKeyCode = 9, keyX: CGKeyCode = 7
 
     private func run(_ action: QuickAction) {
@@ -397,7 +397,7 @@ final class QuickActionsBar {
             configuration.activates = true
             NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { app, _ in
                 DispatchQueue.main.async {
-                    MainActor.assumeIsolated { self.pasteWhenFront(text, bundleIDs: service.bundleIDs, attempt: 0) }
+                    MainActor.assumeIsolated { self.pasteWhenFront(text, bundleIDs: service.bundleIDs, newChat: service.newChatWithCommandN, attempt: 0) }
                 }
             }
             return
@@ -416,13 +416,18 @@ final class QuickActionsBar {
     }
 
     /// Waits (up to 8 s) for the app to be in front with its window, then pastes.
-    private func pasteWhenFront(_ text: String, bundleIDs: [String], attempt: Int) {
+    /// `newChat`: ⌘N first, so the text goes to a new chat, not the one open.
+    private func pasteWhenFront(_ text: String, bundleIDs: [String], newChat: Bool, attempt: Int) {
         let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier.map(bundleIDs.contains) ?? false
         if front {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0.4 : 1.2)) { SelectionConverter.paste(text) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0.4 : 1.2)) {
+                guard newChat else { return SelectionConverter.paste(text) }
+                TextInjector.pressKey(Self.keyN, flags: .maskCommand)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { SelectionConverter.paste(text) }
+            }
         } else if attempt < 40 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.pasteWhenFront(text, bundleIDs: bundleIDs, attempt: attempt + 1)
+                self?.pasteWhenFront(text, bundleIDs: bundleIDs, newChat: newChat, attempt: attempt + 1)
             }
         }
     }
