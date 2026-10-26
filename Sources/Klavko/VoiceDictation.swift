@@ -897,13 +897,16 @@ private struct IslandShape: Shape {
 }
 
 /// The text heard so far, at most `lines` lines: when there is more, the latest lines show and the earlier
-/// ones move up out of sight, fading at the top.
+/// ones move up out of sight, fading at the top. With the pointer over it, the text scrolls back to show
+/// what was said before; once the pointer leaves, it goes back to the latest lines.
 private struct LastLinesText: View {
     let text: String
     let size: CGFloat
     let width: CGFloat
     let lines: Int
     let opacity: Double
+
+    @State private var hovering = false
 
     private var font: NSFont { .systemFont(ofSize: size) }
     private var lineHeight: CGFloat { ceil(NSLayoutManager().defaultLineHeight(for: font)) }
@@ -916,22 +919,41 @@ private struct LastLinesText: View {
     var body: some View {
         let limit = lineHeight * CGFloat(lines)
         let overflows = fullHeight > limit + 1
-        Text(text)
-            .font(.system(size: size))
-            .foregroundStyle(.white.opacity(opacity))
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(width: width, alignment: .leading)
-            // Pinned to the bottom: what doesn't fit goes off the top.
-            .frame(height: overflows ? limit : fullHeight + 2, alignment: .bottom)
-            .clipped()
+        ScrollViewReader { proxy in
+            ScrollView(.vertical) {
+                Text(text)
+                    .font(.system(size: size))
+                    .foregroundStyle(.white.opacity(opacity))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: width, alignment: .leading)
+                    .id("text")
+            }
+            .scrollDisabled(!overflows)
+            .scrollIndicators(hovering && overflows ? .automatic : .hidden)
+            .defaultScrollAnchor(.bottom)
+            .frame(width: width, height: overflows ? limit : fullHeight + 2)
             .mask {
                 VStack(spacing: 0) {
-                    LinearGradient(colors: [.black.opacity(overflows ? 0 : 1), .black], startPoint: .top, endPoint: .bottom)
+                    LinearGradient(colors: [.black.opacity(overflows && !hovering ? 0 : 1), .black],
+                                   startPoint: .top, endPoint: .bottom)
                         .frame(height: lineHeight * 0.8)
                     Color.black
                 }
             }
-            .animation(.easeOut(duration: 0.15), value: text)
+            .onHover { inside in
+                hovering = inside
+                // Back to what is being said now.
+                if !inside { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("text", anchor: .bottom) } }
+            }
+            // While the user reads earlier lines, new words don't pull the text away from under the pointer.
+            .onChange(of: text) {
+                guard !hovering else { return }
+                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo("text", anchor: .bottom) }
+            }
+            // The panel can open with the text already long: start at its end once it is laid out.
+            .onAppear { DispatchQueue.main.async { proxy.scrollTo("text", anchor: .bottom) } }
+            .onChange(of: overflows) { DispatchQueue.main.async { proxy.scrollTo("text", anchor: .bottom) } }
+        }
     }
 }
 
