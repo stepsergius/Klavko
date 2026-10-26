@@ -260,5 +260,16 @@ extension Translations {
         "Clear search": "検索をクリア",
         "Found %1$@ of %2$@": "%2$@ 件中 %1$@ 件",
         "Search the history": "履歴を検索",
+        "Bottom": "下",
+        "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one).": "Dynamic Island：画面上部のカメラのノッチの下に出る黒い楕円（ノッチのない Mac では上部中央）。",
+        "Large window": "大きいウインドウ",
+        "Look while dictating": "音声入力中の表示",
+        "Look": "表示",
+        "No window": "ウインドウなし",
+        "Off: only the wave, without the text.": "オフ：波形のみ、テキストなし。",
+        "Show the text while dictating": "音声入力中にテキストを表示",
+        "Small window": "小さいウインドウ",
+        "Top": "上",
+        "Where": "位置",
     ]
 }

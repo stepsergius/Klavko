@@ -260,5 +260,16 @@ extension Translations {
         "Clear search": "Aramayı temizle",
         "Found %1$@ of %2$@": "%2$@ kayıttan %1$@ bulundu",
         "Search the history": "Geçmişte ara",
+        "Bottom": "Altta",
+        "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one).": "Dynamic Island: ekranın üstünde kamera çentiğinin altında siyah bir hap (çentiksiz Mac’te üstte ortada).",
+        "Large window": "Büyük pencere",
+        "Look while dictating": "Dikte sırasında görünüm",
+        "Look": "Görünüm",
+        "No window": "Pencere yok",
+        "Off: only the wave, without the text.": "Kapalı: yalnızca dalga, metin yok.",
+        "Show the text while dictating": "Dikte sırasında metni göster",
+        "Small window": "Küçük pencere",
+        "Top": "Üstte",
+        "Where": "Konum",
     ]
 }

@@ -334,6 +334,29 @@ struct SettingsView: View {
 
                 case .voice:
                     Section {
+                        Picker(tr("Вигляд", "Look"), selection: $settings.voicePanelStyle) {
+                            ForEach(VoiceLook.Style.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
+                        Picker(tr("Де показувати", "Where"), selection: $settings.voicePanelPosition) {
+                            ForEach(VoiceLook.Position.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .disabled(settings.voicePanelStyle == .island || settings.voicePanelStyle == .hidden)
+                        Toggle(isOn: $settings.voiceShowText) {
+                            Text(tr("Показувати текст під час диктування", "Show the text while dictating"))
+                            Text(tr("Вимкнено — лише хвиля, без тексту.", "Off: only the wave, without the text."))
+                        }
+                        .disabled(settings.voicePanelStyle == .hidden)
+                    } header: {
+                        Text(tr("Вигляд під час диктування", "Look while dictating"))
+                    } footer: {
+                        Text(tr("Dynamic Island — чорна панелька під вирізом камери вгорі екрана (на Mac без вирізу — вгорі по центру).",
+                                "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one)."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(tr("Я говорю", "I speak"))
                             FlowLayout(spacing: 6) {

@@ -39,6 +39,9 @@ final class Settings: ObservableObject {
         static let checkForUpdates = "checkForUpdates"
         static let skippedUpdateVersion = "skippedUpdateVersion"
         static let offerVoiceCorrections = "offerVoiceCorrections"
+        static let voicePanelStyle = "voicePanelStyle"
+        static let voicePanelPosition = "voicePanelPosition"
+        static let voiceShowText = "voiceShowText"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let microphoneUID = "microphoneUID"
         static let duckSound = "duckSound"
@@ -235,6 +238,25 @@ final class Settings: ObservableObject {
         didSet { defaults.set(offerVoiceCorrections, forKey: Key.offerVoiceCorrections) }
     }
 
+    /// The voice input panel: large, small, Dynamic Island or none.
+    @Published var voicePanelStyle: VoiceLook.Style {
+        didSet { defaults.set(voicePanelStyle.rawValue, forKey: Key.voicePanelStyle) }
+    }
+
+    /// Where the large and small panels are: at the bottom or the top of the screen.
+    @Published var voicePanelPosition: VoiceLook.Position {
+        didSet { defaults.set(voicePanelPosition.rawValue, forKey: Key.voicePanelPosition) }
+    }
+
+    /// Show the text heard while dictating (off: only the wave).
+    @Published var voiceShowText: Bool {
+        didSet { defaults.set(voiceShowText, forKey: Key.voiceShowText) }
+    }
+
+    var voiceLook: VoiceLook {
+        VoiceLook(style: voicePanelStyle, position: voicePanelPosition, showText: voiceShowText)
+    }
+
     /// What voice input applies to its text: the vocabulary, then the word replacements ("зсу" → "ЗСУ").
     var voiceRules: [Replacement] {
         voiceVocabulary + replacements.filter { rule in
@@ -384,6 +406,7 @@ final class Settings: ObservableObject {
             // Terminals: words there are mostly commands, not natural language.
             // Code editors: "...", quotes and capitals mean something else in code.
             Key.offerVoiceCorrections: true,
+            Key.voiceShowText: true,
             Key.saveVoiceHistory: true,
             Key.duckSound: true,
             Key.duckLevel: 0.2,
@@ -434,6 +457,9 @@ final class Settings: ObservableObject {
         defaults.removeObject(forKey: "aiModel")
         defaults.removeObject(forKey: "aiActions")
         offerVoiceCorrections = defaults.bool(forKey: Key.offerVoiceCorrections)
+        voicePanelStyle = defaults.string(forKey: Key.voicePanelStyle).flatMap(VoiceLook.Style.init(rawValue:)) ?? .large
+        voicePanelPosition = defaults.string(forKey: Key.voicePanelPosition).flatMap(VoiceLook.Position.init(rawValue:)) ?? .bottom
+        voiceShowText = defaults.bool(forKey: Key.voiceShowText)
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         microphoneUID = defaults.string(forKey: Key.microphoneUID)
         duckSound = defaults.bool(forKey: Key.duckSound)

@@ -21,7 +21,16 @@ final class VoiceDictation: ObservableObject {
         case failed(String)
     }
 
-    @Published private(set) var stage: Stage = .idle
+    @Published private(set) var stage: Stage = .idle {
+        // With no panel during dictation, a problem still needs saying: a small one shows it.
+        didSet { if case .failed = stage, shownLook.style == .hidden { showPanel() } }
+    }
+    /// How voice input looks (from Settings): the panel's style, where it is, whether it shows the text.
+    var look: () -> VoiceLook = { VoiceLook() }
+    /// The look of the current recording, taken when it starts.
+    @Published private(set) var shownLook = VoiceLook()
+    /// The camera notch of the screen the panel is on (zero width without one), for the Dynamic Island look.
+    @Published private(set) var notch = CGSize(width: 0, height: 24)
     @Published private(set) var text = ""
     @Published private(set) var languageTitle = ""
 
@@ -117,6 +126,7 @@ final class VoiceDictation: ObservableObject {
         // Load Parakeet while the user speaks.
         if let parakeet, parakeet.isDownloaded { parakeet.prepare() }
         languageTitle = Self.title(first)
+        shownLook = look()
         showPanel()
         let current = session
         Task { [weak self] in
@@ -520,12 +530,28 @@ final class VoiceDictation: ObservableObject {
         languageTitle = "українська"
         text = "Привіт, я диктую цей текст голосом, а Klavko вставить його туди, де стоїть курсор."
         for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
-        let view = NSHostingView(rootView: VoiceIndicator(dictation: self, meter: meter)
+        shownLook = look()
+        if shownLook.style == .island { notch = Self.notch(of: NSScreen.main) }
+        let view = NSHostingView(rootView: VoicePanelView(dictation: self, meter: meter)
             .background(Color(white: 0.9)))
         view.frame = NSRect(origin: .zero, size: view.fittingSize)
         guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: bitmap)
         try? bitmap.representation(using: .png, properties: [:])?.write(to: url)
+    }
+
+    /// Developer check of the panel on screen: shows it as while listening, with sample text, for a few seconds.
+    func demo(seconds: Double = 8) {
+        shownLook = look()
+        stage = .listening
+        text = "Привіт, я диктую цей текст голосом, а Klavko вставить його туди, де стоїть курсор."
+        for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
+        showPanel()
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            self?.stage = .idle
+            self?.text = ""
+            self?.hidePanel()
+        }
     }
 
     fileprivate func closeFailure() {
@@ -535,9 +561,16 @@ final class VoiceDictation: ObservableObject {
 
     private var resizeObserver: NSObjectProtocol?
 
+    private var isFailed: Bool {
+        if case .failed = stage { return true }
+        return false
+    }
+
     private func showPanel() {
+        // "No window": nothing on screen while dictating (a problem is still shown).
+        guard shownLook.style != .hidden || isFailed else { return hidePanel() }
         if panel == nil {
-            let hosting = NSHostingController(rootView: VoiceIndicator(dictation: self, meter: meter))
+            let hosting = NSHostingController(rootView: VoicePanelView(dictation: self, meter: meter))
             hosting.sizingOptions = [.preferredContentSize]
             let panel = IndicatorPanel(contentViewController: hosting)
             panel.styleMask = [.nonactivatingPanel, .borderless]
@@ -556,19 +589,46 @@ final class VoiceDictation: ObservableObject {
                 MainActor.assumeIsolated { self?.placePanel() }
             }
         }
+        // The island sits over the menu bar, under the notch; the windows stay below it.
+        panel?.level = shownLook.style == .island && !isFailed ? NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1) : .statusBar
+        if let screen = targetScreen() { notch = Self.notch(of: screen) }
         placePanel()
         // Never takes the keyboard: typing goes on in the app where the text will be inserted.
         panel?.orderFrontRegardless()
     }
 
-    /// Bottom centre of the screen with the mouse, above the Dock.
-    private func placePanel() {
-        guard let panel else { return }
+    /// The screen with the mouse (the panel's own while it's shown).
+    private func targetScreen() -> NSScreen? {
+        if let panel, panel.isVisible { return panel.screen ?? NSScreen.main }
         let mouse = NSEvent.mouseLocation
-        let screen = panel.isVisible ? (panel.screen ?? NSScreen.main)
-            : (NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main)
-        guard let frame = screen?.visibleFrame else { return }
-        let origin = NSPoint(x: (frame.midX - panel.frame.width / 2).rounded(), y: frame.minY + 24)
+        return NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
+    }
+
+    /// The camera notch: its width (0 without one) and the height of the menu bar.
+    static func notch(of screen: NSScreen?) -> CGSize {
+        guard let screen else { return CGSize(width: 0, height: 24) }
+        let barHeight = max(screen.frame.maxY - screen.visibleFrame.maxY, NSStatusBar.system.thickness)
+        if screen.safeAreaInsets.top > 0, let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
+            return CGSize(width: max(right.minX - left.maxX, 0), height: screen.safeAreaInsets.top)
+        }
+        return CGSize(width: 0, height: barHeight)
+    }
+
+    /// Centred: at the bottom above the Dock, at the top under the menu bar, or, as an island, at the very
+    /// top under the camera notch. It grows away from the edge it is at.
+    private func placePanel() {
+        guard let panel, let screen = targetScreen() else { return }
+        let frame = screen.visibleFrame
+        var origin = NSPoint(x: (frame.midX - panel.frame.width / 2).rounded(), y: frame.minY + 24)
+        if shownLook.style == .island && !isFailed {
+            var centre = screen.frame.midX
+            if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea, screen.safeAreaInsets.top > 0 {
+                centre = screen.frame.minX + (left.maxX + right.minX) / 2
+            }
+            origin = NSPoint(x: (centre - panel.frame.width / 2).rounded(), y: screen.frame.maxY - panel.frame.height)
+        } else if shownLook.position == .top {
+            origin.y = frame.maxY - panel.frame.height - 6
+        }
         if panel.frame.origin != origin { panel.setFrameOrigin(origin) }
     }
 
@@ -616,19 +676,73 @@ enum Neon {
     static let bar = LinearGradient(colors: [.white, cyan, sky], startPoint: .top, endPoint: .bottom)
 }
 
-/// A glowing navy capsule with a live wave and, above it, a bubble with what is being heard.
-private struct VoiceIndicator: View {
+/// The panel in the look chosen in Settings.
+private struct VoicePanelView: View {
     @ObservedObject var dictation: VoiceDictation
     @ObservedObject var meter: VoiceMeter
 
-    private static let width: CGFloat = 440
+    var body: some View {
+        if dictation.shownLook.style == .island, !isFailed {
+            IslandIndicator(dictation: dictation, meter: meter)
+        } else {
+            VoiceIndicator(dictation: dictation, meter: meter,
+                           metrics: dictation.shownLook.style == .large ? .large : .small,
+                           atTop: dictation.shownLook.position == .top)
+        }
+    }
+
+    private var isFailed: Bool {
+        if case .failed = dictation.stage { return true }
+        return false
+    }
+}
+
+/// Sizes of the panel: the large one, and the small one, about half of it.
+private struct IndicatorMetrics {
+    let width: CGFloat
+    let waveWidth: CGFloat
+    let waveHeight: CGFloat
+    let bars: Int
+    let barWidth: CGFloat
+    let barSpacing: CGFloat
+    let button: CGFloat
+    let symbol: CGFloat
+    let dot: CGFloat
+    let text: CGFloat
+    let hint: CGFloat
+    let showsHint: Bool
+    let lines: Int
+    let corner: CGFloat
+    let padding: CGFloat
+
+    static let large = IndicatorMetrics(width: 440, waveWidth: 150, waveHeight: 28, bars: 28, barWidth: 3, barSpacing: 3,
+                                        button: 26, symbol: 11, dot: 6, text: 14, hint: 11, showsHint: true, lines: 4,
+                                        corner: 14, padding: 14)
+    static let small = IndicatorMetrics(width: 230, waveWidth: 76, waveHeight: 16, bars: 16, barWidth: 2, barSpacing: 2.5,
+                                        button: 18, symbol: 8, dot: 4, text: 12, hint: 9.5, showsHint: false, lines: 3,
+                                        corner: 10, padding: 9)
+}
+
+/// A glowing navy capsule with a live wave and a bubble with what is being heard: above the capsule when the
+/// panel is at the bottom, below it when the panel is at the top.
+private struct VoiceIndicator: View {
+    @ObservedObject var dictation: VoiceDictation
+    @ObservedObject var meter: VoiceMeter
+    let metrics: IndicatorMetrics
+    let atTop: Bool
+
+    private var showsBubble: Bool {
+        if case .failed = dictation.stage { return true }
+        return dictation.shownLook.showText
+    }
 
     var body: some View {
-        VStack(spacing: 10) {
-            bubble
+        VStack(spacing: metrics.padding * 0.7) {
+            if !atTop && showsBubble { bubble }
             capsule
+            if atTop && showsBubble { bubble }
         }
-        .frame(width: Self.width)
+        .frame(width: showsBubble ? metrics.width : nil)
         .padding(.vertical, 18)
         .padding(.horizontal, 22)  // room for the glow
     }
@@ -643,30 +757,32 @@ private struct VoiceIndicator: View {
     // MARK: Bubble with the text
 
     @ViewBuilder private var bubble: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: metrics.padding * 0.4) {
             if case .failed(let message) = dictation.stage {
                 Text(message)
-                    .font(.system(size: 13))
+                    .font(.system(size: metrics.text - 1))
                     .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.55))
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text(dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text)
-                    .font(.system(size: 14))
+                    .font(.system(size: metrics.text))
                     .foregroundStyle(.white.opacity(dictation.text.isEmpty ? 0.55 : 0.96))
-                    .lineLimit(4)
+                    .lineLimit(metrics.lines)
                     .truncationMode(.head)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .animation(.easeOut(duration: 0.15), value: dictation.text)
-                Text(hint)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Neon.cyan.opacity(0.55))
+                if metrics.showsHint {
+                    Text(hint)
+                        .font(.system(size: metrics.hint))
+                        .foregroundStyle(Neon.cyan.opacity(0.55))
+                }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, metrics.padding)
+        .padding(.vertical, metrics.padding * 0.7)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Neon.navy).opacity(0.94))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Neon.rim, lineWidth: 1).opacity(0.55))
+        .background(RoundedRectangle(cornerRadius: metrics.corner, style: .continuous).fill(Neon.navy).opacity(0.94))
+        .overlay(RoundedRectangle(cornerRadius: metrics.corner, style: .continuous).strokeBorder(Neon.rim, lineWidth: 1).opacity(0.55))
         .shadow(color: Neon.blue.opacity(0.35), radius: 12)
     }
 
@@ -680,30 +796,25 @@ private struct VoiceIndicator: View {
     // MARK: Capsule with the wave
 
     private var capsule: some View {
-        HStack(spacing: 10) {
-            closeButton
+        HStack(spacing: metrics.padding * 0.7) {
+            VoiceButton(kind: .cancel, size: metrics.button, symbol: metrics.symbol, dictation: dictation)
             // The yellow dot from the icon: on while listening.
             Circle()
                 .fill(Neon.yellow)
-                .frame(width: 6, height: 6)
+                .frame(width: metrics.dot, height: metrics.dot)
                 .shadow(color: Neon.yellow.opacity(0.9), radius: 4)
                 .opacity(dictation.stage == .listening ? 1 : 0.3)
-            Group {
-                if dictation.stage == .finishing {
-                    ThinkingWave()
-                } else {
-                    Waveform(levels: meter.levels, muted: dictation.stage != .listening)
-                }
-            }
-            .frame(width: 150, height: 28)
+            VoiceWave(dictation: dictation, meter: meter, bars: metrics.bars, barWidth: metrics.barWidth,
+                      spacing: metrics.barSpacing, height: metrics.waveHeight)
+                .frame(width: metrics.waveWidth, height: metrics.waveHeight)
             if dictation.stage == .listening {
-                insertButton
+                VoiceButton(kind: .insert, size: metrics.button, symbol: metrics.symbol, dictation: dictation)
             } else {
-                Color.clear.frame(width: 26, height: 26)
+                Color.clear.frame(width: metrics.button, height: metrics.button)
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 6)
+        .padding(.horizontal, metrics.padding * 0.5)
+        .padding(.vertical, metrics.padding * 0.43)
         .background(Capsule().fill(Neon.navy))
         .overlay(Capsule().strokeBorder(Neon.rim, lineWidth: 1.2))
         // Neon glow that swells as you speak.
@@ -711,33 +822,103 @@ private struct VoiceIndicator: View {
         .shadow(color: Neon.cyan.opacity(0.25 * loudness), radius: 3)
         .animation(.easeOut(duration: 0.12), value: loudness)
     }
+}
 
-    private var closeButton: some View {
-        Button {
-            if case .failed = dictation.stage { dictation.closeFailure() } else { dictation.cancel() }
-        } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white.opacity(0.8))
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(.white.opacity(0.12)))
+/// Like the iPhone's Dynamic Island: a black pill coming out of the camera notch at the top of the screen,
+/// with the dot and the wave beside the notch, and the text heard so far growing out below it.
+private struct IslandIndicator: View {
+    @ObservedObject var dictation: VoiceDictation
+    @ObservedObject var meter: VoiceMeter
+
+    private var showsText: Bool { dictation.shownLook.showText }
+    private var notch: CGSize { dictation.notch }
+    /// What fits on each side of the notch.
+    private static let side: CGFloat = 88
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 7) {
+                VoiceButton(kind: .cancel, size: 18, symbol: 8, dictation: dictation)
+                Circle()
+                    .fill(Neon.yellow)
+                    .frame(width: 5, height: 5)
+                    .shadow(color: Neon.yellow.opacity(0.9), radius: 3)
+                    .opacity(dictation.stage == .listening ? 1 : 0.3)
+                Spacer(minLength: max(notch.width, 16))
+                VoiceWave(dictation: dictation, meter: meter, bars: 10, barWidth: 2, spacing: 2, height: 14)
+                    .frame(width: 40, height: 14)
+                if dictation.stage == .listening {
+                    VoiceButton(kind: .insert, size: 18, symbol: 8, dictation: dictation)
+                } else {
+                    Color.clear.frame(width: 18, height: 18)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: notch.height)
+            if showsText {
+                Text(dictation.stage == .finishing ? tr("Розпізнаю…", "Recognizing…")
+                     : dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.white.opacity(dictation.text.isEmpty || dictation.stage == .finishing ? 0.55 : 0.95))
+                    .lineLimit(3)
+                    .truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
+                    .animation(.easeOut(duration: 0.15), value: dictation.text)
+            }
         }
-        .buttonStyle(.plain)
-        .help(tr("Скасувати (Esc)", "Cancel (Esc)"))
+        .frame(width: notch.width + 2 * Self.side + (showsText ? 60 : 0))
+        .background(UnevenRoundedRectangle(bottomLeadingRadius: 18, bottomTrailingRadius: 18, style: .continuous).fill(.black))
+        .animation(.spring(duration: 0.3), value: showsText)
     }
+}
 
-    private var insertButton: some View {
-        Button { dictation.toggle() } label: {
-            Image(systemName: "checkmark")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(LinearGradient(colors: [Neon.sky, Neon.blue],
-                                                         startPoint: .top, endPoint: .bottom)))
-                .shadow(color: Neon.sky.opacity(0.8), radius: 5)
+/// The ✕ (cancel, or close a problem) and ✓ (insert) buttons.
+private struct VoiceButton: View {
+    enum Kind { case cancel, insert }
+    let kind: Kind
+    let size: CGFloat
+    let symbol: CGFloat
+    @ObservedObject var dictation: VoiceDictation
+
+    var body: some View {
+        Button {
+            switch kind {
+            case .cancel: if case .failed = dictation.stage { dictation.closeFailure() } else { dictation.cancel() }
+            case .insert: dictation.toggle()
+            }
+        } label: {
+            Image(systemName: kind == .cancel ? "xmark" : "checkmark")
+                .font(.system(size: symbol, weight: .bold))
+                .foregroundStyle(.white.opacity(kind == .cancel ? 0.8 : 1))
+                .frame(width: size, height: size)
+                .background(Circle().fill(kind == .cancel ? AnyShapeStyle(.white.opacity(0.12))
+                                          : AnyShapeStyle(LinearGradient(colors: [Neon.sky, Neon.blue], startPoint: .top, endPoint: .bottom))))
+                .shadow(color: kind == .insert ? Neon.sky.opacity(0.8) : .clear, radius: 5)
         }
         .buttonStyle(.plain)
-        .help(tr("Вставити (Enter)", "Insert (Return)"))
+        .help(kind == .cancel ? tr("Скасувати (Esc)", "Cancel (Esc)") : tr("Вставити (Enter)", "Insert (Return)"))
+    }
+}
+
+/// The live wave while listening, a travelling one while recognizing.
+private struct VoiceWave: View {
+    @ObservedObject var dictation: VoiceDictation
+    @ObservedObject var meter: VoiceMeter
+    let bars: Int
+    let barWidth: CGFloat
+    let spacing: CGFloat
+    let height: CGFloat
+
+    var body: some View {
+        if dictation.stage == .finishing {
+            ThinkingWave(bars: bars, barWidth: barWidth, spacing: spacing, height: height)
+        } else {
+            Waveform(levels: Array(meter.levels.suffix(bars)), muted: dictation.stage != .listening,
+                     barWidth: barWidth, spacing: spacing, height: height)
+        }
     }
 }
 
@@ -745,13 +926,16 @@ private struct VoiceIndicator: View {
 private struct Waveform: View {
     let levels: [CGFloat]
     let muted: Bool
+    var barWidth: CGFloat = 3
+    var spacing: CGFloat = 3
+    var height: CGFloat = 28
 
     var body: some View {
-        HStack(alignment: .center, spacing: 3) {
+        HStack(alignment: .center, spacing: spacing) {
             ForEach(0..<levels.count, id: \.self) { index in
                 Capsule()
                     .fill(Neon.bar)
-                    .frame(width: 3, height: height(index))
+                    .frame(width: barWidth, height: barHeight(index))
             }
         }
         .opacity(muted ? 0.4 : 1)
@@ -760,27 +944,32 @@ private struct Waveform: View {
     }
 
     /// Bars mirror around the centre, which shows the latest level.
-    private func height(_ index: Int) -> CGFloat {
+    private func barHeight(_ index: Int) -> CGFloat {
         let half = levels.count / 2
         let distance = abs(index - half)
         let level = levels[max(levels.count - 1 - distance * 2, 0)]
         let taper = 1 - CGFloat(distance) / CGFloat(half + 2)
-        return 3 + 25 * level * taper
+        return 3 + (height - 3) * level * taper
     }
 }
 
 /// A gentle travelling wave while the recording is being recognized.
 private struct ThinkingWave: View {
+    var bars = VoiceMeter.count
+    var barWidth: CGFloat = 3
+    var spacing: CGFloat = 3
+    var height: CGFloat = 28
+
     var body: some View {
         TimelineView(.animation) { context in
             let time = context.date.timeIntervalSinceReferenceDate
-            HStack(alignment: .center, spacing: 3) {
-                ForEach(0..<VoiceMeter.count, id: \.self) { index in
+            HStack(alignment: .center, spacing: spacing) {
+                ForEach(0..<bars, id: \.self) { index in
                     let phase = sin(time * 5 - Double(index) * 0.45)
                     Capsule()
                         .fill(Neon.bar)
                         .opacity(0.5 + 0.4 * phase)
-                        .frame(width: 3, height: 4 + 7 * (phase + 1))
+                        .frame(width: barWidth, height: 4 + (height / 2 - 4) * CGFloat(phase + 1))
                 }
             }
             .shadow(color: Neon.sky.opacity(0.8), radius: 3)

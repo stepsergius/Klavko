@@ -62,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Between two plausible results, the one in the layout's language.
         dictation.preferredLanguage = { SystemLayouts.currentLanguage() ?? "uk" }
         dictation.vocabulary = { [unowned self] in settings.voiceRules }
+        dictation.look = { [unowned self] in settings.voiceLook }
         dictation.microphone = { [unowned self] in settings.microphoneUID }
         dictation.duckLevel = { [unowned self] in settings.duckSound ? settings.duckLevel : nil }
         dictation.onInserted = { [unowned self] text in
@@ -232,6 +233,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 NSApp.terminate(nil)
             }
         }
+        // Developer check of the voice panel on screen, in the look set in Settings: --demo-voice.
+        if CommandLine.arguments.contains("--demo-voice") { dictation.demo() }
         // Developer check of the voice indicator: --snapshot-voice <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-voice"), index + 1 < CommandLine.arguments.count {
             dictation.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]))

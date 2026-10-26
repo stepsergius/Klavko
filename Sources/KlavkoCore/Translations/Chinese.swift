@@ -260,5 +260,16 @@ extension Translations {
         "Clear search": "清除搜索",
         "Found %1$@ of %2$@": "找到 %1$@ 条，共 %2$@ 条",
         "Search the history": "搜索历史记录",
+        "Bottom": "底部",
+        "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one).": "Dynamic Island：屏幕顶部摄像头刘海下方的黑色胶囊（没有刘海的 Mac 上位于顶部中央）。",
+        "Large window": "大窗口",
+        "Look while dictating": "口述时的外观",
+        "Look": "外观",
+        "No window": "不显示窗口",
+        "Off: only the wave, without the text.": "关闭：只显示波形，不显示文字。",
+        "Show the text while dictating": "口述时显示文字",
+        "Small window": "小窗口",
+        "Top": "顶部",
+        "Where": "位置",
     ]
 }

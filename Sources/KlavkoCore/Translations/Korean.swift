@@ -260,5 +260,16 @@ extension Translations {
         "Clear search": "검색 지우기",
         "Found %1$@ of %2$@": "%2$@개 중 %1$@개 찾음",
         "Search the history": "기록 검색",
+        "Bottom": "아래",
+        "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one).": "Dynamic Island: 화면 위쪽 카메라 노치 아래의 검은 알약 모양(노치가 없는 Mac에서는 위쪽 가운데).",
+        "Large window": "큰 창",
+        "Look while dictating": "받아쓰기 중 모양",
+        "Look": "모양",
+        "No window": "창 없음",
+        "Off: only the wave, without the text.": "끔: 텍스트 없이 파형만 표시.",
+        "Show the text while dictating": "받아쓰기 중 텍스트 표시",
+        "Small window": "작은 창",
+        "Top": "위",
+        "Where": "위치",
     ]
 }

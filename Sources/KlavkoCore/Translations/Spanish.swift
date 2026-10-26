@@ -260,5 +260,16 @@ extension Translations {
         "Clear search": "Borrar búsqueda",
         "Found %1$@ of %2$@": "%1$@ de %2$@ encontrados",
         "Search the history": "Buscar en el historial",
+        "Bottom": "Abajo",
+        "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one).": "Dynamic Island: una píldora negra bajo la muesca de la cámara, arriba de la pantalla (arriba en el centro en un Mac sin muesca).",
+        "Large window": "Ventana grande",
+        "Look while dictating": "Aspecto al dictar",
+        "Look": "Aspecto",
+        "No window": "Sin ventana",
+        "Off: only the wave, without the text.": "Desactivado: solo la onda, sin el texto.",
+        "Show the text while dictating": "Mostrar el texto al dictar",
+        "Small window": "Ventana pequeña",
+        "Top": "Arriba",
+        "Where": "Posición",
     ]
 }
