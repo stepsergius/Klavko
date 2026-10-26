@@ -288,10 +288,12 @@ final class QuickActionsBar {
             return
         case .stats:
             let stats = QuickText.stats(text)
-            model.page = .result(trFormat("Слів: %1$@ · символів: %2$@ · без пробілів: %3$@",
-                                          "Words: %1$@ · characters: %2$@ · without spaces: %3$@",
-                                          StatsFormat.number(stats.words), StatsFormat.number(stats.characters),
-                                          StatsFormat.number(stats.charactersWithoutSpaces)), copy: nil)
+            let line = trFormat("Слів: %1$@ · символів: %2$@ · без пробілів: %3$@",
+                                "Words: %1$@ · characters: %2$@ · without spaces: %3$@",
+                                StatsFormat.number(stats.words), StatsFormat.number(stats.characters),
+                                StatsFormat.number(stats.charactersWithoutSpaces))
+            // A click copies it, as with the sum.
+            model.page = .result(line, copy: line)
             return
         case .sum:
             guard let sum = QuickText.sum(text) else { return }
@@ -361,7 +363,14 @@ final class QuickActionsBar {
     /// The AI's Mac app when it is installed (the text is pasted into its message box), its website otherwise.
     private func open(in service: AIService) {
         let text = model.text
-        if let appURL = service.bundleIDs.lazy.compactMap({ NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }).first {
+        let apps = service.bundleIDs.flatMap { NSWorkspace.shared.urlsForApplications(withBundleIdentifier: $0) }
+            .filter { service.isApp(named: Bundle(url: $0)?.infoDictionary?["CFBundleName"] as? String ?? $0.lastPathComponent) }
+        // A new chat with the text in it (a link that long stays within what the app takes).
+        if !apps.isEmpty, let link = service.appLink(for: text), link.absoluteString.utf8.count < 16_000 {
+            NSWorkspace.shared.open(link)
+            return
+        }
+        if let appURL = apps.first {
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true
             NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { app, _ in

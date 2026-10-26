@@ -141,13 +141,27 @@ public enum AIService: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The Mac apps, if the service has one.
+    /// The Mac apps, if the service has one, the preferred first: the new ChatGPT app is "com.openai.codex"
+    /// ("com.openai.chat" is now ChatGPT Classic).
     public var bundleIDs: [String] {
         switch self {
         case .claude: ["com.anthropic.claudefordesktop"]
-        case .chatGPT: ["com.openai.chat"]
+        case .chatGPT: ["com.openai.codex", "com.openai.chat"]
         case .gemini: []
         case .perplexity: ["ai.perplexity.mac"]
+        }
+    }
+
+    /// Whether an app with this name is the service's (the Codex app shares the new ChatGPT app's identifier).
+    public func isApp(named name: String) -> Bool {
+        self != .chatGPT || name.hasPrefix("ChatGPT")
+    }
+
+    /// A link that opens a new chat in the Mac app with the text already in its message box, when the app has one.
+    public func appLink(for text: String) -> URL? {
+        switch self {
+        case .claude: URL(string: "claude://claude.ai/new?q=" + QuickText.queryEncoded(text) + "&surface=chat")
+        default: nil
         }
     }
 
