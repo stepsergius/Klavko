@@ -3,8 +3,8 @@ import Foundation
 /// Quick Actions: a small bar over (or under) text selected with the mouse, with what can be done to it —
 /// copy, search, translate, change case, wrap in brackets, read aloud, ask an AI…
 public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
-    case openLink, copy, cut, paste, plainPaste, search, youtube, translate, ai, speak,
-         bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, brackets, quotes, stats, sum
+    case openLink, copy, cut, paste, plainPaste, search, youtube, music, translate, ai, speak,
+         bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, sentence, brackets, quotes, stats, sum
 
     public var id: String { rawValue }
 
@@ -17,6 +17,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .plainPaste: tr("Вставити як звичайний текст", "Paste as Plain Text")
         case .search: tr("Шукати в інтернеті", "Search the Web")
         case .youtube: tr("Шукати на YouTube", "Search YouTube")
+        case .music: tr("Шукати в Музиці", "Search in Music")
         case .translate: tr("Перекласти", "Translate")
         case .ai: tr("Відкрити в ШІ", "Open in AI")
         case .speak: tr("Прочитати вголос", "Read Aloud")
@@ -27,6 +28,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .uppercase: tr("ВЕЛИКІ ЛІТЕРИ", "UPPERCASE")
         case .lowercase: tr("малі літери", "lowercase")
         case .capitalize: tr("Кожне Слово З Великої", "Capitalize Each Word")
+        case .sentence: tr("Перша велика, решта малі", "Sentence case")
         case .brackets: tr("Дужки", "Brackets")
         case .quotes: tr("Лапки «»", "Quotes «»")
         case .stats: tr("Слова й символи", "Words and Characters")
@@ -42,6 +44,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .plainPaste: "doc.plaintext"
         case .search: "magnifyingglass"
         case .youtube: "play.rectangle"
+        case .music: "music.note"
         case .translate: "character.bubble"
         case .ai: "sparkles"
         case .speak: "speaker.wave.2"
@@ -49,7 +52,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .italic: "italic"
         case .underline: "underline"
         case .strikethrough: "strikethrough"
-        case .uppercase, .lowercase, .capitalize, .brackets, .quotes: nil
+        case .uppercase, .lowercase, .capitalize, .sentence, .brackets, .quotes: nil
         case .stats: "textformat.123"
         case .sum: "sum"
         }
@@ -64,6 +67,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .uppercase: "AA"
         case .lowercase: "aa"
         case .capitalize: "Aa"
+        case .sentence: "S"
         case .brackets: "( )"
         case .quotes: "« »"
         default: title
@@ -74,7 +78,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
     public var needsEditable: Bool {
         switch self {
         case .cut, .paste, .plainPaste, .bold, .italic, .underline, .strikethrough,
-             .uppercase, .lowercase, .capitalize, .brackets, .quotes: true
+             .uppercase, .lowercase, .capitalize, .sentence, .brackets, .quotes: true
         default: false
         }
     }
@@ -123,6 +127,11 @@ public enum SearchEngine: String, Codable, CaseIterable, Sendable {
 
     public static func youtube(_ query: String) -> URL? {
         URL(string: "https://www.youtube.com/results?search_query=" + QuickText.queryEncoded(query))
+    }
+
+    /// A search in the Music app.
+    public static func music(_ query: String) -> URL? {
+        URL(string: "music://music.apple.com/search?term=" + QuickText.queryEncoded(query))
     }
 }
 
@@ -204,6 +213,27 @@ public enum QuickText {
                 result.append(character)
                 // «п’ять», «будь-який»: one word.
                 if !["'", "’", "ʼ", "-"].contains(character) { atWordStart = true }
+            }
+        }
+        return result
+    }
+
+    /// Sentence case: the first letter of each sentence capital, every other letter small.
+    public static func sentenceCased(_ text: String, locale: Locale = .current) -> String {
+        var result = ""
+        var atSentenceStart = true
+        for character in text {
+            if character.isLetter {
+                let letter = String(character)
+                result += atSentenceStart ? letter.uppercased(with: locale) : letter.lowercased(with: locale)
+                atSentenceStart = false
+            } else {
+                result.append(character)
+                if [".", "!", "?", "…"].contains(character) || character.isNewline {
+                    atSentenceStart = true
+                } else if character.isNumber {
+                    atSentenceStart = false
+                }
             }
         }
         return result

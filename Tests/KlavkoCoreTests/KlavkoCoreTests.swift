@@ -1120,6 +1120,11 @@ final class QuickTextTests: XCTestCase {
         XCTAssertTrue(AIService.claude.webURL(for: "hi").carriesText)
         XCTAssertFalse(AIService.gemini.webURL(for: "hi").carriesText)
         XCTAssertFalse(AIService.perplexity.webURL(for: "hi").carriesText)
+        XCTAssertEqual(SearchEngine.music("Океан Ельзи")?.absoluteString,
+                       "music://music.apple.com/search?term=%D0%9E%D0%BA%D0%B5%D0%B0%D0%BD%20%D0%95%D0%BB%D1%8C%D0%B7%D0%B8")
+        XCTAssertEqual(QuickText.sentenceCased("ПРИВІТ, СВІТЕ. ЯК СПРАВИ? ДОБРЕ!\nНОВИЙ РЯДОК 2 РАЗИ"),
+                       "Привіт, світе. Як справи? Добре!\nНовий рядок 2 рази")
+        XCTAssertEqual(QuickText.sentenceCased("  hello WORLD"), "  Hello world")
         XCTAssertEqual(AIService.claude.appLink(for: "a & b")?.absoluteString, "claude://claude.ai/new?q=a%20%26%20b&surface=chat")
         XCTAssertNil(AIService.chatGPT.appLink(for: "hi"))
         XCTAssertTrue(AIService.chatGPT.isApp(named: "ChatGPT"))

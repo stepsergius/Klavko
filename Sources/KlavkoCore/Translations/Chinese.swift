@@ -315,6 +315,8 @@ extension Translations {
         "Paste as Plain Text": "粘贴为纯文本",
         "Search the Web": "网页搜索",
         "Search YouTube": "在 YouTube 搜索",
+        "Search in Music": "在“音乐”中搜索",
+        "Sentence case": "句首大写",
         "Translate": "翻译",
         "Read Aloud": "朗读",
         "Bold": "粗体",

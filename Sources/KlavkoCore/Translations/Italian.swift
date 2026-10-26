@@ -315,6 +315,8 @@ extension Translations {
         "Paste as Plain Text": "Incolla come testo semplice",
         "Search the Web": "Cerca sul web",
         "Search YouTube": "Cerca su YouTube",
+        "Search in Music": "Cerca in Musica",
+        "Sentence case": "Maiuscola a inizio frase",
         "Translate": "Traduci",
         "Read Aloud": "Leggi ad alta voce",
         "Bold": "Grassetto",

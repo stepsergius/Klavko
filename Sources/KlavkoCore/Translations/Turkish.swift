@@ -315,6 +315,8 @@ extension Translations {
         "Paste as Plain Text": "Düz Metin Olarak Yapıştır",
         "Search the Web": "Web’de Ara",
         "Search YouTube": "YouTube’da Ara",
+        "Search in Music": "Müzik’te Ara",
+        "Sentence case": "Cümle düzeni",
         "Translate": "Çevir",
         "Read Aloud": "Sesli Oku",
         "Bold": "Kalın",

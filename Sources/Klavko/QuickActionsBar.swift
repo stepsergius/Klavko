@@ -322,6 +322,7 @@ final class QuickActionsBar {
             if let plain = NSPasteboard.general.string(forType: .string) { SelectionConverter.paste(plain) }
         case .search: if let url = settings()?.searchEngine.url(for: text) { NSWorkspace.shared.open(url) }
         case .youtube: if let url = SearchEngine.youtube(text) { NSWorkspace.shared.open(url) }
+        case .music: if let url = SearchEngine.music(text) { NSWorkspace.shared.open(url) }
         case .translate: translate()
         case .ai: if let service = model.aiServices.first { open(in: service) }
         case .speak: speak(text)
@@ -332,6 +333,7 @@ final class QuickActionsBar {
         case .uppercase: replace { QuickText.uppercased($0, locale: Self.locale(of: $0)) }
         case .lowercase: replace { QuickText.lowercased($0, locale: Self.locale(of: $0)) }
         case .capitalize: replace { QuickText.capitalized($0, locale: Self.locale(of: $0)) }
+        case .sentence: replace { QuickText.sentenceCased($0, locale: Self.locale(of: $0)) }
         case .quotes: replace { QuickText.wrapped($0, open: "«", close: "»") }
         case .brackets, .stats, .sum: break
         }
@@ -563,7 +565,7 @@ private struct QuickActionsView: View {
             Image(systemName: symbol).font(.system(size: 14, weight: .medium))
         } else {
             switch action {
-            case .uppercase, .lowercase, .capitalize:
+            case .uppercase, .lowercase, .capitalize, .sentence:
                 Text(action.label).font(.system(size: 14, weight: .semibold, design: .rounded))
             default:
                 Text(action.label).font(.system(size: 13))

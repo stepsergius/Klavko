@@ -315,6 +315,8 @@ extension Translations {
         "Paste as Plain Text": "일반 텍스트로 붙여넣기",
         "Search the Web": "웹에서 검색",
         "Search YouTube": "YouTube에서 검색",
+        "Search in Music": "음악에서 검색",
+        "Sentence case": "문장 첫 글자만 대문자",
         "Translate": "번역",
         "Read Aloud": "소리 내어 읽기",
         "Bold": "굵게",

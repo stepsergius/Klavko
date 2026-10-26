@@ -236,7 +236,7 @@ final class Settings: ObservableObject {
     @Published var quickActionsPosition: QuickActionsPosition {
         didSet { defaults.set(quickActionsPosition.rawValue, forKey: Key.quickActionsPosition) }
     }
-    /// Every action, in the order of the bar (the user's order, then any new ones).
+    /// Every action, in the order of the bar (the user's order, new ones next to their neighbours).
     @Published var quickActionOrder: [QuickAction] {
         didSet { defaults.set(quickActionOrder.map(\.rawValue), forKey: Key.quickActionOrder) }
     }
@@ -512,8 +512,13 @@ final class Settings: ObservableObject {
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above
-        let order = (defaults.stringArray(forKey: Key.quickActionOrder) ?? []).compactMap(QuickAction.init(rawValue:))
-        quickActionOrder = order + QuickAction.allCases.filter { !order.contains($0) }
+        var order = (defaults.stringArray(forKey: Key.quickActionOrder) ?? []).compactMap(QuickAction.init(rawValue:))
+        // Actions added in a later version go after the one they follow in the list (Music after YouTube).
+        for (index, action) in QuickAction.allCases.enumerated() where !order.contains(action) {
+            let before = QuickAction.allCases[..<index].last(where: order.contains)
+            order.insert(action, at: before.flatMap { order.firstIndex(of: $0) }.map { $0 + 1 } ?? 0)
+        }
+        quickActionOrder = order
         quickActionsOff = Set((defaults.stringArray(forKey: Key.quickActionsOff)
                                ?? QuickAction.allCases.filter { !$0.onByDefault }.map(\.rawValue)).compactMap(QuickAction.init(rawValue:)))
         aiServices = (defaults.stringArray(forKey: Key.aiServices) ?? AIService.onByDefault.map(\.rawValue)).compactMap(AIService.init(rawValue:))

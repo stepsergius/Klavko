@@ -315,6 +315,8 @@ extension Translations {
         "Paste as Plain Text": "プレーンテキストとしてペースト",
         "Search the Web": "Web で検索",
         "Search YouTube": "YouTube で検索",
+        "Search in Music": "ミュージックで検索",
+        "Sentence case": "文頭のみ大文字",
         "Translate": "翻訳",
         "Read Aloud": "読み上げ",
         "Bold": "太字",
