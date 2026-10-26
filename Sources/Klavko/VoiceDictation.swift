@@ -630,7 +630,9 @@ final class VoiceDictation: ObservableObject {
     private func placePanel() {
         guard let panel, let screen = targetScreen() else { return }
         let frame = screen.visibleFrame
-        var origin = NSPoint(x: (frame.midX - panel.frame.width / 2).rounded(), y: frame.minY + 24)
+        // The capsule 42 pt above the bottom of the screen's free area, or 24 pt below its top (the glow's margin
+        // around it is transparent).
+        var origin = NSPoint(x: (frame.midX - panel.frame.width / 2).rounded(), y: frame.minY + 42 - VoiceIndicator.glowRoom)
         if shownLook.style == .island && !isFailed {
             var centre = screen.frame.midX
             if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea, screen.safeAreaInsets.top > 0 {
@@ -638,7 +640,7 @@ final class VoiceDictation: ObservableObject {
             }
             origin = NSPoint(x: (centre - panel.frame.width / 2).rounded(), y: screen.frame.maxY - panel.frame.height)
         } else if shownLook.position == .top {
-            origin.y = frame.maxY - panel.frame.height - 6
+            origin.y = frame.maxY - panel.frame.height - 24 + VoiceIndicator.glowRoom
         }
         if panel.frame.origin != origin { panel.setFrameOrigin(origin) }
     }
@@ -765,6 +767,9 @@ private struct VoiceIndicator: View {
     let metrics: IndicatorMetrics
     let atTop: Bool
 
+    /// The transparent margin around the panel's content where the glow fades out.
+    static let glowRoom: CGFloat = 32
+
     private var showsBubble: Bool {
         if case .failed = dictation.stage { return true }
         return dictation.shownLook.showText
@@ -777,8 +782,8 @@ private struct VoiceIndicator: View {
             if atTop && showsBubble { bubble }
         }
         .frame(width: showsBubble ? metrics.width : nil)
-        .padding(.vertical, 18)
-        .padding(.horizontal, 22)  // room for the glow
+        // Room for the whole glow: at its loudest it spreads about 30 pt.
+        .padding(Self.glowRoom)
     }
 
     /// How loud it is right now, 0…1: the glow breathes with the voice.
