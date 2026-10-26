@@ -647,7 +647,7 @@ final class VoiceDictation: ObservableObject {
     }
 
     private func hidePanel() {
-        guard let panel, panel.isVisible, shownLook.style == .island, !isFailed, islandOut else {
+        guard let panel, panel.isVisible, atNotch, islandOut else {
             islandOut = false
             self.panel?.orderOut(nil)
             return
@@ -931,35 +931,46 @@ private struct IslandIndicator: View {
     }
 }
 
-/// "No window": only ✕ and ✓ on either side of the camera notch (side by side at the top without one), gently
-/// pulsing while recording so it's clear the microphone is on.
+/// "No window": the island only just wider than the camera notch, with a small ✕ and ✓ on either side of it
+/// (side by side at the top without a notch), gently pulsing while recording so it's clear the microphone is on.
 private struct NotchMarks: View {
     @ObservedObject var dictation: VoiceDictation
     @State private var pulse = false
 
     private var notch: CGSize { dictation.notch }
+    private static let mark: CGFloat = 14
+    private static let flare: CGFloat = 8
+    private var width: CGFloat { notch.width + 2 * (Self.mark + 12) + 2 * Self.flare }
 
     var body: some View {
         HStack(spacing: 0) {
             mark(.cancel)
-            Color.clear.frame(width: notch.width + 12)
+            Spacer(minLength: 0)
             mark(.insert)
                 .opacity(dictation.stage == .listening ? 1 : 0.4)
         }
-        .padding(.horizontal, 2)
-        .frame(width: notch.width + 12 + 2 * 22 + 4, height: notch.height)
+        .padding(.horizontal, Self.flare + 7)
+        .opacity(dictation.islandOut ? 1 : 0)
+        .animation(dictation.islandOut ? .easeOut(duration: 0.2).delay(0.12) : .easeIn(duration: 0.1),
+                   value: dictation.islandOut)
+        .frame(width: width, height: notch.height)
+        .background(
+            // Grows sideways out of the notch, solid black like the island.
+            IslandShape(flare: Self.flare, corner: min(notch.height / 2, 12)).fill(.black)
+                .scaleEffect(x: dictation.islandOut ? 1 : notch.width > 0 ? notch.width / width : 0.4,
+                             y: dictation.islandOut || notch.width > 0 ? 1 : 0.01, anchor: .top)
+                .animation(dictation.islandOut ? .spring(duration: 0.45, bounce: 0.18)
+                           : .easeIn(duration: IslandIndicator.closing), value: dictation.islandOut)
+        )
         .onAppear {
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { pulse = true }
         }
     }
 
     private func mark(_ kind: VoiceButton.Kind) -> some View {
-        VoiceButton(kind: kind, size: 18, symbol: 8, dictation: dictation)
-            // On a black disc, so it shows over any menu bar.
-            .frame(width: 22, height: 22)
-            .background(Circle().fill(.black))
-            .scaleEffect(pulse && dictation.stage == .listening ? 1.08 : 0.94)
-            .shadow(color: Neon.sky.opacity(pulse && dictation.stage == .listening ? 0.7 : 0.15), radius: 4)
+        VoiceButton(kind: kind, size: Self.mark, symbol: 6.5, dictation: dictation)
+            .scaleEffect(pulse && dictation.stage == .listening ? 1.1 : 0.92)
+            .shadow(color: Neon.sky.opacity(pulse && dictation.stage == .listening ? 0.7 : 0.1), radius: 3)
     }
 }
 
