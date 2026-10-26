@@ -1026,3 +1026,64 @@ final class TextLinksTests: XCTestCase {
         XCTAssertTrue(TextLinks.find(in: "Просто текст без адрес.").isEmpty)
     }
 }
+
+final class VoiceStatsTests: XCTestCase {
+    private var calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Kyiv")!
+        return calendar
+    }()
+
+    private func date(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    func testWordsKeepApostrophesAndHyphens() {
+        XCTAssertEqual(VoiceStats.words(in: "П’ять яблук — будь-який, 2026 рік!"), ["П’ять", "яблук", "будь-який", "2026", "рік"])
+    }
+
+    func testPeriodsAndTopWords() {
+        var stats = VoiceStats()
+        let today = date(2026, 10, 26)
+        stats.addStart(at: today, calendar: calendar)
+        stats.addListening(12, at: today, calendar: calendar)
+        stats.addInserted("Проєкт готовий, проєкт надіслано і він на місці", at: today, calendar: calendar)
+        stats.addInserted("Старий проєкт", at: date(2026, 9, 3), calendar: calendar)
+        stats.addInserted("Минулий рік", at: date(2025, 12, 31), calendar: calendar)
+
+        XCTAssertEqual(stats.counts(.day, now: today, calendar: calendar).words, 8)
+        XCTAssertEqual(stats.counts(.day, now: today, calendar: calendar).starts, 1)
+        XCTAssertEqual(stats.counts(.day, now: today, calendar: calendar).seconds, 12)
+        XCTAssertEqual(stats.counts(.month, now: today, calendar: calendar).words, 8)
+        XCTAssertEqual(stats.counts(.year, now: today, calendar: calendar).words, 10)
+        XCTAssertEqual(stats.counts(.all, now: today, calendar: calendar).words, 12)
+        // Words shorter than 3 letters ("і", "він" counts, "на" doesn't), case ignored.
+        let top = stats.topWords(.day, now: today, calendar: calendar)
+        XCTAssertEqual(top.first?.word, "проєкт")
+        XCTAssertEqual(top.first?.count, 2)
+        XCTAssertFalse(top.contains { $0.word == "на" || $0.word == "і" })
+        XCTAssertTrue(top.contains { $0.word == "він" })
+        XCTAssertEqual(stats.topWords(.year, now: today, calendar: calendar).first?.count, 3)
+    }
+
+    func testMilestonesOnceEach() {
+        var stats = VoiceStats()
+        let text = Array(repeating: "слово", count: 600).joined(separator: " ")
+        XCTAssertNil(stats.addInserted(text))
+        XCTAssertEqual(stats.addInserted(text), 1_000)
+        XCTAssertNil(stats.addInserted(text))
+    }
+
+    func testTypingSpeedAndTimeSaved() {
+        var stats = VoiceStats()
+        XCTAssertNil(stats.measuredCharactersPerMinute)
+        XCTAssertEqual(stats.charactersPerMinute, VoiceStats.defaultCharactersPerMinute)
+        stats.addKey(printable: true, interval: nil)
+        for _ in 0..<1_999 { stats.addKey(printable: true, interval: 0.25) }
+        stats.addKey(printable: true, interval: 30)  // a pause is not typing time
+        XCTAssertEqual(stats.measuredCharactersPerMinute ?? 0, 2_001 / (1_999 * 0.25) * 60, accuracy: 0.01)
+        // 400 characters at 200 a minute take 2 minutes to type; dictating them took 30 s.
+        let counts = VoiceStats.Counts(words: 60, characters: 400, seconds: 30, starts: 1)
+        XCTAssertEqual(VoiceStats().savedSeconds(counts), 90, accuracy: 0.01)
+    }
+}

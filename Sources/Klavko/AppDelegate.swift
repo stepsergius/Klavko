@@ -17,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let updater = Updater()
     private let updatePrompt = UpdatePrompt()
     let voiceHistory = VoiceHistoryStore()
+    let voiceStats = VoiceStatsStore()
+    private let voiceStatsWindow = VoiceStatsWindow()
+    private let milestoneWindow = MilestoneWindow()
     private let voiceHistoryWindow = VoiceHistoryWindow()
     private let capsLight = CapsLockLight()
     private let supportWindow = SupportWindow()
@@ -68,7 +71,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         dictation.onInserted = { [unowned self] text in
             engine.reset()
             if settings.saveVoiceHistory { voiceHistory.add(text) }
+            voiceStats.inserted(text)
             if settings.offerVoiceCorrections { correctionWatcher.watch(inserted: text) }
+        }
+        dictation.onStarted = { [unowned self] in voiceStats.started() }
+        dictation.onListened = { [unowned self] seconds in voiceStats.listened(seconds) }
+        voiceStats.onMilestone = { [unowned self] words in
+            milestoneWindow.show(words: words, store: voiceStats) { [weak self] in self?.showVoiceStats() }
         }
         // A dictated word fixed by hand: offer to spell it that way from now on.
         correctionWatcher.known = { [unowned self] in settings.voiceRules }
@@ -199,6 +208,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         monitor = KeyboardMonitor { [weak self, engine] type, event in
             let pass = engine.handle(type, event)
+            // Typing speed for the voice statistics: only whether a key types a character, and when.
+            if type == .keyDown {
+                let time = event.timestamp
+                let printable = Self.typesCharacter(event)
+                DispatchQueue.main.async { MainActor.assumeIsolated { self?.voiceStats.key(at: time, printable: printable) } }
+            }
             // The layout notification sometimes doesn't arrive; layout shortcuts are key events, so check after them.
             if type == .keyDown || type == .flagsChanged {
                 DispatchQueue.main.async {
@@ -235,6 +250,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         // Developer check of the voice panel on screen, in the look set in Settings: --demo-voice.
         if CommandLine.arguments.contains("--demo-voice") { dictation.demo() }
+        // Developer check of the statistics windows with made-up numbers (never saved): --sample-voice-stats
+        // with --show-voice-stats and/or --show-milestone <words>.
+        if CommandLine.arguments.contains("--sample-voice-stats") { voiceStats.fillWithSample() }
+        if CommandLine.arguments.contains("--show-voice-stats") { showVoiceStats() }
+        if let index = CommandLine.arguments.firstIndex(of: "--show-milestone"), index + 1 < CommandLine.arguments.count,
+           let words = Int(CommandLine.arguments[index + 1]) {
+            milestoneWindow.show(words: words, store: voiceStats) { [weak self] in self?.showVoiceStats() }
+        }
         // Developer check of the voice indicator: --snapshot-voice <file.png>.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-voice"), index + 1 < CommandLine.arguments.count {
             dictation.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]))
@@ -488,9 +511,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let updateItem = updater.available.map {
             item(trFormat("⬆︎ Оновити Klavko до %@", "⬆︎ Update Klavko to %@", $0.version), #selector(installUpdate))
         } ?? item(tr("Перевірити оновлення…", "Check for Updates…"), #selector(checkForUpdates))
+        let statsItem = item(tr("Статистика голосового вводу…", "Voice Input Statistics…"), #selector(showVoiceStats))
+        statsItem.image = NSImage(systemSymbolName: "chart.bar", accessibilityDescription: nil)
         let settingsItem = item(tr("Налаштування…", "Settings…"), #selector(showSettings))
         let quitItem = item(tr("Вийти з Klavko", "Quit Klavko"), #selector(quit))
         Self.showShortcuts([(updateItem, nil), (settingsItem, "⌘,"), (quitItem, "⌘Q")])
+        menu.addItem(statsItem)
         menu.addItem(updateItem)
         menu.addItem(settingsItem)
         menu.addItem(.separator())
@@ -655,6 +681,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func showVoiceHistory() {
         voiceHistoryWindow.show(voiceHistory)
+    }
+
+    @objc func showVoiceStats() {
+        voiceStatsWindow.show(voiceStats)
+    }
+
+    /// A key that types a character (not ⌘ or ⌃ shortcuts, arrows, Delete or Return). Only that is looked at.
+    nonisolated private static func typesCharacter(_ event: CGEvent) -> Bool {
+        guard event.flags.intersection([.maskCommand, .maskControl]).isEmpty else { return false }
+        var length = 0
+        var characters = [UniChar](repeating: 0, count: 4)
+        event.keyboardGetUnicodeString(maxStringLength: 4, actualStringLength: &length, unicodeString: &characters)
+        guard length > 0, let scalar = Unicode.Scalar(characters[0]) else { return false }
+        return !CharacterSet.controlCharacters.contains(scalar) && !(0xF700...0xF8FF).contains(scalar.value)
     }
 
     @objc private func captureScreenText() {

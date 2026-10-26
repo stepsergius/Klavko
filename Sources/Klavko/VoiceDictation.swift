@@ -50,6 +50,10 @@ final class VoiceDictation: ObservableObject {
     var vocabulary: () -> [Replacement] = { [] }
     /// Called with the text after it was typed (key tracking starts afresh; corrections get watched).
     var onInserted: (String) -> Void = { _ in }
+    /// The microphone is on (for the statistics), and how long it was on once it goes off.
+    var onStarted: () -> Void = {}
+    var onListened: (Double) -> Void = { _ in }
+    private var listeningSince: Date?
     /// The microphone to record from (a device UID); nil: the one chosen in macOS.
     var microphone: () -> String? = { nil }
     /// While listening, other sound is turned down to this share of its volume; nil: left alone.
@@ -184,6 +188,8 @@ final class VoiceDictation: ObservableObject {
         }
         insertOnFinish = true
         stage = .listening
+        listeningSince = Date()
+        onStarted()
         if let level = duckLevel() { ducker.duck(to: level) }
         schedulePreview(after: 1.0)
         Log.engine.notice("Voice input started (\(code, privacy: .public))")
@@ -433,6 +439,10 @@ final class VoiceDictation: ObservableObject {
     }
 
     private func stopAudio() {
+        if let since = listeningSince {
+            listeningSince = nil
+            onListened(Date().timeIntervalSince(since))
+        }
         ducker.restore()
         if audio.isRunning { audio.stop() }
         audio.inputNode.removeTap(onBus: 0)
