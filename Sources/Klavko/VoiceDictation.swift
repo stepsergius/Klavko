@@ -769,6 +769,8 @@ private struct VoiceIndicator: View {
                     .foregroundStyle(.white.opacity(dictation.text.isEmpty ? 0.55 : 0.96))
                     .lineLimit(metrics.lines)
                     .truncationMode(.head)
+                    // Takes the height its lines need, so the panel grows with them.
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .animation(.easeOut(duration: 0.15), value: dictation.text)
                 if metrics.showsHint {
@@ -862,6 +864,7 @@ private struct IslandIndicator: View {
                     .foregroundStyle(.white.opacity(dictation.text.isEmpty || dictation.stage == .finishing ? 0.55 : 0.95))
                     .lineLimit(3)
                     .truncationMode(.head)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
