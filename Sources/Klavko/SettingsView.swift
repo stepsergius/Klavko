@@ -101,6 +101,104 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder private var quickActionsTab: some View {
+        Section {
+            Toggle(tr("Показувати після виділення тексту мишкою", "Show after selecting text with the mouse"),
+                   isOn: $settings.quickActionsEnabled)
+            Picker(tr("Де показувати", "Where"), selection: $settings.quickActionsPosition) {
+                ForEach(QuickActionsPosition.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text(tr("Швидкі дії", "Quick Actions"))
+        } footer: {
+            Text(tr("Виділіть текст мишкою (або двічі клацніть слово) — над ним з’явиться панелька з діями. Клік деінде чи будь-яка клавіша її ховає. Для тексту, виділеного з клавіатури, задайте гарячу клавішу «Швидкі дії для виділеного» на вкладці «Клавіші».",
+                    "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Section {
+            ForEach(Array(settings.quickActionOrder.enumerated()), id: \.element) { index, action in
+                quickActionRow(action, index: index)
+            }
+        } header: {
+            Text(tr("Дії на панельці", "Actions on the bar"))
+        } footer: {
+            Text(tr("Стрілками змініть порядок. «Відкрити посилання» з’являється лише для посилання і завжди першою. Дії, що змінюють текст, видно лише там, де його можна редагувати; «Сума чисел» — коли виділено щонайменше два числа.",
+                    "Change the order with the arrows. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Section {
+            Picker(tr("Шукати в інтернеті через", "Search the web with"), selection: $settings.searchEngine) {
+                ForEach(SearchEngine.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            HStack(spacing: 14) {
+                Text(tr("Відкривати в ШІ", "Open in AI"))
+                Spacer()
+                ForEach(AIService.allCases) { service in
+                    Toggle(service.title, isOn: Binding(
+                        get: { settings.aiServices.contains(service) },
+                        set: { on in
+                            settings.aiServices = AIService.allCases.filter {
+                                $0 == service ? on : settings.aiServices.contains($0)
+                            }
+                        }))
+                    .toggleStyle(.checkbox)
+                }
+            }
+        } footer: {
+            Text(tr("Якщо програма ШІ встановлена на цьому Mac (Claude, ChatGPT, Perplexity), виділене вставляється в неї; якщо ні — відкривається сайт із текстом. Кілька вибраних — на панельці з’явиться вибір.",
+                    "If the AI’s app is on this Mac (Claude, ChatGPT, Perplexity), the selection is pasted into it; otherwise its website opens with the text. With several chosen, the bar offers a choice."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Section(tr("Не показувати в програмах", "Don’t show in these apps")) {
+            appList(settings.quickActionsIgnoredApps, remove: { settings.toggleQuickActionsIgnored($0) },
+                    add: { pickApps(adding: settings.quickActionsIgnoredApps) { settings.toggleQuickActionsIgnored($0) } })
+        }
+    }
+
+    private func quickActionRow(_ action: QuickAction, index: Int) -> some View {
+        HStack(spacing: 10) {
+            Toggle(isOn: Binding(
+                get: { !settings.quickActionsOff.contains(action) },
+                set: { on in
+                    if on { settings.quickActionsOff.remove(action) } else { settings.quickActionsOff.insert(action) }
+                })) {
+                HStack(spacing: 8) {
+                    Group {
+                        if let symbol = action.symbol {
+                            Image(systemName: symbol)
+                        } else {
+                            Text(action.label).font(.system(size: 11, weight: .semibold, design: .rounded)).lineLimit(1)
+                        }
+                    }
+                    .frame(width: 58, alignment: .center)
+                    .foregroundStyle(.secondary)
+                    Text(action.title)
+                }
+            }
+            .toggleStyle(.checkbox)
+            Spacer()
+            Button { moveQuickAction(index, by: -1) } label: { Image(systemName: "chevron.up") }
+                .buttonStyle(.borderless)
+                .disabled(index == 0)
+            Button { moveQuickAction(index, by: 1) } label: { Image(systemName: "chevron.down") }
+                .buttonStyle(.borderless)
+                .disabled(index == settings.quickActionOrder.count - 1)
+        }
+    }
+
+    private func moveQuickAction(_ index: Int, by step: Int) {
+        let target = index + step
+        guard settings.quickActionOrder.indices.contains(target) else { return }
+        settings.quickActionOrder.swapAt(index, target)
+    }
+
     private func addReplacement() {
         if settings.setReplacement(from: newReplacementFrom, to: newReplacementTo) {
             newReplacementFrom = ""
@@ -549,6 +647,8 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                case .quickActions:
+                    quickActionsTab
                 case .clipboard:
                     Section {
                         Toggle(tr("Зберігати історію буфера обміну", "Keep clipboard history"), isOn: $settings.clipboardEnabled)
@@ -737,7 +837,7 @@ struct SettingsView: View {
 }
 
 enum SettingsTab: String, CaseIterable {
-    case general, layout, text, voice, clipboard, hotkeys, about, thanks, whatsNew
+    case general, layout, text, voice, quickActions, clipboard, hotkeys, about, thanks, whatsNew
 
     /// Listed apart, at the bottom of the sidebar.
     var isExtra: Bool { self == .thanks || self == .whatsNew }
@@ -748,6 +848,7 @@ enum SettingsTab: String, CaseIterable {
         case .layout: tr("Розкладка", "Layout")
         case .text: tr("Текст", "Text")
         case .voice: tr("Голос", "Voice")
+        case .quickActions: tr("Швидкі дії", "Quick Actions")
         case .clipboard: tr("Буфер", "Clipboard")
         case .about: tr("Про Klavko", "About")
         case .hotkeys: tr("Клавіші", "Hotkeys")
@@ -762,6 +863,7 @@ enum SettingsTab: String, CaseIterable {
         case .layout: "keyboard"
         case .text: "textformat"
         case .voice: "waveform"
+        case .quickActions: "text.cursor"
         case .clipboard: "doc.on.clipboard"
         case .about: "info.circle"
         case .hotkeys: "command"

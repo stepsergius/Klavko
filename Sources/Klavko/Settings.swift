@@ -43,6 +43,13 @@ final class Settings: ObservableObject {
         static let voicePanelPosition = "voicePanelPosition"
         static let voiceShowText = "voiceShowText"
         static let saveVoiceHistory = "saveVoiceHistory"
+        static let quickActionsEnabled = "quickActionsEnabled"
+        static let quickActionsPosition = "quickActionsPosition"
+        static let quickActionOrder = "quickActionOrder"
+        static let quickActionsOff = "quickActionsOff"
+        static let aiServices = "aiServices"
+        static let searchEngine = "searchEngine"
+        static let quickActionsIgnoredApps = "quickActionsIgnoredApps"
         static let microphoneUID = "microphoneUID"
         static let duckSound = "duckSound"
         static let duckLevel = "duckLevel"
@@ -218,6 +225,48 @@ final class Settings: ObservableObject {
     /// Keep what was dictated in the voice history (this Mac only).
     @Published var saveVoiceHistory: Bool {
         didSet { defaults.set(saveVoiceHistory, forKey: Key.saveVoiceHistory) }
+    }
+
+    // MARK: Quick Actions
+
+    /// The bar over text selected with the mouse.
+    @Published var quickActionsEnabled: Bool {
+        didSet { defaults.set(quickActionsEnabled, forKey: Key.quickActionsEnabled) }
+    }
+    @Published var quickActionsPosition: QuickActionsPosition {
+        didSet { defaults.set(quickActionsPosition.rawValue, forKey: Key.quickActionsPosition) }
+    }
+    /// Every action, in the order of the bar (the user's order, then any new ones).
+    @Published var quickActionOrder: [QuickAction] {
+        didSet { defaults.set(quickActionOrder.map(\.rawValue), forKey: Key.quickActionOrder) }
+    }
+    @Published var quickActionsOff: Set<QuickAction> {
+        didSet { defaults.set(quickActionsOff.map(\.rawValue).sorted(), forKey: Key.quickActionsOff) }
+    }
+    /// The AI chats "Open in AI" offers.
+    @Published var aiServices: [AIService] {
+        didSet { defaults.set(aiServices.map(\.rawValue), forKey: Key.aiServices) }
+    }
+    @Published var searchEngine: SearchEngine {
+        didSet { defaults.set(searchEngine.rawValue, forKey: Key.searchEngine) }
+    }
+
+    /// Apps where the bar never appears.
+    @Published private(set) var quickActionsIgnoredApps: [String] {
+        didSet { defaults.set(quickActionsIgnoredApps, forKey: Key.quickActionsIgnoredApps) }
+    }
+
+    func toggleQuickActionsIgnored(_ bundleID: String) {
+        if quickActionsIgnoredApps.contains(bundleID) {
+            quickActionsIgnoredApps.removeAll { $0 == bundleID }
+        } else {
+            quickActionsIgnoredApps.append(bundleID)
+        }
+    }
+
+    /// The buttons of the bar, in order.
+    var quickActions: [QuickAction] {
+        quickActionOrder.filter { !quickActionsOff.contains($0) && ($0 != .ai || !aiServices.isEmpty) }
     }
 
     /// The microphone for voice input, by its device UID; nil: the one chosen in macOS.
@@ -461,6 +510,15 @@ final class Settings: ObservableObject {
         voicePanelPosition = defaults.string(forKey: Key.voicePanelPosition).flatMap(VoiceLook.Position.init(rawValue:)) ?? .bottom
         voiceShowText = defaults.bool(forKey: Key.voiceShowText)
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
+        quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
+        quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above
+        let order = (defaults.stringArray(forKey: Key.quickActionOrder) ?? []).compactMap(QuickAction.init(rawValue:))
+        quickActionOrder = order + QuickAction.allCases.filter { !order.contains($0) }
+        quickActionsOff = Set((defaults.stringArray(forKey: Key.quickActionsOff)
+                               ?? QuickAction.allCases.filter { !$0.onByDefault }.map(\.rawValue)).compactMap(QuickAction.init(rawValue:)))
+        aiServices = (defaults.stringArray(forKey: Key.aiServices) ?? AIService.onByDefault.map(\.rawValue)).compactMap(AIService.init(rawValue:))
+        searchEngine = defaults.string(forKey: Key.searchEngine).flatMap(SearchEngine.init(rawValue:)) ?? .google
+        quickActionsIgnoredApps = defaults.stringArray(forKey: Key.quickActionsIgnoredApps) ?? []
         microphoneUID = defaults.string(forKey: Key.microphoneUID)
         duckSound = defaults.bool(forKey: Key.duckSound)
         duckLevel = defaults.double(forKey: Key.duckLevel)

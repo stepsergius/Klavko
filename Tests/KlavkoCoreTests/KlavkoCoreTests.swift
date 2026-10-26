@@ -1040,6 +1040,7 @@ final class VoiceStatsTests: XCTestCase {
 
     func testWordsKeepApostrophesAndHyphens() {
         XCTAssertEqual(VoiceStats.words(in: "П’ять яблук — будь-який, 2026 рік!"), ["П’ять", "яблук", "будь-який", "2026", "рік"])
+        XCTAssertEqual(VoiceStats.words(in: "Числа: 120, 35,5 і 44."), ["Числа", "120", "35,5", "і", "44"])
     }
 
     func testPeriodsAndTopWords() {
@@ -1085,5 +1086,38 @@ final class VoiceStatsTests: XCTestCase {
         // 400 characters at 200 a minute take 2 minutes to type; dictating them took 30 s.
         let counts = VoiceStats.Counts(words: 60, characters: 400, seconds: 30, starts: 1)
         XCTAssertEqual(VoiceStats().savedSeconds(counts), 90, accuracy: 0.01)
+    }
+}
+
+final class QuickTextTests: XCTestCase {
+    func testCase() {
+        let uk = Locale(identifier: "uk_UA")
+        XCTAssertEqual(QuickText.uppercased("привіт, світ", locale: uk), "ПРИВІТ, СВІТ")
+        XCTAssertEqual(QuickText.lowercased("ПРИВІТ Світ", locale: uk), "привіт світ")
+        XCTAssertEqual(QuickText.capitalized("п’ять будь-яких iPhone слів", locale: uk), "П’ять Будь-яких IPhone Слів")
+    }
+
+    func testWrapKeepsOuterSpaces() {
+        XCTAssertEqual(QuickText.wrapped("слово ", open: "(", close: ")"), "(слово) ")
+        XCTAssertEqual(QuickText.wrapped(" два слова", open: "«", close: "»"), " «два слова»")
+    }
+
+    func testStrikeAndStats() {
+        XCTAssertEqual(QuickText.struckThrough("аб в"), "а\u{0336}б\u{0336} в\u{0336}")
+        XCTAssertEqual(QuickText.stats("Привіт, світе! Як ти?"), QuickText.Stats(words: 4, characters: 21, charactersWithoutSpaces: 18))
+    }
+
+    func testNumbersAndSum() {
+        XCTAssertEqual(QuickText.numbers(in: "1\u{00A0}234,5 грн, 1,234.5 $, −12 і 3.75; рік2026"), [1234.5, 1234.5, -12, 3.75])
+        XCTAssertEqual(QuickText.numbers(in: "100 200"), [100, 200])
+        XCTAssertEqual(QuickText.sum("10 + 20,5 + 1.000.000"), Decimal(string: "1000030.5"))
+        XCTAssertNil(QuickText.sum("лише 42"))
+    }
+
+    func testWebAddresses() {
+        XCTAssertEqual(SearchEngine.google.url(for: " кіт & пес ")?.absoluteString,
+                       "https://www.google.com/search?q=%D0%BA%D1%96%D1%82%20%26%20%D0%BF%D0%B5%D1%81")
+        XCTAssertTrue(AIService.claude.webURL(for: "hi").carriesText)
+        XCTAssertFalse(AIService.gemini.webURL(for: "hi").carriesText)
     }
 }

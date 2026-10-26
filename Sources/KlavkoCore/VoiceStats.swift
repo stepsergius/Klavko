@@ -130,7 +130,8 @@ public struct VoiceStats: Codable, Equatable, Sendable {
 
     // MARK: Helpers
 
-    /// Words: runs of letters and digits, with apostrophes and hyphens inside them («п’ять», «будь-який»).
+    /// Words: runs of letters and digits, with apostrophes and hyphens inside them («п’ять», «будь-який»),
+    /// and decimal marks inside numbers («35,5» is one).
     public static func words(in text: String) -> [String] {
         var words: [String] = []
         var current = ""
@@ -139,6 +140,8 @@ public struct VoiceStats: Codable, Equatable, Sendable {
             if character.isLetter || character.isNumber {
                 current.append(character)
             } else if joiners.contains(character), !current.isEmpty {
+                current.append(character)
+            } else if character == "," || character == ".", current.last?.isNumber == true {
                 current.append(character)
             } else {
                 flush(&current, into: &words)

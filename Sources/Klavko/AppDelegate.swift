@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let updatePrompt = UpdatePrompt()
     let voiceHistory = VoiceHistoryStore()
     let voiceStats = VoiceStatsStore()
+    private let quickActions = QuickActionsBar()
     private let voiceStatsWindow = VoiceStatsWindow()
     private let milestoneWindow = MilestoneWindow()
     private let voiceHistoryWindow = VoiceHistoryWindow()
@@ -126,6 +127,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         translator.defaultPair = { [unowned self] in (settings.translationOwn, settings.translationOther) }
         engine.onTranslate = { [unowned self] in
             MainActor.assumeIsolated { translator.start() }
+        }
+        quickActions.settings = { [weak self] in self?.settings }
+        quickActions.translate = { [unowned self] in translator.start() }
+        quickActions.start()
+        engine.onQuickActions = { [unowned self] in
+            MainActor.assumeIsolated { quickActions.showForSelection() }
         }
         engine.onVoice = { [unowned self] in
             MainActor.assumeIsolated { dictation.toggle() }
