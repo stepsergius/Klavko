@@ -271,7 +271,6 @@ extension Translations {
         "Small window": "小窗口",
         "Top": "顶部",
         "Where": "位置",
-        "Voice Input Statistics…": "语音输入统计…",
         "Voice Input Statistics": "语音输入统计",
         "Congratulations!": "恭喜！",
         "Reset…": "重置…",
@@ -294,5 +293,9 @@ extension Translations {
         "Nothing dictated in this time yet.": "这段时间还没有口述内容。",
         "Time saved is compared with your typing speed: %@ characters a minute (Klavko counts only key presses, not the text).": "节省的时间是与你的打字速度比较得出：每分钟 %@ 个字符（Klavko 只统计按键次数，不记录文字）。",
         "Until Klavko has measured your typing speed, time saved is based on an average of %@ characters a minute (≈ 40 words).": "在 Klavko 测出你的打字速度之前，节省的时间按平均每分钟 %@ 个字符计算（≈ 40 个词）。",
+        "Words today: %1$@ · all time: %2$@": "今天的词数：%1$@ · 总计：%2$@",
+        "View Statistics": "查看统计",
+        "Voice input statistics": "语音输入统计",
+        "Words, time spent dictating, time saved and the most frequent words — by day, month, year and all time. Kept on this Mac only.": "字词数、口述时间、节省的时间和最常用的词——按天、月、年和全部时间统计。仅保存在这台 Mac 上。",
     ]
 }

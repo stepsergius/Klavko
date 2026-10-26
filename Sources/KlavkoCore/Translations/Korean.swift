@@ -271,7 +271,6 @@ extension Translations {
         "Small window": "작은 창",
         "Top": "위",
         "Where": "위치",
-        "Voice Input Statistics…": "음성 입력 통계…",
         "Voice Input Statistics": "음성 입력 통계",
         "Congratulations!": "축하합니다!",
         "Reset…": "재설정…",
@@ -294,5 +293,9 @@ extension Translations {
         "Nothing dictated in this time yet.": "이 기간에는 아직 받아쓴 내용이 없습니다.",
         "Time saved is compared with your typing speed: %@ characters a minute (Klavko counts only key presses, not the text).": "절약한 시간은 타이핑 속도와 비교한 값입니다: 분당 %@자 (Klavko는 키 누름 횟수만 세고 텍스트는 기록하지 않습니다).",
         "Until Klavko has measured your typing speed, time saved is based on an average of %@ characters a minute (≈ 40 words).": "Klavko가 타이핑 속도를 측정하기 전까지는 분당 %@자(≈ 40단어) 평균으로 절약한 시간을 계산합니다.",
+        "Words today: %1$@ · all time: %2$@": "오늘 단어: %1$@ · 전체: %2$@",
+        "View Statistics": "통계 보기",
+        "Voice input statistics": "음성 입력 통계",
+        "Words, time spent dictating, time saved and the most frequent words — by day, month, year and all time. Kept on this Mac only.": "단어 수, 받아쓰기 시간, 절약한 시간과 자주 쓰는 단어 — 일, 월, 연도, 전체 기간별. 이 Mac에만 저장됩니다.",
     ]
 }

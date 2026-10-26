@@ -271,7 +271,6 @@ extension Translations {
         "Small window": "Küçük pencere",
         "Top": "Üstte",
         "Where": "Konum",
-        "Voice Input Statistics…": "Dikte İstatistikleri…",
         "Voice Input Statistics": "Dikte İstatistikleri",
         "Congratulations!": "Tebrikler!",
         "Reset…": "Sıfırla…",
@@ -294,5 +293,9 @@ extension Translations {
         "Nothing dictated in this time yet.": "Bu dönemde henüz bir şey dikte edilmedi.",
         "Time saved is compared with your typing speed: %@ characters a minute (Klavko counts only key presses, not the text).": "Kazanılan süre yazma hızınızla karşılaştırılır: dakikada %@ karakter (Klavko yalnızca tuş basışlarını sayar, metni değil).",
         "Until Klavko has measured your typing speed, time saved is based on an average of %@ characters a minute (≈ 40 words).": "Klavko yazma hızınızı ölçene kadar kazanılan süre dakikada %@ karakterlik bir ortalamaya göre hesaplanır (≈ 40 kelime).",
+        "Words today: %1$@ · all time: %2$@": "Bugünkü kelimeler: %1$@ · toplam: %2$@",
+        "View Statistics": "İstatistikleri Göster",
+        "Voice input statistics": "Dikte istatistikleri",
+        "Words, time spent dictating, time saved and the most frequent words — by day, month, year and all time. Kept on this Mac only.": "Kelimeler, dikteye harcanan süre, kazanılan süre ve en sık kelimeler — günlük, aylık, yıllık ve tüm zamanlar. Yalnızca bu Mac’te saklanır.",
     ]
 }

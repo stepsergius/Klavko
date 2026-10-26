@@ -511,12 +511,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let updateItem = updater.available.map {
             item(trFormat("⬆︎ Оновити Klavko до %@", "⬆︎ Update Klavko to %@", $0.version), #selector(installUpdate))
         } ?? item(tr("Перевірити оновлення…", "Check for Updates…"), #selector(checkForUpdates))
-        let statsItem = item(tr("Статистика голосового вводу…", "Voice Input Statistics…"), #selector(showVoiceStats))
-        statsItem.image = NSImage(systemSymbolName: "chart.bar", accessibilityDescription: nil)
         let settingsItem = item(tr("Налаштування…", "Settings…"), #selector(showSettings))
         let quitItem = item(tr("Вийти з Klavko", "Quit Klavko"), #selector(quit))
         Self.showShortcuts([(updateItem, nil), (settingsItem, "⌘,"), (quitItem, "⌘Q")])
-        menu.addItem(statsItem)
         menu.addItem(updateItem)
         menu.addItem(settingsItem)
         menu.addItem(.separator())
@@ -604,6 +601,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if settingsWindow == nil {
             let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
+                                    voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },
                                     keyLayout: englishLayout(),
                                     previewSound: { [weak self] name in self?.playSound(named: name) })
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
@@ -622,6 +620,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let tab = tabs.first else { return NSApp.terminate(nil) }
         var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
+                                    voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },
                                     keyLayout: englishLayout(),
                                 previewSound: { _ in })
         view.initialTab = tab
@@ -683,7 +682,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         voiceHistoryWindow.show(voiceHistory)
     }
 
-    @objc func showVoiceStats() {
+    func showVoiceStats() {
         voiceStatsWindow.show(voiceStats)
     }
 

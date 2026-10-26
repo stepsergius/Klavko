@@ -11,6 +11,8 @@ struct SettingsView: View {
     @ObservedObject var updater: Updater
     @ObservedObject var voiceHistory: VoiceHistoryStore
     let showVoiceHistory: () -> Void
+    @ObservedObject var voiceStats: VoiceStatsStore
+    let showVoiceStats: () -> Void
     /// English layout, used to name letter keys in shortcuts.
     let keyLayout: LayoutMap?
     let previewSound: (String) -> Void
@@ -525,6 +527,24 @@ struct SettingsView: View {
                     } footer: {
                         Text(tr("Надиктований текст із датою й часом. Зберігається лише на цьому Mac.",
                                 "Dictated text with its date and time. Kept on this Mac only."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        HStack {
+                            Text(trFormat("Слів сьогодні: %1$@ · усього: %2$@", "Words today: %1$@ · all time: %2$@",
+                                          StatsFormat.number(voiceStats.stats.counts(.day).words),
+                                          StatsFormat.number(voiceStats.stats.counts(.all).words)))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button(tr("Подивитися статистику", "View Statistics"), action: showVoiceStats)
+                        }
+                    } header: {
+                        Text(tr("Статистика голосового вводу", "Voice input statistics"))
+                    } footer: {
+                        Text(tr("Слова, час на диктування, зекономлений час і найчастіші слова — за день, місяць, рік і весь час. Зберігається лише на цьому Mac.",
+                                "Words, time spent dictating, time saved and the most frequent words — by day, month, year and all time. Kept on this Mac only."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

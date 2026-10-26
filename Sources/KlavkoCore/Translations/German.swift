@@ -271,7 +271,6 @@ extension Translations {
         "Small window": "Kleines Fenster",
         "Top": "Oben",
         "Where": "Position",
-        "Voice Input Statistics…": "Diktierstatistik…",
         "Voice Input Statistics": "Diktierstatistik",
         "Congratulations!": "Glückwunsch!",
         "Reset…": "Zurücksetzen…",
@@ -294,5 +293,9 @@ extension Translations {
         "Nothing dictated in this time yet.": "In diesem Zeitraum wurde noch nichts diktiert.",
         "Time saved is compared with your typing speed: %@ characters a minute (Klavko counts only key presses, not the text).": "Die gesparte Zeit wird mit deiner Tippgeschwindigkeit verglichen: %@ Zeichen pro Minute (Klavko zählt nur Tastendrücke, nicht den Text).",
         "Until Klavko has measured your typing speed, time saved is based on an average of %@ characters a minute (≈ 40 words).": "Bis Klavko deine Tippgeschwindigkeit gemessen hat, wird die gesparte Zeit mit einem Durchschnitt von %@ Zeichen pro Minute berechnet (≈ 40 Wörter).",
+        "Words today: %1$@ · all time: %2$@": "Wörter heute: %1$@ · gesamt: %2$@",
+        "View Statistics": "Statistik anzeigen",
+        "Voice input statistics": "Diktierstatistik",
+        "Words, time spent dictating, time saved and the most frequent words — by day, month, year and all time. Kept on this Mac only.": "Wörter, Diktierzeit, gesparte Zeit und häufigste Wörter – pro Tag, Monat, Jahr und gesamt. Nur auf diesem Mac gespeichert.",
     ]
 }
