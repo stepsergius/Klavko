@@ -746,13 +746,15 @@ private struct IndicatorMetrics {
     let lines: Int
     let corner: CGFloat
     let padding: CGFloat
+    /// Between the buttons, the dot and the wave in the capsule.
+    let gap: CGFloat
 
     static let large = IndicatorMetrics(width: 440, waveWidth: 150, waveHeight: 28, bars: 28, barWidth: 3, barSpacing: 3,
                                         button: 26, symbol: 11, dot: 6, text: 14, hint: 11, showsHint: true, lines: 4,
-                                        corner: 14, padding: 14)
-    static let small = IndicatorMetrics(width: 230, waveWidth: 76, waveHeight: 16, bars: 16, barWidth: 2, barSpacing: 2.5,
+                                        corner: 14, padding: 14, gap: 9.8)
+    static let small = IndicatorMetrics(width: 230, waveWidth: 34, waveHeight: 16, bars: 9, barWidth: 2, barSpacing: 2,
                                         button: 18, symbol: 8, dot: 4, text: 12, hint: 9.5, showsHint: false, lines: 3,
-                                        corner: 10, padding: 9)
+                                        corner: 10, padding: 9, gap: 4)
 }
 
 /// A glowing navy capsule with a live wave and a bubble with what is being heard: above the capsule when the
@@ -824,7 +826,7 @@ private struct VoiceIndicator: View {
     // MARK: Capsule with the wave
 
     private var capsule: some View {
-        HStack(spacing: metrics.padding * 0.7) {
+        HStack(spacing: metrics.gap) {
             VoiceButton(kind: .cancel, size: metrics.button, symbol: metrics.symbol, dictation: dictation)
             // The yellow dot from the icon: on while listening.
             Circle()
