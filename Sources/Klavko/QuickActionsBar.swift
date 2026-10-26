@@ -206,6 +206,11 @@ final class QuickActionsBar {
         guard !actions.isEmpty else { return }
         model.text = text
         model.selection = selection
+        model.range = selection.flatMap { selection in
+            var range: CFTypeRef?
+            AXUIElementCopyAttributeValue(selection.element, kAXSelectedTextRangeAttribute as CFString, &range)
+            return range
+        }
         model.actions = actions
         model.aiServices = settings.aiServices
         model.page = .main
@@ -310,8 +315,8 @@ final class QuickActionsBar {
         hide()
         switch action {
         case .openLink: if let link = model.link { NSWorkspace.shared.open(link) }
-        case .copy: TextInjector.pressKey(Self.keyC, flags: .maskCommand)
-        case .cut: TextInjector.pressKey(Self.keyX, flags: .maskCommand)
+        case .copy: pressOnSelection(Self.keyC)
+        case .cut: pressOnSelection(Self.keyX)
         case .paste: TextInjector.pressKey(Self.keyV, flags: .maskCommand)
         case .plainPaste:
             if let plain = NSPasteboard.general.string(forType: .string) { SelectionConverter.paste(plain) }
@@ -320,9 +325,9 @@ final class QuickActionsBar {
         case .translate: translate()
         case .ai: if let service = model.aiServices.first { open(in: service) }
         case .speak: speak(text)
-        case .bold: TextInjector.pressKey(Self.keyB, flags: .maskCommand)
-        case .italic: TextInjector.pressKey(Self.keyI, flags: .maskCommand)
-        case .underline: TextInjector.pressKey(Self.keyU, flags: .maskCommand)
+        case .bold: pressOnSelection(Self.keyB)
+        case .italic: pressOnSelection(Self.keyI)
+        case .underline: pressOnSelection(Self.keyU)
         case .strikethrough: replace(QuickText.struckThrough)
         case .uppercase: replace { QuickText.uppercased($0, locale: Self.locale(of: $0)) }
         case .lowercase: replace { QuickText.lowercased($0, locale: Self.locale(of: $0)) }
@@ -330,6 +335,23 @@ final class QuickActionsBar {
         case .quotes: replace { QuickText.wrapped($0, open: "«", close: "»") }
         case .brackets, .stats, .sum: break
         }
+    }
+
+    /// ⌘ and the key, on the text that was selected: some apps drop the selection when the bar is clicked, and
+    /// ⌘B then makes the whole paragraph bold, so the selection is put back first.
+    private func pressOnSelection(_ key: CGKeyCode) {
+        guard let element = model.selection?.element, let saved = model.range else {
+            TextInjector.pressKey(key, flags: .maskCommand)
+            return
+        }
+        var current: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &current)
+        guard current.map({ !CFEqual($0, saved) }) ?? true else {
+            TextInjector.pressKey(key, flags: .maskCommand)
+            return
+        }
+        AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, saved)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { TextInjector.pressKey(key, flags: .maskCommand) }
     }
 
     /// Puts the changed text in place of the selection: through Accessibility where the app allows it,
@@ -425,6 +447,8 @@ fileprivate final class QuickActionsModel: ObservableObject {
     var text = ""
     var link: URL?
     var selection: SelectionConverter.Selection?
+    /// Where the selection was when the bar appeared (an AXValue range).
+    var range: CFTypeRef?
     var aiServices: [AIService] = []
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
@@ -454,6 +478,7 @@ private extension View {
 private struct QuickActionsView: View {
     @ObservedObject var model: QuickActionsModel
     @State private var copied = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 0) {
@@ -505,9 +530,9 @@ private struct QuickActionsView: View {
         }
         .padding(.horizontal, 3)
         .frame(height: 32)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color(white: 0.13).opacity(0.97)))
-        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
-        .environment(\.colorScheme, .dark)
+        // Light or dark with the system.
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color(white: colorScheme == .dark ? 0.13 : 0.97).opacity(0.97)))
+        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.primary.opacity(colorScheme == .dark ? 0.12 : 0.1), lineWidth: 0.5))
         .coordinateSpace(name: "bar")
         .onPreferenceChange(BarAnchorKey.self) { offset in
             MainActor.assumeIsolated {
@@ -519,7 +544,7 @@ private struct QuickActionsView: View {
     }
 
     private var separator: some View {
-        Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 18)
+        Rectangle().fill(.primary.opacity(0.14)).frame(width: 0.5, height: 18)
     }
 
     private var back: some View {
@@ -542,7 +567,7 @@ private struct QuickActionsView: View {
     }
 }
 
-/// A button of the bar: light text, blue under the mouse like a menu.
+/// A button of the bar: the system's text colour, blue with white text under the mouse like a menu.
 private struct BarButton<Label: View>: View {
     let help: String
     let action: () -> Void
@@ -552,7 +577,7 @@ private struct BarButton<Label: View>: View {
     var body: some View {
         Button(action: action) {
             label()
-                .foregroundStyle(.white.opacity(0.95))
+                .foregroundStyle(hovering ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.9)))
                 .padding(.horizontal, 9)
                 .frame(minWidth: 30, minHeight: 26)
                 .background(RoundedRectangle(cornerRadius: 6).fill(hovering ? Color.accentColor : .clear))
