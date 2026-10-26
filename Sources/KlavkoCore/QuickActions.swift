@@ -128,11 +128,6 @@ public enum SearchEngine: String, Codable, CaseIterable, Sendable {
     public static func youtube(_ query: String) -> URL? {
         URL(string: "https://www.youtube.com/results?search_query=" + QuickText.queryEncoded(query))
     }
-
-    /// A search in the Music app.
-    public static func music(_ query: String) -> URL? {
-        URL(string: "music://music.apple.com/search?term=" + QuickText.queryEncoded(query))
-    }
 }
 
 /// An AI chat the selection can be opened in: its Mac app when installed, its website otherwise.

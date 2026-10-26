@@ -279,7 +279,7 @@ final class QuickActionsBar {
 
     // MARK: Actions
 
-    private static let keyB: CGKeyCode = 11, keyC: CGKeyCode = 8, keyI: CGKeyCode = 34, keyN: CGKeyCode = 45, keyU: CGKeyCode = 32,
+    private static let keyB: CGKeyCode = 11, keyC: CGKeyCode = 8, keyI: CGKeyCode = 34, keyN: CGKeyCode = 45, keyReturn: CGKeyCode = 36, keyU: CGKeyCode = 32,
                        keyV: CGKeyCode = 9, keyX: CGKeyCode = 7
 
     private func run(_ action: QuickAction) {
@@ -322,7 +322,7 @@ final class QuickActionsBar {
             if let plain = NSPasteboard.general.string(forType: .string) { SelectionConverter.paste(plain) }
         case .search: if let url = settings()?.searchEngine.url(for: text) { NSWorkspace.shared.open(url) }
         case .youtube: if let url = SearchEngine.youtube(text) { NSWorkspace.shared.open(url) }
-        case .music: if let url = SearchEngine.music(text) { NSWorkspace.shared.open(url) }
+        case .music: searchInMusic(text)
         case .translate: translate()
         case .ai: if let service = model.aiServices.first { open(in: service) }
         case .speak: speak(text)
@@ -415,6 +415,72 @@ final class QuickActionsBar {
             guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
             TextInjector.pressKey(Self.keyV, flags: .maskCommand)
         }
+    }
+
+    /// The Music app's own search: its search links open an empty page, so the text is typed into the search
+    /// field (a value set through Accessibility isn't searched for) and Return pressed.
+    private func searchInMusic(_ text: String) {
+        let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.musicID) else { return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, _ in
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated { self.typeInMusic(query, attempt: 0) }
+            }
+        }
+    }
+
+    private static let musicID = "com.apple.Music"
+
+    /// Waits (up to 8 s) for Music to be in front with its search field, then types.
+    private func typeInMusic(_ query: String, attempt: Int) {
+        let retry = { [weak self] in
+            guard attempt < 40 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self?.typeInMusic(query, attempt: attempt + 1) }
+        }
+        guard let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier == Self.musicID else { return retry() }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        var windowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXMainWindowAttribute as CFString, &windowValue) == .success,
+              let windowValue, CFGetTypeID(windowValue) == AXUIElementGetTypeID() else { return retry() }
+        let window = windowValue as! AXUIElement
+        // "Search" is the first row of the sidebar; its page has the search field in the toolbar (the other
+        // search field, "filterField", filters a list).
+        if let sidebar = Self.firstElement(in: window, where: { Self.string($0, kAXRoleAttribute) == kAXOutlineRole }),
+           let searchRow = Self.children(of: sidebar).first(where: { Self.string($0, kAXRoleAttribute) == kAXRowRole }) {
+            AXUIElementSetAttributeValue(searchRow, kAXSelectedAttribute as CFString, kCFBooleanTrue)
+        }
+        guard let field = Self.firstElement(in: window, where: {
+            Self.string($0, kAXSubroleAttribute) == "AXSearchField" && Self.string($0, kAXIdentifierAttribute) != "filterField"
+        }) else { return retry() }
+        AXUIElementSetAttributeValue(field, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+        AXUIElementSetAttributeValue(field, kAXValueAttribute as CFString, "" as CFString)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            TextInjector.type(query)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { TextInjector.pressKey(Self.keyReturn) }
+        }
+    }
+
+    private static func string(_ element: AXUIElement, _ attribute: String) -> String? {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        return value as? String
+    }
+
+    private static func children(of element: AXUIElement) -> [AXUIElement] {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value)
+        return value as? [AXUIElement] ?? []
+    }
+
+    private static func firstElement(in element: AXUIElement, depth: Int = 0, where match: (AXUIElement) -> Bool) -> AXUIElement? {
+        if match(element) { return element }
+        guard depth < 12 else { return nil }
+        for child in children(of: element) {
+            if let found = firstElement(in: child, depth: depth + 1, where: match) { return found }
+        }
+        return nil
     }
 
     /// Waits (up to 8 s) for the app to be in front with its window, then pastes.
