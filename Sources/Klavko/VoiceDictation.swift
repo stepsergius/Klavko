@@ -551,6 +551,8 @@ final class VoiceDictation: ObservableObject {
             + "Коли тексту багато, перші рядки ховаються вгорі, а видно останні — те, що ви щойно сказали."
         for index in 0..<VoiceMeter.count { meter.push(Float(0.02 + 0.1 * abs(sin(Double(index) / 3)))) }
         showPanel()
+        // The end of a recording too: recognizing for a moment, then away.
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds - 1.5) { [weak self] in self?.stage = .finishing }
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
             self?.stage = .idle
             self?.hidePanel()
@@ -597,6 +599,7 @@ final class VoiceDictation: ObservableObject {
         // The island sits over the menu bar, under the notch; the windows stay below it.
         panel?.level = shownLook.style == .island && !isFailed ? NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1) : .statusBar
         if let screen = targetScreen() { notch = Self.notch(of: screen) }
+        (panel as? IndicatorPanel)?.keepsTop = (shownLook.style == .island && !isFailed) || shownLook.position == .top
         placePanel()
         // Never takes the keyboard: typing goes on in the app where the text will be inserted.
         islandHide?.cancel()
@@ -680,6 +683,15 @@ final class VoiceMeter: ObservableObject {
 /// Its buttons take a click without activating Klavko.
 private final class IndicatorPanel: NSPanel {
     override var canBecomeKey: Bool { true }
+    /// At the top of the screen the panel grows and shrinks downwards: its top edge stays where it is,
+    /// so a change of height never makes it jump (AppKit would keep the bottom edge instead).
+    var keepsTop = false
+
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        var rect = frameRect
+        if keepsTop, isVisible, rect.height != frame.height { rect.origin.y = frame.maxY - rect.height }
+        super.setFrame(rect, display: flag)
+    }
 }
 
 /// Klavko's icon colours, for the voice panel's glow.
@@ -878,8 +890,9 @@ private struct IslandIndicator: View {
             .padding(.horizontal, 10)
             .frame(height: notch.height)
             if showsText {
-                LastLinesText(text: dictation.stage == .finishing ? tr("Розпізнаю…", "Recognizing…")
-                              : dictation.text.isEmpty ? tr("Говоріть…", "Speak…") : dictation.text,
+                // While recognizing, the text stays (dimmed) so the island keeps its size.
+                LastLinesText(text: !dictation.text.isEmpty ? dictation.text
+                              : dictation.stage == .finishing ? tr("Розпізнаю…", "Recognizing…") : tr("Говоріть…", "Speak…"),
                               size: 12.5, width: width - 2 * Self.flare - 32, lines: 3,
                               opacity: dictation.text.isEmpty || dictation.stage == .finishing ? 0.55 : 0.95)
                     .padding(.horizontal, 16)
