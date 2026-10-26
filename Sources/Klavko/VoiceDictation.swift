@@ -942,6 +942,8 @@ private struct NotchMarks: View {
 
     private var notch: CGSize { dictation.notch }
     private static let mark: CGFloat = 14
+    /// Room around each mark for its glow (it may spill over the island's edge, never get cut).
+    private static let glow: CGFloat = 12
     private static let flare: CGFloat = 8
     /// Without a notch, a small island of its own in the middle of the menu bar, with room between the marks.
     private var width: CGFloat { max(notch.width, 20) + 2 * (Self.mark + 12) + 2 * Self.flare }
@@ -953,7 +955,7 @@ private struct NotchMarks: View {
             mark(.insert)
                 .opacity(dictation.stage == .listening ? 1 : 0.4)
         }
-        .padding(.horizontal, Self.flare + 7)
+        .padding(.horizontal, Self.flare + 7 - Self.glow)
         .opacity(dictation.islandOut ? 1 : 0)
         .animation(dictation.islandOut ? .easeOut(duration: 0.2).delay(0.12) : .easeIn(duration: 0.1),
                    value: dictation.islandOut)
@@ -966,17 +968,28 @@ private struct NotchMarks: View {
                 .animation(dictation.islandOut ? .spring(duration: 0.45, bounce: 0.18)
                            : .easeIn(duration: IslandIndicator.closing), value: dictation.islandOut)
         )
+        // The window is wider than the island so a glow at its edge still fades out fully.
+        .padding(.horizontal, Self.glow)
         .onAppear {
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { pulse = true }
         }
     }
 
     private func mark(_ kind: VoiceButton.Kind) -> some View {
-        VoiceButton(kind: kind, size: Self.mark, symbol: 6.5, dictation: dictation)
-            .scaleEffect(pulse && dictation.stage == .listening ? 1.22 : 0.84)
-            .opacity(pulse || dictation.stage != .listening ? 1 : 0.7)
-            .shadow(color: (kind == .insert ? Neon.sky : .white).opacity(pulse && dictation.stage == .listening ? 0.9 : 0),
-                    radius: 5)
+        let on = pulse && dictation.stage == .listening
+        return ZStack {
+            // The glow: a soft disc behind the mark, with room all round so it fades out fully.
+            Circle()
+                .fill(kind == .insert ? Neon.sky : .white)
+                .frame(width: Self.mark, height: Self.mark)
+                .blur(radius: 5)
+                .opacity(on ? (kind == .insert ? 0.9 : 0.45) : 0)
+                .scaleEffect(on ? 1.5 : 1)
+            VoiceButton(kind: kind, size: Self.mark, symbol: 6.5, dictation: dictation)
+                .scaleEffect(on ? 1.22 : 0.84)
+                .opacity(on || dictation.stage != .listening ? 1 : 0.7)
+        }
+        .frame(width: Self.mark + 2 * Self.glow, height: Self.mark + 2 * Self.glow)
     }
 }
 
