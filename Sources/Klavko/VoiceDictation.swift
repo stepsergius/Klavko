@@ -31,6 +31,9 @@ final class VoiceDictation: ObservableObject {
     @Published private(set) var shownLook = VoiceLook()
     /// The camera notch of the screen the panel is on (zero width without one), for the Dynamic Island look.
     @Published private(set) var notch = CGSize(width: 0, height: 24)
+    /// The island is out of the notch: it grows from it when shown and shrinks back into it before hiding.
+    @Published private(set) var islandOut = false
+    private var islandHide: DispatchWorkItem?
     @Published private(set) var text = ""
     @Published private(set) var languageTitle = ""
 
@@ -595,7 +598,10 @@ final class VoiceDictation: ObservableObject {
         if let screen = targetScreen() { notch = Self.notch(of: screen) }
         placePanel()
         // Never takes the keyboard: typing goes on in the app where the text will be inserted.
+        islandHide?.cancel()
+        islandHide = nil
         panel?.orderFrontRegardless()
+        if !islandOut { DispatchQueue.main.async { self.islandOut = true } }
     }
 
     /// The screen with the mouse (the panel's own while it's shown).
@@ -634,7 +640,19 @@ final class VoiceDictation: ObservableObject {
     }
 
     private func hidePanel() {
-        panel?.orderOut(nil)
+        guard let panel, panel.isVisible, shownLook.style == .island, !isFailed, islandOut else {
+            islandOut = false
+            self.panel?.orderOut(nil)
+            return
+        }
+        // Back into the notch first, then away.
+        islandOut = false
+        let hide = DispatchWorkItem { [weak self] in
+            self?.panel?.orderOut(nil)
+            self?.islandHide = nil
+        }
+        islandHide = hide
+        DispatchQueue.main.asyncAfter(deadline: .now() + IslandIndicator.closing, execute: hide)
     }
 }
 
@@ -835,6 +853,8 @@ private struct IslandIndicator: View {
     private static let flare: CGFloat = 10
 
     private var width: CGFloat { notch.width + 2 * Self.side + (showsText ? 60 : 0) + 2 * Self.flare }
+    /// How long the island takes to go back into the notch.
+    static let closing = 0.32
 
     var body: some View {
         VStack(spacing: 0) {
@@ -870,6 +890,13 @@ private struct IslandIndicator: View {
         .frame(width: width)
         .background(IslandShape(flare: Self.flare, corner: 18).fill(.black))
         .animation(.spring(duration: 0.3), value: showsText)
+        // Out of the notch and back: from its size at the top edge, gently, like the system's own island.
+        .scaleEffect(x: dictation.islandOut ? 1 : max(notch.width, 120) / width,
+                     y: dictation.islandOut ? 1 : 0.35, anchor: .top)
+        .opacity(dictation.islandOut ? 1 : 0)
+        .blur(radius: dictation.islandOut ? 0 : 4)
+        .animation(dictation.islandOut ? .spring(duration: 0.5, bounce: 0.18) : .easeIn(duration: Self.closing),
+                   value: dictation.islandOut)
     }
 }
 
