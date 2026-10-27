@@ -432,8 +432,8 @@ struct SettingsView: View {
                     Section {
                         Toggle(isOn: $settings.emojiByColon) {
                             Text(tr("Емодзі за назвою після двокрапки", "Emoji by name after a colon"))
-                            Text(tr("Пробіл, двокрапка й назва — «:сміх», «:серце» — показують емодзі біля курсора. ← → — вибрати, Return чи Tab — вставити, Esc — закрити. У розкладках українській, польській, російській, грецькій, івриті й арабській — за назвами цією мовою; англійською, німецькою та іншими мовами, які знає macOS, показує свій список вона.",
-                                    "A space, a colon and a name — “:сміх”, “:серце” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. In Ukrainian, Polish, Russian, Greek, Hebrew and Arabic layouts, by names in that language; in English, German and the other languages macOS knows, it shows its own list."))
+                            Text(tr("Пробіл, двокрапка й назва — «:сміх», «:серце» — показують емодзі біля курсора. ← → — вибрати, Return чи Tab — вставити, Esc — закрити. Назви — мовою розкладки, якою ви друкуєте.",
+                                    "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in."))
                         }
                         Toggle(isOn: $settings.emojiSuggestions) {
                             Text(tr("Підказувати емодзі після слова", "Suggest emoji after a word"))

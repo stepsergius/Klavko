@@ -45,10 +45,7 @@ final class EmojiInput {
     /// What the typing engine calls.
     func hooks() -> SwitchEngine.EmojiHooks {
         var hooks = SwitchEngine.EmojiHooks()
-        // Where macOS lists emoji after a colon itself (English, German…), its list alone: two would cover each other.
-        hooks.byColon = { [weak self] language in
-            (self?.settings()?.emojiByColon ?? false) && !EmojiCatalog.namedByMacOS.contains(language)
-        }
+        hooks.byColon = { [weak self] in self?.settings()?.emojiByColon ?? false }
         hooks.suggestions = { [weak self] in self?.settings()?.emojiSuggestions ?? false }
         hooks.isShowing = { [weak self] in self?.bar?.isShowingEmojiList ?? false }
         hooks.search = { [weak self] query, language in self?.search(query, language: language) }
@@ -65,6 +62,11 @@ final class EmojiInput {
 
     private func search(_ query: String, language: String) {
         showing = .name(query)
+        // Just the colon: the latest used, then all the rest.
+        if query.isEmpty, let listed = catalog(language)?.listed(recent: recent) {
+            bar?.showEmojiList(listed.recent + listed.rest, recentCount: listed.recent.count, highlighted: false)
+            return
+        }
         let found = catalog(language)?.search(query, recent: recent) ?? []
         if found.isEmpty {
             bar?.hideEmojiList()

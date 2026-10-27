@@ -79,8 +79,8 @@ final class SwitchEngine {
 
     /// What the emoji list near the caret does (EmojiInput fills it).
     struct EmojiHooks {
-        /// " :" starts looking for an emoji by name, in a layout of this language.
-        var byColon: (_ language: String) -> Bool = { _ in false }
+        /// " :" starts looking for an emoji by name.
+        var byColon: () -> Bool = { false }
         /// Emoji offered after a word that names one.
         var suggestions: () -> Bool = { false }
         /// The list is on screen (something was found).
@@ -344,12 +344,13 @@ final class SwitchEngine {
             reset()
             return true
         }
-        // " :" starts an emoji's name (not "10:30" or "Ось:").
-        if typedCharacter == ":", !excludedNow, emoji.byColon(pair.current.map.language) {
+        // " :" (or a colon starting a line) starts an emoji's name, not "10:30" or "Ось:".
+        if typedCharacter == ":", !excludedNow, emoji.byColon() {
             if buffer.isEmpty && visible.isEmpty { readContextBeforeCaret() }
-            if visible.last == " " {
+            if visible.last.map({ $0.isWhitespace }) ?? atFieldStart {
                 let passed = handlePunctuation(keystroke, typedCharacter, alternativeCharacter, pair)
                 emojiQuery = ""
+                emoji.search("", pair.current.map.language)
                 return passed
             }
         }

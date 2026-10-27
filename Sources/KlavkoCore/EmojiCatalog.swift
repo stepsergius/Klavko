@@ -113,10 +113,6 @@ public struct EmojiCatalog: Sendable {
         return ranked(scored, recent: [], limit: limit)
     }
 
-    /// The languages of Klavko's layouts in which macOS itself offers emoji after a colon (its emoji search has
-    /// them: CoreEmoji's SearchModels). It doesn't know Ukrainian, Russian, Polish, Greek, Hebrew or Arabic names.
-    public static let namedByMacOS: Set<String> = ["en", "de", "fr", "es", "it", "pt", "tr"]
-
     /// The order of the Quick Actions list: the latest used first (up to `recentCount`), then all the rest.
     public func listed(recent: [String], recentCount: Int = 5) -> (recent: [String], rest: [String]) {
         let known = Set(entries.map(\.emoji))

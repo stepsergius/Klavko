@@ -30,6 +30,8 @@ final class QuickActionsBar {
     private let speech = AVSpeechSynthesizer()
     /// Where the second button goes (the mouse), kept when the bar changes width (a submenu, an answer).
     private var anchorX: CGFloat = 0
+    /// How wide the bar with all its actions was last: the emoji list is as wide.
+    private var fullWidth: CGFloat = 400
 
     func start() {
         guard monitors.isEmpty else { return }
@@ -243,6 +245,9 @@ final class QuickActionsBar {
         let listed = catalog.listed(recent: emoji?.recent ?? [])
         model.emojiRecentCount = listed.recent.count
         model.emojis = listed.recent + listed.rest
+        model.emojiWidth = fullWidth
+        // Where the bar was: its middle stays, the emoji scroll inside.
+        if let panel { anchorX = panel.frame.midX }
         model.page = .emoji
         model.keyIndex = 1
         // The arrows go to the bar now (the app with the text stays in front).
@@ -274,22 +279,26 @@ final class QuickActionsBar {
         return model.emojis[index]
     }
 
-    func showEmojiList(_ emojis: [String]) {
+    /// `recentCount`: how many of `emojis` are the latest used (a divider after them). Not `highlighted`: none is
+    /// picked until an arrow is pressed (Return goes on to the app).
+    func showEmojiList(_ emojis: [String], recentCount: Int = 0, highlighted: Bool = true) {
         let wasShowing = isShowingEmojiList
         model.emojis = emojis
-        model.emojiRecentCount = 0
+        model.emojiRecentCount = recentCount
+        model.emojiWidth = fullWidth
         model.emojiNearCaret = true
         model.page = .emoji
-        model.keyIndex = 0
+        model.keyIndex = highlighted ? 0 : nil
         model.insertEmoji = { [weak self] emoji in self?.insertFromList(emoji) }
         model.close = { [weak self] in self?.hide() }
         model.anchorMoved = { [weak self] in self?.keepAnchored() }
         guard !wasShowing else { return }
-        // Under the line with the caret, its first emoji at the caret; where the app doesn't tell, at the mouse.
+        // Where the bar comes up, over (or under) the line with the caret; where the app doesn't tell, at the mouse.
         let mouse = NSEvent.mouseLocation
         // A caret's rect is a sliver within the line (TextEdit's ends above the descenders): a little room below it.
         let caret = Self.caretRect().map { NSRect(x: $0.minX, y: $0.minY - 6, width: $0.width, height: $0.height + 6) }
-        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: .below, takesKeys: false)
+        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: settings()?.quickActionsPosition ?? .above,
+                takesKeys: false)
     }
 
     func hideEmojiList() {
@@ -297,7 +306,10 @@ final class QuickActionsBar {
     }
 
     func moveInEmojiList(by step: Int) {
-        guard let index = model.keyIndex else { return }
+        guard let index = model.keyIndex else {
+            model.keyIndex = 0
+            return
+        }
         model.keyIndex = min(max(index + step, 0), model.emojis.count - 1)
     }
 
@@ -338,6 +350,7 @@ final class QuickActionsBar {
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
         let size = panel.contentViewController?.view.fittingSize ?? panel.frame.size
         panel.setContentSize(size)
+        if model.page == .main, model.actions.count > 3 { fullWidth = size.width }
         let screen = NSScreen.screens.first { $0.frame.intersects(rect) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? rect
         // The second button at the mouse (kept along the selection), over (or under) its top (bottom) line.
@@ -666,6 +679,8 @@ fileprivate final class QuickActionsModel: ObservableObject {
     /// Where the selection was when the bar appeared (an AXValue range).
     var range: CFTypeRef?
     var aiServices: [AIService] = []
+    /// How wide the Emoji page is: as the bar with all its actions.
+    @Published var emojiWidth: CGFloat = 400
     /// The Emoji page: the emoji, the first `emojiRecentCount` of them the latest used.
     @Published var emojis: [String] = []
     var emojiRecentCount = 0
@@ -803,10 +818,9 @@ private struct QuickActionsView: View {
         .onChange(of: model.page) { model.copied = false }
     }
 
-    /// Emoji in a row that scrolls with the keyboard; after the latest used, a separator.
+    /// Emoji in a row that scrolls with the keyboard (the bar stays put); after the latest used, a divider.
     private var emojiPage: some View {
         let offset = model.emojiNearCaret ? 0 : 1
-        let visibleCount = min(model.emojis.count, 12)
         return HStack(spacing: 0) {
             if !model.emojiNearCaret {
                 back
@@ -816,23 +830,25 @@ private struct QuickActionsView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 0) {
                         ForEach(Array(model.emojis.enumerated()), id: \.offset) { index, emoji in
-                            if index == model.emojiRecentCount && index > 0 { separator }
+                            if index == model.emojiRecentCount && index > 0 {
+                                separator.padding(.horizontal, 6)
+                            }
                             BarButton(help: "", selected: model.keyIndex == index + offset, padding: 3,
                                       action: { model.insertEmoji(emoji) }) {
                                 Text(emoji).font(.system(size: 18))
                             }
                             .id(index)
-                            .barAnchor(index == 0)
                         }
                     }
                 }
-                .frame(width: CGFloat(visibleCount) * 32 + (model.emojiRecentCount > 0 ? 1 : 0))
                 .onChange(of: model.keyIndex) {
                     guard let key = model.keyIndex, key >= offset else { return }
                     withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: .center) }
                 }
             }
         }
+        // The bar's 3-point margins aside.
+        .frame(width: max(model.emojiWidth - 6, 120))
     }
 
     private var separator: some View {

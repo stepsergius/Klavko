@@ -375,7 +375,7 @@ extension Translations {
         "Offer Again": "再次提议",
         "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google 文档只有在开启盲文支持后才会向其他 App 提供文字。你点按文档时，Klavko 会提议开启。也可以自己开启：在文档中按 ⌘⌥H，或选择“工具”→“无障碍功能”。",
         "Emoji by name after a colon": "在冒号后按名称输入表情",
-        "A space, a colon and a name — “:сміх”, “:серце” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. In Ukrainian, Polish, Russian, Greek, Hebrew and Arabic layouts, by names in that language; in English, German and the other languages macOS knows, it shows its own list.": "输入空格、冒号和名称（“:сміх”“:серце”），光标旁会显示表情。← → 选择，Return 或 Tab 插入，Esc 关闭。在乌克兰语、波兰语、俄语、希腊语、希伯来语和阿拉伯语布局中按该语言的名称查找；英语、德语等 macOS 已支持的语言由 macOS 显示自己的列表。",
+        "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "输入空格、冒号和名称（“:smile”“:heart”），光标旁会显示表情。← → 选择，Return 或 Tab 插入，Esc 关闭。名称使用你当前输入布局的语言。",
         "Suggest emoji after a word": "在词语后建议表情",
         "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "输入能表示表情的词（“heart”“fire”）后，旁边会出现 ❤️ 和 🔥。按 Tab 把第一个放在词后。",
         "Emoji": "表情",

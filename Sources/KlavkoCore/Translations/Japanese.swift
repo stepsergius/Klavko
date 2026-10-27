@@ -375,7 +375,7 @@ extension Translations {
         "Offer Again": "もう一度提案する",
         "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google ドキュメントは、点字サポートがオンのときだけテキストを他のアプリに公開します。ドキュメントをクリックすると Klavko がオンにするよう提案します。自分でオンにすることもできます：ドキュメントで ⌘⌥H、または「ツール」→「ユーザー補助」。",
         "Emoji by name after a colon": "コロンの後に名前で絵文字",
-        "A space, a colon and a name — “:сміх”, “:серце” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. In Ukrainian, Polish, Russian, Greek, Hebrew and Arabic layouts, by names in that language; in English, German and the other languages macOS knows, it shows its own list.": "スペース、コロン、名前（「:сміх」「:серце」）を入力すると、カーソルの横に絵文字が表示されます。← → で選択、Return または Tab で挿入、Esc で閉じます。ウクライナ語・ポーランド語・ロシア語・ギリシャ語・ヘブライ語・アラビア語の配列ではその言語の名前で探します。英語やドイツ語など macOS が対応している言語では、macOS が独自のリストを表示します。",
+        "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "スペース、コロン、名前（「:smile」「:heart」）を入力すると、カーソルの横に絵文字が表示されます。← → で選択、Return または Tab で挿入、Esc で閉じます。名前は入力中のキーボード配列の言語です。",
         "Suggest emoji after a word": "単語の後に絵文字を提案",
         "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "絵文字を表す単語（「heart」「fire」）の後に、横に ❤️ や 🔥 が表示されます。Tab で最初のものを単語の後に入れます。",
         "Emoji": "絵文字",

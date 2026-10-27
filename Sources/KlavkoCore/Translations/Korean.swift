@@ -375,7 +375,7 @@ extension Translations {
         "Offer Again": "다시 제안",
         "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google 문서는 점자 지원이 켜져 있을 때만 다른 앱에 텍스트를 보여 줍니다. 문서를 클릭하면 Klavko가 켜기를 제안합니다. 직접 켤 수도 있습니다: 문서에서 ⌘⌥H 또는 도구 → 접근성.",
         "Emoji by name after a colon": "콜론 뒤에 이름으로 이모지",
-        "A space, a colon and a name — “:сміх”, “:серце” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. In Ukrainian, Polish, Russian, Greek, Hebrew and Arabic layouts, by names in that language; in English, German and the other languages macOS knows, it shows its own list.": "공백, 콜론, 이름(“:сміх”, “:серце”)을 입력하면 커서 옆에 이모지가 나타납니다. ← → 선택, Return 또는 Tab 입력, Esc 닫기. 우크라이나어, 폴란드어, 러시아어, 그리스어, 히브리어, 아랍어 자판에서는 그 언어의 이름으로 찾고, 영어나 독일어 등 macOS가 지원하는 언어에서는 macOS가 자체 목록을 보여 줍니다.",
+        "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "공백, 콜론, 이름(“:smile”, “:heart”)을 입력하면 커서 옆에 이모지가 나타납니다. ← → 선택, Return 또는 Tab 입력, Esc 닫기. 이름은 입력 중인 자판의 언어입니다.",
         "Suggest emoji after a word": "단어 뒤에 이모지 제안",
         "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "이모지를 뜻하는 단어(“heart”, “fire”) 뒤에 ❤️, 🔥가 옆에 나타납니다. Tab을 누르면 첫 번째가 단어 뒤에 들어갑니다.",
         "Emoji": "이모지",
