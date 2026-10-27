@@ -371,5 +371,8 @@ extension Translations {
         "Not Now": "以后再说",
         "Got It": "知道了",
         "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "指向带下划线的词即可看到修改建议。适用于向系统提供文字的 App（备忘录、邮件、信息、TextEdit、Safari 浏览器…），以及开启了盲文支持的 Google 文档（Klavko 会提议开启）。",
+        "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document.": "选择“以后再说”后，Klavko 会在一周后再提醒你。你也可以随时开启：在文档中按 ⌘⌥H。",
+        "Offer Again": "再次提议",
+        "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google 文档只有在开启盲文支持后才会向其他 App 提供文字。你点按文档时，Klavko 会提议开启。也可以自己开启：在文档中按 ⌘⌥H，或选择“工具”→“无障碍功能”。",
     ]
 }

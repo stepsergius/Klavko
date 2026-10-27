@@ -212,6 +212,16 @@ struct SettingsView: View {
                         "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on)."))
             }
             .disabled(!grammar.isDownloaded)
+            LabeledContent {
+                if settings.googleDocsAnswer == "later" {
+                    Button(tr("Запропонувати знову", "Offer Again")) { settings.googleDocsAnswer = "" }
+                }
+            } label: {
+                Text("Google Docs")
+                Text(tr("Google Docs показує свій текст іншим програмам лише з підтримкою дисплея Брайля. Klavko запропонує її ввімкнути, коли ви клацнете в документ. Або ввімкніть самі: ⌘⌥H у документі чи Інструменти → Доступність.",
+                        "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility."))
+            }
+            .disabled(!grammar.isDownloaded || !settings.liveGrammar)
             if let shortcut = settings.shortcuts[.checkText] {
                 LabeledContent(tr("Перевірити виділене", "Check the selection"), value: shortcut.displayName(layout: keyLayout))
             }

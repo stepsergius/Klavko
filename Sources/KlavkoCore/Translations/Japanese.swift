@@ -371,5 +371,8 @@ extension Translations {
         "Not Now": "後で",
         "Got It": "了解",
         "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "下線の付いた単語にポインタを合わせると修正候補が表示されます。テキストをシステムに公開しているアプリ（メモ、メール、メッセージ、TextEdit、Safari など）と、点字サポートがオンの Google ドキュメントで使えます（Klavko がオンにするよう提案します）。",
+        "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document.": "「後で」を選ぶと、Klavko が1週間後にもう一度お知らせします。いつでもドキュメント内で ⌘⌥H を押してオンにできます。",
+        "Offer Again": "もう一度提案する",
+        "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google ドキュメントは、点字サポートがオンのときだけテキストを他のアプリに公開します。ドキュメントをクリックすると Klavko がオンにするよう提案します。自分でオンにすることもできます：ドキュメントで ⌘⌥H、または「ツール」→「ユーザー補助」。",
     ]
 }

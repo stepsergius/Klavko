@@ -371,5 +371,8 @@ extension Translations {
         "Not Now": "Nie teraz",
         "Got It": "Rozumiem",
         "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "Wskaż podkreślone słowo, aby zobaczyć poprawki. Działa w aplikacjach, które pokazują swój tekst systemowi (Notatki, Mail, Wiadomości, TextEdit, Safari…), oraz w Dokumentach Google z włączoną obsługą brajla (Klavko zaproponuje jej włączenie).",
+        "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document.": "„Nie teraz”: Klavko przypomni za tydzień. Możesz też włączyć ją w każdej chwili: ⌘⌥H w dokumencie.",
+        "Offer Again": "Zaproponuj ponownie",
+        "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Dokumenty Google pokazują swój tekst innym aplikacjom tylko z włączoną obsługą monitora brajlowskiego. Klavko zaproponuje jej włączenie, gdy klikniesz w dokument. Albo włącz ją sam: ⌘⌥H w dokumencie lub Narzędzia → Ułatwienia dostępu.",
     ]
 }

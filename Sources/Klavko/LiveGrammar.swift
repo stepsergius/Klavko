@@ -39,6 +39,7 @@ final class LiveGrammar {
     private let docsOffer = GoogleDocsOffer()
     /// Google Docs documents offered braille support in already (their addresses).
     private var docsOffered: Set<String> = []
+    private var docsAnswerSeen = ""
     /// What's underlined now: the field, its text, and each issue (offsets in the whole text) with where it is.
     private var field: AXUIElement?
     private var fieldText = ""
@@ -161,6 +162,11 @@ final class LiveGrammar {
     /// A Google Docs document whose text is hidden: offered once a document to turn braille support on.
     private func offerGoogleDocs(in app: NSRunningApplication) {
         let answer = docsAnswer()
+        // Asked again (from Settings, or a week after "not now"): the documents offered in so far count again.
+        if answer != docsAnswerSeen {
+            docsOffered = []
+            docsAnswerSeen = answer
+        }
         guard answer != "later", !docsOffer.isVisible, let path = GoogleDocsAccess.documentPath(of: app),
               !docsOffered.contains(path) else { return }
         let state = GoogleDocsAccess.state(of: app)

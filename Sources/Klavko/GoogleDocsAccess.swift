@@ -155,6 +155,13 @@ private struct GoogleDocsOfferView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
+            if step == .offer {
+                Text(tr("«Не зараз» — Klavko нагадає через тиждень. Увімкнути можна й будь-коли: ⌘⌥H у документі.",
+                        "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document."))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(12)
         .frame(width: 320, alignment: .leading)

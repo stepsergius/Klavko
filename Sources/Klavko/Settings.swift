@@ -45,6 +45,7 @@ final class Settings: ObservableObject {
         static let voiceTranslationTarget = "voiceTranslationTarget"
         static let liveGrammar = "liveGrammar"
         static let googleDocsAnswer = "googleDocsAnswer"
+        static let googleDocsLaterSince = "googleDocsLaterSince"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let quickActionsEnabled = "quickActionsEnabled"
         static let quickActionsPosition = "quickActionsPosition"
@@ -313,9 +314,17 @@ final class Settings: ObservableObject {
         didSet { defaults.set(liveGrammar, forKey: Key.liveGrammar) }
     }
     /// Turning on Google Docs' braille support: "" not asked yet, "later" not now, "on" turned on through Klavko.
-    var googleDocsAnswer: String {
-        get { defaults.string(forKey: Key.googleDocsAnswer) ?? "" }
-        set { defaults.set(newValue, forKey: Key.googleDocsAnswer) }
+    @Published var googleDocsAnswer: String {
+        didSet {
+            defaults.set(googleDocsAnswer, forKey: Key.googleDocsAnswer)
+            if googleDocsAnswer == "later" { defaults.set(Date(), forKey: Key.googleDocsLaterSince) }
+        }
+    }
+    /// The answer to go by now: "not now" lasts a week, then Klavko offers again.
+    var googleDocsAnswerNow: String {
+        guard googleDocsAnswer == "later", let since = defaults.object(forKey: Key.googleDocsLaterSince) as? Date,
+              Date().timeIntervalSince(since) > 7 * 24 * 3600 else { return googleDocsAnswer }
+        return ""
     }
 
     var voiceLook: VoiceLook {
@@ -527,6 +536,7 @@ final class Settings: ObservableObject {
         voiceShowText = defaults.bool(forKey: Key.voiceShowText)
         voiceTranslationTarget = defaults.string(forKey: Key.voiceTranslationTarget) ?? "en"
         liveGrammar = defaults.object(forKey: Key.liveGrammar) as? Bool ?? true
+        googleDocsAnswer = defaults.string(forKey: Key.googleDocsAnswer) ?? ""
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above
