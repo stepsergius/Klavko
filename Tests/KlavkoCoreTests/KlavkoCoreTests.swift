@@ -1187,6 +1187,17 @@ final class GrammarCheckTests: XCTestCase {
         XCTAssertEqual(GrammarCheck.kind(issueType: "uncategorized", category: "BARBARISM"), .style)
     }
 
+    func testParagraphsAndTheCaret() {
+        let paragraphs = GrammarCheck.paragraphs(of: "Перший 😀 рядок\n\n  \nДругий")
+        XCTAssertEqual(paragraphs, [GrammarCheck.Paragraph(text: "Перший 😀 рядок", offset: 0),
+                                    GrammarCheck.Paragraph(text: "Другий", offset: 20)])
+        let typo = GrammarIssue(offset: 2, length: 4, message: "", replacements: [], kind: .spelling, ruleID: "A")
+        let comma = GrammarIssue(offset: 2, length: 4, message: "", replacements: [], kind: .punctuation, ruleID: "B")
+        XCTAssertEqual(GrammarCheck.awayFromCaret([typo, comma], caret: 6), [comma])
+        XCTAssertEqual(GrammarCheck.awayFromCaret([typo], caret: 7), [typo])
+        XCTAssertEqual(typo.shifted(by: 19).offset, 21)
+    }
+
     func testLanguageCodes() {
         XCTAssertEqual(GrammarCheck.languageCode(for: "uk"), "uk-UA")
         XCTAssertEqual(GrammarCheck.languageCode(for: "fr"), "fr")

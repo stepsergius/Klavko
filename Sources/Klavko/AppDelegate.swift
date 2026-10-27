@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let parakeet = ParakeetEngine()
     private let grammar = GrammarChecker()
     private let grammarPanel = GrammarPanel()
+    private let liveGrammar = LiveGrammar()
     private let google = GeminiTranscriber()
     private var monitor: KeyboardMonitor?
     private var statusItem: NSStatusItem?
@@ -92,7 +93,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         engine.onUserKey = { [unowned self] in
-            MainActor.assumeIsolated { correctionWatcher.userTyped() }
+            MainActor.assumeIsolated {
+                correctionWatcher.userTyped()
+                liveGrammar.userTyped()
+            }
         }
         // Used once its model is downloaded (opt-in, from Settings → Voice input); macOS recognition until then.
         dictation.parakeet = parakeet
@@ -133,6 +137,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         grammarPanel.checker = grammar
         grammarPanel.languages = { SystemLayouts.enabledLayouts().map(\.map.language) }
         grammarPanel.openSettings = { [unowned self] in showSettings() }
+        liveGrammar.checker = grammar
+        liveGrammar.isOn = { [unowned self] in settings.liveGrammar }
+        liveGrammar.isExcluded = { [unowned self] in settings.isExcluded($0) }
+        liveGrammar.languages = { SystemLayouts.enabledLayouts().map(\.map.language) }
+        liveGrammar.start()
         engine.onCheckText = { [unowned self] in
             MainActor.assumeIsolated { grammarPanel.start() }
         }

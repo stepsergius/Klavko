@@ -206,6 +206,12 @@ struct SettingsView: View {
                     Button(tr("Ще раз", "Try Again")) { grammar.download() }
                 }
             }
+            Toggle(isOn: $settings.liveGrammar) {
+                Text(tr("Підкреслювати помилки під час набору", "Underline mistakes while typing"))
+                Text(tr("Наведіть мишку на підкреслене слово — з’являться виправлення. Працює в програмах, які показують свій текст системі (Нотатки, Пошта, Повідомлення, TextEdit, Safari…).",
+                        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…)."))
+            }
+            .disabled(!grammar.isDownloaded)
             if let shortcut = settings.shortcuts[.checkText] {
                 LabeledContent(tr("Перевірити виділене", "Check the selection"), value: shortcut.displayName(layout: keyLayout))
             }

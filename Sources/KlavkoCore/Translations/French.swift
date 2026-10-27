@@ -362,5 +362,8 @@ extension Translations {
         "LanguageTool checks spelling, grammar and punctuation in Ukrainian, English and over 20 more languages — on this Mac; the text goes nowhere. Select text and press the hotkey, or “Check Spelling” on the Quick Actions bar.": "LanguageTool vérifie l’orthographe, la grammaire et la ponctuation en ukrainien, en anglais et dans plus de 20 autres langues — sur ce Mac ; le texte n’est envoyé nulle part. Sélectionnez du texte et appuyez sur le raccourci, ou sur « Vérifier l’orthographe » dans la barre d’actions rapides.",
         "Check Spelling": "Vérifier l’orthographe",
         "Check spelling of the selection": "Vérifier l’orthographe de la sélection",
+        "Ignore": "Ignorer",
+        "Underline mistakes while typing": "Souligner les fautes pendant la saisie",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "Pointez un mot souligné pour voir les corrections. Fonctionne dans les apps qui exposent leur texte au système (Notes, Mail, Messages, TextEdit, Safari…).",
     ]
 }

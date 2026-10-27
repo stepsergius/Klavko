@@ -43,6 +43,7 @@ final class Settings: ObservableObject {
         static let voicePanelPosition = "voicePanelPosition"
         static let voiceShowText = "voiceShowText"
         static let voiceTranslationTarget = "voiceTranslationTarget"
+        static let liveGrammar = "liveGrammar"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let quickActionsEnabled = "quickActionsEnabled"
         static let quickActionsPosition = "quickActionsPosition"
@@ -306,6 +307,10 @@ final class Settings: ObservableObject {
     @Published var voiceTranslationTarget: String {
         didSet { defaults.set(voiceTranslationTarget, forKey: Key.voiceTranslationTarget) }
     }
+    /// Mistakes underlined while typing (once LanguageTool is downloaded).
+    @Published var liveGrammar: Bool {
+        didSet { defaults.set(liveGrammar, forKey: Key.liveGrammar) }
+    }
 
     var voiceLook: VoiceLook {
         VoiceLook(style: voicePanelStyle, position: voicePanelPosition, showText: voiceShowText)
@@ -515,6 +520,7 @@ final class Settings: ObservableObject {
         voicePanelPosition = defaults.string(forKey: Key.voicePanelPosition).flatMap(VoiceLook.Position.init(rawValue:)) ?? .bottom
         voiceShowText = defaults.bool(forKey: Key.voiceShowText)
         voiceTranslationTarget = defaults.string(forKey: Key.voiceTranslationTarget) ?? "en"
+        liveGrammar = defaults.object(forKey: Key.liveGrammar) as? Bool ?? true
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above

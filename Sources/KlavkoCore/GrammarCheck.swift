@@ -27,6 +27,12 @@ public struct GrammarIssue: Equatable, Sendable, Identifiable {
         self.ruleID = ruleID
     }
 
+    /// The same issue `distance` UTF-16 units further on (from a paragraph into the whole text).
+    public func shifted(by distance: Int) -> GrammarIssue {
+        GrammarIssue(offset: offset + distance, length: length, message: message, replacements: replacements,
+                     kind: kind, ruleID: ruleID)
+    }
+
     /// The part of `text` the issue is about; nil when it doesn't fit (the text changed).
     public func range(in text: String) -> Range<String.Index>? {
         let utf16 = text.utf16
@@ -113,6 +119,30 @@ public enum GrammarCheck {
         case ("style", _), ("locale-violation", _), (_, "STYLE"), (_, "REDUNDANCY"), (_, "BARBARISM"): .style
         default: .grammar
         }
+    }
+
+    /// A paragraph of a longer text and where it starts in it (UTF-16 units).
+    public struct Paragraph: Equatable, Sendable {
+        public let text: String
+        public let offset: Int
+    }
+
+    /// The paragraphs of `text` with words in them, each checked on its own (and remembered: typing in one
+    /// doesn't check the others again).
+    public static func paragraphs(of text: String) -> [Paragraph] {
+        var result: [Paragraph] = []
+        var offset = 0
+        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.contains(where: { $0.isLetter }) { result.append(Paragraph(text: String(line), offset: offset)) }
+            offset += line.utf16.count + 1
+        }
+        return result
+    }
+
+    /// The issues to underline: not a spelling mistake in the word the caret is in (it may still be typed).
+    public static func awayFromCaret(_ issues: [GrammarIssue], caret: Int?) -> [GrammarIssue] {
+        guard let caret else { return issues }
+        return issues.filter { !($0.kind == .spelling && $0.offset < caret && caret <= $0.offset + $0.length) }
     }
 
     /// `text` with the chosen fixes: issue id → the replacement to put in. Issues not in `choices` stay as they are.
