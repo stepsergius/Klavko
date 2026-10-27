@@ -30,6 +30,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let qrPanel = QRCodePanel()
     private let dictation = VoiceDictation()
     private let parakeet = ParakeetEngine()
+    private let grammar = GrammarChecker()
+    private let grammarPanel = GrammarPanel()
     private let google = GeminiTranscriber()
     private var monitor: KeyboardMonitor?
     private var statusItem: NSStatusItem?
@@ -128,8 +130,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         engine.onTranslate = { [unowned self] in
             MainActor.assumeIsolated { translator.start() }
         }
+        grammarPanel.checker = grammar
+        grammarPanel.languages = { SystemLayouts.enabledLayouts().map(\.map.language) }
+        grammarPanel.openSettings = { [unowned self] in showSettings() }
+        engine.onCheckText = { [unowned self] in
+            MainActor.assumeIsolated { grammarPanel.start() }
+        }
         quickActions.settings = { [weak self] in self?.settings }
         quickActions.translate = { [unowned self] in translator.start() }
+        quickActions.checkText = { [unowned self] in grammarPanel.start() }
         quickActions.start()
         engine.onQuickActions = { [unowned self] in
             MainActor.assumeIsolated { quickActions.showForSelection() }
@@ -277,6 +286,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Developer check of the translator: --translate-check <text> <out.txt> writes the translation and quits.
         if let index = CommandLine.arguments.firstIndex(of: "--translate-check"), index + 2 < CommandLine.arguments.count {
             translator.check(CommandLine.arguments[index + 1], writeTo: URL(fileURLWithPath: CommandLine.arguments[index + 2]))
+        }
+        // Developer check of the spelling check: --grammar-check <text> <out.txt> writes what was found and quits.
+        if let index = CommandLine.arguments.firstIndex(of: "--grammar-check"), index + 2 < CommandLine.arguments.count {
+            grammarPanel.check(CommandLine.arguments[index + 1], writeTo: URL(fileURLWithPath: CommandLine.arguments[index + 2]))
         }
         // Developer check of updating: --update-test <test copy of Klavko.app> <report.txt> installs the latest
         // release over that copy (never over the running app) and quits.
@@ -610,7 +623,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func showSettings() {
         if settingsWindow == nil {
-            let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
+            let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, grammar: grammar,
+                                    clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },
                                     keyLayout: englishLayout(),
@@ -629,7 +643,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Renders every tab into `<name>-<tab>.png` next to `url`, then quits.
     private func snapshotSettings(to url: URL, tabs: [SettingsTab] = SettingsTab.allCases) {
         guard let tab = tabs.first else { return NSApp.terminate(nil) }
-        var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, clipboard: clipboard, updater: updater,
+        var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, grammar: grammar,
+                                clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },
                                     keyLayout: englishLayout(),
@@ -722,6 +737,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        grammar.stop()
     }
 
     private func englishLayout() -> LayoutMap? {

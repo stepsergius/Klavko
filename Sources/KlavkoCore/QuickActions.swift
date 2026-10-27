@@ -3,7 +3,7 @@ import Foundation
 /// Quick Actions: a small bar over (or under) text selected with the mouse, with what can be done to it —
 /// copy, search, translate, change case, wrap in brackets, read aloud, ask an AI…
 public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
-    case openLink, copy, cut, paste, plainPaste, search, youtube, music, translate, ai, speak,
+    case openLink, copy, cut, paste, plainPaste, search, youtube, music, translate, check, ai, speak,
          bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, sentence, brackets, quotes, stats, sum
 
     public var id: String { rawValue }
@@ -19,6 +19,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .youtube: tr("Шукати на YouTube", "Search YouTube")
         case .music: tr("Шукати в Музиці", "Search in Music")
         case .translate: tr("Перекласти", "Translate")
+        case .check: tr("Перевірити правопис", "Check Spelling")
         case .ai: tr("Відкрити в ШІ", "Open in AI")
         case .speak: tr("Прочитати вголос", "Read Aloud")
         case .bold: tr("Жирний", "Bold")
@@ -46,6 +47,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .youtube: "play.rectangle"
         case .music: "music.note"
         case .translate: "character.bubble"
+        case .check: "checkmark.seal"
         case .ai: "sparkles"
         case .speak: "speaker.wave.2"
         case .bold: "bold"

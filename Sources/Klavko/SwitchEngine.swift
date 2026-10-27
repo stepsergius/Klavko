@@ -60,6 +60,7 @@ final class SwitchEngine {
     /// The AI actions hotkey was pressed.
     /// The voice input hotkey was pressed.
     var onTranslate: () -> Void = {}
+    var onCheckText: () -> Void = {}
     var onClipboard: () -> Void = {}
     var onScreenText: () -> Void = {}
     var onQuickActions: () -> Void = {}
@@ -884,6 +885,9 @@ final class SwitchEngine {
         case .translate:
             reset()
             onTranslate()
+        case .checkText:
+            reset()
+            onCheckText()
         case .screenText:
             reset()
             onScreenText()

@@ -1132,3 +1132,64 @@ final class QuickTextTests: XCTestCase {
         XCTAssertFalse(AIService.chatGPT.isApp(named: "Codex"))
     }
 }
+
+final class GrammarCheckTests: XCTestCase {
+    private let response = """
+    {"matches":[
+     {"message":"Пропущена кома","offset":13,"length":2,"replacements":[{"value":", що"}],
+      "rule":{"id":"COMMA_SHCHO","issueType":"typographical","category":{"id":"PUNCTUATION"}}},
+     {"message":"Помилка","offset":0,"length":6,"replacements":[{"value":"Привіт"},{"value":"Привітання"}],
+      "rule":{"id":"MORFOLOGIK_RULE_UK_UA","issueType":"misspelling","category":{"id":"TYPOS"}}},
+     {"message":"Перекривається","offset":2,"length":3,"replacements":[],
+      "rule":{"id":"X","issueType":"grammar","category":{"id":"GRAMMAR"}}}
+    ]}
+    """
+
+    func testParsesInTextOrderAndDropsOverlaps() throws {
+        let issues = try GrammarCheck.issues(fromResponse: Data(response.utf8))
+        XCTAssertEqual(issues.map(\.offset), [0, 13])
+        XCTAssertEqual(issues[0].kind, .spelling)
+        XCTAssertEqual(issues[0].replacements, ["Привіт", "Привітання"])
+        XCTAssertEqual(issues[1].kind, .punctuation)
+    }
+
+    func testAppliesChosenFixesFromTheEnd() {
+        let text = "Првіт, я знаю що ти тут"
+        let issues = [
+            GrammarIssue(offset: 0, length: 5, message: "", replacements: ["Привіт"], kind: .spelling, ruleID: "A"),
+            GrammarIssue(offset: 13, length: 3, message: "", replacements: [", що"], kind: .punctuation, ruleID: "B"),
+        ]
+        XCTAssertEqual(GrammarCheck.apply([issues[0].id: "Привіт", issues[1].id: ", що"], of: issues, to: text),
+                       "Привіт, я знаю, що ти тут")
+        XCTAssertEqual(GrammarCheck.apply([issues[1].id: ", що"], of: issues, to: text), "Првіт, я знаю, що ти тут")
+    }
+
+    func testRangesCountUTF16LikeJava() {
+        // The emoji is two UTF-16 units, so the word after it starts at 3.
+        let text = "😀 слво"
+        let issue = GrammarIssue(offset: 3, length: 4, message: "", replacements: ["слово"], kind: .spelling, ruleID: "A")
+        XCTAssertEqual(issue.range(in: text).map { String(text[$0]) }, "слво")
+        XCTAssertNil(GrammarIssue(offset: 6, length: 4, message: "", replacements: [], kind: .spelling, ruleID: "B")
+            .range(in: text))
+    }
+
+    func testDictionaryFormFixesKeepTheEnding() throws {
+        // As LanguageTool 6.6 answers for «у проекті»: the fix is the dictionary form.
+        let text = "Я у проекті."
+        let json = """
+        {"matches":[{"message":"Правопис","offset":4,"length":7,"replacements":[{"value":"проєкт"}],
+          "rule":{"id":"UK_SIMPLE_REPLACE_SPELLING_1992","issueType":"misspelling","category":{"id":"MISC"}}}]}
+        """
+        let issues = try GrammarCheck.issues(fromResponse: Data(json.utf8), text: text)
+        XCTAssertEqual(issues.first?.replacements, ["проєкті"])
+        XCTAssertEqual(GrammarCheck.inflected("брати", like: "приймаю"), "брати")
+        XCTAssertEqual(GrammarCheck.inflected(",", like: " ,"), ",")
+        XCTAssertEqual(GrammarCheck.kind(issueType: "uncategorized", category: "BARBARISM"), .style)
+    }
+
+    func testLanguageCodes() {
+        XCTAssertEqual(GrammarCheck.languageCode(for: "uk"), "uk-UA")
+        XCTAssertEqual(GrammarCheck.languageCode(for: "fr"), "fr")
+        XCTAssertEqual(GrammarCheck.languageCode(for: nil), "auto")
+    }
+}

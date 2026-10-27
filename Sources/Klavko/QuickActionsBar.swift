@@ -15,6 +15,8 @@ final class QuickActionsBar {
     var settings: () -> Settings? = { nil }
     /// "Translate": the translation panel, which reads the selection itself.
     var translate: () -> Void = {}
+    /// "Check spelling": the spelling panel, which reads the selection itself.
+    var checkText: () -> Void = {}
 
     fileprivate let model = QuickActionsModel()
     private var panel: BarPanel?
@@ -360,6 +362,7 @@ final class QuickActionsBar {
         case .youtube: if let url = SearchEngine.youtube(text) { NSWorkspace.shared.open(url) }
         case .music: searchInMusic(text)
         case .translate: translate()
+        case .check: checkText()
         case .ai: if let service = model.aiServices.first { open(in: service) }
         case .speak: speak(text)
         case .bold: pressOnSelection(Self.keyB)

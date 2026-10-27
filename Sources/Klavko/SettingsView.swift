@@ -7,6 +7,7 @@ struct SettingsView: View {
     @ObservedObject var settings: Settings
     @ObservedObject var recorder: ShortcutRecorder
     @ObservedObject var parakeet: ParakeetEngine
+    @ObservedObject var grammar: GrammarChecker
     @ObservedObject var clipboard: ClipboardManager
     @ObservedObject var updater: Updater
     @ObservedObject var voiceHistory: VoiceHistoryStore
@@ -176,6 +177,45 @@ struct SettingsView: View {
         Section(tr("Не показувати в програмах", "Don’t show in these apps")) {
             appList(settings.quickActionsIgnoredApps, remove: { settings.toggleQuickActionsIgnored($0) },
                     add: { pickApps(adding: settings.quickActionsIgnoredApps) { settings.toggleQuickActionsIgnored($0) } })
+        }
+    }
+
+    /// LanguageTool: downloaded once on request, then the check works offline.
+    private var grammarSection: some View {
+        Section {
+            HStack {
+                switch grammar.state {
+                case .notDownloaded:
+                    Text(tr("Не завантажено", "Not downloaded")).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(tr("Завантажити (~300 МБ)", "Download (~300 MB)")) { grammar.download() }
+                case .downloading(let fraction):
+                    ProgressView(value: fraction).frame(maxWidth: 220)
+                    Text("\(Int(fraction * 100)) %").monospacedDigit().foregroundStyle(.secondary)
+                    Spacer()
+                case .ready:
+                    Label(tr("Готово, працює без інтернету", "Ready, works offline"), systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Text(ByteCountFormatter.string(fromByteCount: GrammarChecker.downloadedSize(), countStyle: .file))
+                        .foregroundStyle(.secondary)
+                    Button(tr("Видалити", "Delete")) { grammar.deleteDownload() }
+                case .failed(let message):
+                    Text(message).foregroundStyle(.secondary).lineLimit(2)
+                    Spacer()
+                    Button(tr("Ще раз", "Try Again")) { grammar.download() }
+                }
+            }
+            if let shortcut = settings.shortcuts[.checkText] {
+                LabeledContent(tr("Перевірити виділене", "Check the selection"), value: shortcut.displayName(layout: keyLayout))
+            }
+        } header: {
+            Text(tr("Перевірка правопису", "Spelling and grammar"))
+        } footer: {
+            Text(tr("LanguageTool перевіряє правопис, граматику й пунктуацію українською, англійською та ще понад 20 мовами — на цьому Mac, текст нікуди не надсилається. Виділіть текст і натисніть гарячу клавішу або «Перевірити правопис» на панельці швидких дій.",
+                    "LanguageTool checks spelling, grammar and punctuation in Ukrainian, English and over 20 more languages — on this Mac; the text goes nowhere. Select text and press the hotkey, or “Check Spelling” on the Quick Actions bar."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -370,6 +410,8 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    grammarSection
 
                     Section {
                         Toggle(isOn: $settings.correctSpelling) {
