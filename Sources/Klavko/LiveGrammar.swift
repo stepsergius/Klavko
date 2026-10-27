@@ -15,6 +15,9 @@ final class LiveGrammar {
     var isExcluded: (String) -> Bool = { _ in false }
     /// The languages the user writes in, to tell which one each paragraph is in.
     var languages: () -> [String] = { ["uk", "en"] }
+    /// Turning on Google Docs' braille support: "" not asked yet, "later" not now, "on" turned on through Klavko.
+    var docsAnswer: () -> String = { "" }
+    var setDocsAnswer: (String) -> Void = { _ in }
 
     /// Paragraph → its issues (offsets in the paragraph). Typing in one paragraph leaves the others' results.
     private var cache: [String: [GrammarIssue]] = [:]
@@ -33,6 +36,9 @@ final class LiveGrammar {
 
     private let overlay = UnderlineOverlay()
     private let popup = GrammarPopup()
+    private let docsOffer = GoogleDocsOffer()
+    /// Google Docs documents offered braille support in already (their addresses).
+    private var docsOffered: Set<String> = []
     /// What's underlined now: the field, its text, and each issue (offsets in the whole text) with where it is.
     private var field: AXUIElement?
     private var fieldText = ""
@@ -68,6 +74,7 @@ final class LiveGrammar {
                 MainActor.assumeIsolated {
                     guard app?.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
                     self?.clear()
+                    self?.docsOffer.close()
                 }
             }
     }
@@ -124,9 +131,12 @@ final class LiveGrammar {
         pending = nil
         guard isOn(), let checker, checker.isDownloaded,
               let app = NSWorkspace.shared.frontmostApplication, let bundleID = app.bundleIdentifier,
-              bundleID != Bundle.main.bundleIdentifier, !isExcluded(bundleID),
-              let state = FieldState.focused(), state.text.utf16.count <= Self.maxCharacters else {
+              bundleID != Bundle.main.bundleIdentifier, !isExcluded(bundleID) else {
             return clear()
+        }
+        guard let state = FieldState.focused(), state.text.utf16.count <= Self.maxCharacters else {
+            clear()
+            return offerGoogleDocs(in: app)
         }
         let paragraphs = GrammarCheck.paragraphs(of: state.text)
         let missing = paragraphs.filter { cache[$0.text] == nil }
@@ -143,6 +153,52 @@ final class LiveGrammar {
             // Drawn only if the text is still what was checked.
             guard let self, !Task.isCancelled, let now = FieldState.focused(), now.text == state.text else { return }
             self.draw(now, paragraphs)
+        }
+    }
+
+    // MARK: Google Docs
+
+    /// A Google Docs document whose text is hidden: offered once a document to turn braille support on.
+    private func offerGoogleDocs(in app: NSRunningApplication) {
+        let answer = docsAnswer()
+        guard answer != "later", !docsOffer.isVisible, let path = GoogleDocsAccess.documentPath(of: app),
+              !docsOffered.contains(path) else { return }
+        let state = GoogleDocsAccess.state(of: app)
+        // Braille support on looks the same as off in an empty document: asked there only before it was turned on.
+        guard state == .brailleOff || (state == .maybeOff && answer.isEmpty),
+              let window = GoogleDocsAccess.windowFrame(of: app) else { return }
+        docsOffered.insert(path)
+        Log.engine.notice("Live grammar: Google Docs without braille support, offered")
+        docsOffer.show(.offer, in: window, onTurnOn: { [weak self] in
+            self?.turnOnGoogleDocs(in: app, window: window)
+        }, onLater: { [weak self] in
+            self?.docsOffer.close()
+            self?.setDocsAnswer("later")
+        })
+    }
+
+    private func turnOnGoogleDocs(in app: NSRunningApplication, window: NSRect) {
+        docsOffer.close()
+        app.activate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            GoogleDocsAccess.pressBrailleShortcut()
+            // Docs takes a moment; then the text is there, or (an empty document that already had it on) the
+            // shortcut turned it off: pressed again.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                guard let self else { return }
+                switch GoogleDocsAccess.state(of: app) {
+                case .fine:
+                    Log.engine.notice("Live grammar: Google Docs braille support turned on")
+                    setDocsAnswer("on")
+                    schedule(after: 0.3)
+                case .brailleOff:
+                    GoogleDocsAccess.pressBrailleShortcut()
+                    setDocsAnswer("on")
+                case .maybeOff:
+                    Log.engine.error("Live grammar: Google Docs braille support didn't turn on")
+                    docsOffer.show(.failed, in: window, onTurnOn: {}, onLater: { [weak self] in self?.docsOffer.close() })
+                }
+            }
         }
     }
 
@@ -413,7 +469,8 @@ private struct FieldState {
         var count: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXNumberOfCharactersAttribute as CFString, &count) == .success,
            let number = count as? Int, number > 30_000 { return nil }
-        guard let text = string(element, kAXValueAttribute), !text.isEmpty,
+        // Not a field with only invisible characters (Google Docs keeps two zero-width spaces in its own).
+        guard let text = string(element, kAXValueAttribute), text.contains(where: { $0.isLetter || $0.isNumber }),
               let ownFrame = frame(of: element) else { return nil }
         var caret: Int?
         var rangeValue: CFTypeRef?
@@ -638,7 +695,7 @@ private final class GrammarPopup {
 }
 
 /// The popup is over another app: its first click must press the button, not only bring the window forward.
-private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 

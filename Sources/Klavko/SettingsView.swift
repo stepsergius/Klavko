@@ -208,8 +208,8 @@ struct SettingsView: View {
             }
             Toggle(isOn: $settings.liveGrammar) {
                 Text(tr("Підкреслювати помилки під час набору", "Underline mistakes while typing"))
-                Text(tr("Наведіть мишку на підкреслене слово — з’являться виправлення. Працює в програмах, які показують свій текст системі (Нотатки, Пошта, Повідомлення, TextEdit, Safari…).",
-                        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…)."))
+                Text(tr("Наведіть мишку на підкреслене слово — з’являться виправлення. Працює в програмах, які показують свій текст системі (Нотатки, Пошта, Повідомлення, TextEdit, Safari…), і в Google Docs з підтримкою дисплея Брайля (Klavko запропонує її ввімкнути).",
+                        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on)."))
             }
             .disabled(!grammar.isDownloaded)
             if let shortcut = settings.shortcuts[.checkText] {

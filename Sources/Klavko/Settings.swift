@@ -44,6 +44,7 @@ final class Settings: ObservableObject {
         static let voiceShowText = "voiceShowText"
         static let voiceTranslationTarget = "voiceTranslationTarget"
         static let liveGrammar = "liveGrammar"
+        static let googleDocsAnswer = "googleDocsAnswer"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let quickActionsEnabled = "quickActionsEnabled"
         static let quickActionsPosition = "quickActionsPosition"
@@ -310,6 +311,11 @@ final class Settings: ObservableObject {
     /// Mistakes underlined while typing (once LanguageTool is downloaded).
     @Published var liveGrammar: Bool {
         didSet { defaults.set(liveGrammar, forKey: Key.liveGrammar) }
+    }
+    /// Turning on Google Docs' braille support: "" not asked yet, "later" not now, "on" turned on through Klavko.
+    var googleDocsAnswer: String {
+        get { defaults.string(forKey: Key.googleDocsAnswer) ?? "" }
+        set { defaults.set(newValue, forKey: Key.googleDocsAnswer) }
     }
 
     var voiceLook: VoiceLook {

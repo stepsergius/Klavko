@@ -364,6 +364,12 @@ extension Translations {
         "Check spelling of the selection": "检查所选内容的拼写",
         "Ignore": "忽略",
         "Underline mistakes while typing": "输入时为错误加下划线",
-        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "将指针移到带下划线的词上即可查看修改建议。适用于向系统提供文本的 App（备忘录、邮件、信息、文本编辑、Safari 等）。",
+        "Spell check in Google Docs": "在 Google 文档中检查拼写",
+        "For Klavko to see the document’s text, Google Docs needs braille support on. Klavko can turn it on for you (⌘⌥H). Google remembers it for your account; you can turn it off the same way.": "要让 Klavko 看到文档的文字，Google 文档需要开启盲文支持。Klavko 可以替你开启（⌘⌥H）。Google 会为你的账号记住这一设置；也可以用同样的方式关闭。",
+        "That didn’t work. Turn it on in Google Docs: Tools → Accessibility → “Turn on screen reader support” and “Turn on braille support”.": "没有成功。请在 Google 文档中开启：工具 → 无障碍功能 →“开启屏幕阅读器支持”和“开启盲文支持”。",
+        "Turn On": "开启",
+        "Not Now": "以后再说",
+        "Got It": "知道了",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "指向带下划线的词即可看到修改建议。适用于向系统提供文字的 App（备忘录、邮件、信息、TextEdit、Safari 浏览器…），以及开启了盲文支持的 Google 文档（Klavko 会提议开启）。",
     ]
 }

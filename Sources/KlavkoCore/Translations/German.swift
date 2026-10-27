@@ -364,6 +364,12 @@ extension Translations {
         "Check spelling of the selection": "Rechtschreibung der Auswahl prüfen",
         "Ignore": "Ignorieren",
         "Underline mistakes while typing": "Fehler beim Tippen unterstreichen",
-        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "Zeige auf ein unterstrichenes Wort, um die Korrekturen zu sehen. Funktioniert in Apps, die ihren Text dem System zeigen (Notizen, Mail, Nachrichten, TextEdit, Safari …).",
+        "Spell check in Google Docs": "Rechtschreibprüfung in Google Docs",
+        "For Klavko to see the document’s text, Google Docs needs braille support on. Klavko can turn it on for you (⌘⌥H). Google remembers it for your account; you can turn it off the same way.": "Damit Klavko den Text des Dokuments sieht, braucht Google Docs die Braille-Unterstützung. Klavko kann sie für dich einschalten (⌘⌥H). Google merkt sich das für dein Konto; ausschalten kannst du sie genauso.",
+        "That didn’t work. Turn it on in Google Docs: Tools → Accessibility → “Turn on screen reader support” and “Turn on braille support”.": "Das hat nicht geklappt. Schalte sie in Google Docs ein: Tools → Bedienungshilfen → „Screenreader-Unterstützung aktivieren“ und „Braille-Unterstützung aktivieren“.",
+        "Turn On": "Einschalten",
+        "Not Now": "Nicht jetzt",
+        "Got It": "Verstanden",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "Zeige auf ein unterstrichenes Wort, um die Korrekturen zu sehen. Funktioniert in Apps, die ihren Text dem System zeigen (Notizen, Mail, Nachrichten, TextEdit, Safari …), und in Google Docs mit Braille-Unterstützung (Klavko bietet an, sie einzuschalten).",
     ]
 }

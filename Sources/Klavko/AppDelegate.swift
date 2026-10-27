@@ -141,6 +141,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         liveGrammar.isOn = { [unowned self] in settings.liveGrammar }
         liveGrammar.isExcluded = { [unowned self] in settings.isExcluded($0) }
         liveGrammar.languages = { SystemLayouts.enabledLayouts().map(\.map.language) }
+        liveGrammar.docsAnswer = { [unowned self] in settings.googleDocsAnswer }
+        liveGrammar.setDocsAnswer = { [unowned self] in settings.googleDocsAnswer = $0 }
         liveGrammar.start()
         engine.onCheckText = { [unowned self] in
             MainActor.assumeIsolated { grammarPanel.start() }

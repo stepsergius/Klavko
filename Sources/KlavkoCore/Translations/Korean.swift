@@ -364,6 +364,12 @@ extension Translations {
         "Check spelling of the selection": "선택 영역의 맞춤법 검사",
         "Ignore": "무시",
         "Underline mistakes while typing": "입력하는 동안 오류에 밑줄 표시",
-        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "밑줄 친 단어를 가리키면 수정안이 표시됩니다. 텍스트를 시스템에 제공하는 앱(메모, Mail, 메시지, TextEdit, Safari 등)에서 작동합니다.",
+        "Spell check in Google Docs": "Google 문서에서 맞춤법 검사",
+        "For Klavko to see the document’s text, Google Docs needs braille support on. Klavko can turn it on for you (⌘⌥H). Google remembers it for your account; you can turn it off the same way.": "Klavko가 문서의 텍스트를 볼 수 있으려면 Google 문서에서 점자 지원을 켜야 합니다. Klavko가 대신 켤 수 있습니다(⌘⌥H). Google은 이 설정을 계정에 기억하며, 같은 방법으로 끌 수 있습니다.",
+        "That didn’t work. Turn it on in Google Docs: Tools → Accessibility → “Turn on screen reader support” and “Turn on braille support”.": "실패했습니다. Google 문서에서 켜세요: 도구 → 접근성 → ‘스크린 리더 지원 사용’과 ‘점자 지원 사용’.",
+        "Turn On": "켜기",
+        "Not Now": "나중에",
+        "Got It": "알겠습니다",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "밑줄 그은 단어를 가리키면 수정 제안이 보입니다. 텍스트를 시스템에 보여 주는 앱(메모, Mail, 메시지, TextEdit, Safari…)과 점자 지원을 켠 Google 문서에서 작동합니다(Klavko가 켜기를 제안합니다).",
     ]
 }

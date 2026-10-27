@@ -364,6 +364,12 @@ extension Translations {
         "Check spelling of the selection": "選択範囲のスペルをチェック",
         "Ignore": "無視",
         "Underline mistakes while typing": "入力中に誤りに下線を引く",
-        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "下線の付いた語にポインタを置くと修正候補が表示されます。テキストをシステムに公開しているアプリ（メモ、メール、メッセージ、TextEdit、Safari など）で動作します。",
+        "Spell check in Google Docs": "Google ドキュメントでのスペルチェック",
+        "For Klavko to see the document’s text, Google Docs needs braille support on. Klavko can turn it on for you (⌘⌥H). Google remembers it for your account; you can turn it off the same way.": "Klavko がドキュメントのテキストを読めるように、Google ドキュメントで点字サポートをオンにする必要があります。Klavko がオンにできます（⌘⌥H）。Google はアカウントごとにこの設定を記憶します。同じ方法でオフにできます。",
+        "That didn’t work. Turn it on in Google Docs: Tools → Accessibility → “Turn on screen reader support” and “Turn on braille support”.": "うまくいきませんでした。Google ドキュメントでオンにしてください：ツール → ユーザー補助 →「スクリーン リーダーのサポートをオンにする」と「点字サポートをオンにする」。",
+        "Turn On": "オンにする",
+        "Not Now": "後で",
+        "Got It": "了解",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "下線の付いた単語にポインタを合わせると修正候補が表示されます。テキストをシステムに公開しているアプリ（メモ、メール、メッセージ、TextEdit、Safari など）と、点字サポートがオンの Google ドキュメントで使えます（Klavko がオンにするよう提案します）。",
     ]
 }

@@ -364,6 +364,12 @@ extension Translations {
         "Check spelling of the selection": "Seçimin yazımını denetle",
         "Ignore": "Yok Say",
         "Underline mistakes while typing": "Yazarken hataların altını çiz",
-        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…).": "Düzeltmeleri görmek için altı çizili bir kelimenin üzerine gelin. Metnini sisteme gösteren uygulamalarda çalışır (Notlar, Mail, Mesajlar, TextEdit, Safari…).",
+        "Spell check in Google Docs": "Google Dokümanlar’da yazım denetimi",
+        "For Klavko to see the document’s text, Google Docs needs braille support on. Klavko can turn it on for you (⌘⌥H). Google remembers it for your account; you can turn it off the same way.": "Klavko’nun belgenin metnini görebilmesi için Google Dokümanlar’da braille desteğinin açık olması gerekir. Klavko bunu sizin için açabilir (⌘⌥H). Google bunu hesabınız için hatırlar; aynı şekilde kapatabilirsiniz.",
+        "That didn’t work. Turn it on in Google Docs: Tools → Accessibility → “Turn on screen reader support” and “Turn on braille support”.": "Olmadı. Google Dokümanlar’da açın: Araçlar → Erişilebilirlik → “Ekran okuyucu desteğini aç” ve “Braille desteğini aç”.",
+        "Turn On": "Aç",
+        "Not Now": "Şimdi değil",
+        "Got It": "Anladım",
+        "Point at an underlined word to see the fixes. Works in apps that show their text to the system (Notes, Mail, Messages, TextEdit, Safari…) and in Google Docs with braille support on (Klavko offers to turn it on).": "Düzeltmeleri görmek için altı çizili bir kelimenin üzerine gelin. Metnini sisteme gösteren uygulamalarda (Notlar, Mail, Mesajlar, TextEdit, Safari…) ve braille desteği açık Google Dokümanlar’da çalışır (Klavko açmayı önerir).",
     ]
 }
