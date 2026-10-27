@@ -221,7 +221,8 @@ final class LiveGrammar {
 
     private func fix(_ issue: GrammarIssue, with replacement: String) {
         popup.close()
-        guard let field else { return }
+        guard let field else { return Log.engine.error("Live grammar: fix chosen, but no field") }
+        Log.engine.notice("Live grammar: fix chosen for \(issue.ruleID, privacy: .public)")
         // The click on the popup can take the keyboard focus from the app (Chromium apps then drop it from the
         // text): give it back, then fix once it has it.
         NSWorkspace.shared.frontmostApplication?.activate()
@@ -546,11 +547,9 @@ private final class GrammarPopup {
     func show(issue: GrammarIssue, word: String, near rect: NSRect,
               onFix: @escaping (String) -> Void, onIgnore: @escaping () -> Void) {
         close()
-        let view = GrammarPopupView(issue: issue, word: word, onFix: onFix, onIgnore: onIgnore)
-        let controller = NSHostingController(rootView: view)
-        controller.sizingOptions = [.preferredContentSize]
+        let view = FirstClickHostingView(rootView: GrammarPopupView(issue: issue, word: word, onFix: onFix, onIgnore: onIgnore))
         let panel = NSPanel(contentRect: .zero, styleMask: [.nonactivatingPanel, .borderless], backing: .buffered, defer: true)
-        panel.contentViewController = controller
+        panel.contentView = view
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
@@ -558,8 +557,7 @@ private final class GrammarPopup {
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-        controller.view.layoutSubtreeIfNeeded()
-        let size = controller.view.fittingSize
+        let size = view.fittingSize
         panel.setContentSize(size)
         // Under the word; over it when there's no room below.
         let visible = (NSScreen.screens.first { $0.frame.intersects(rect) } ?? NSScreen.main)?.visibleFrame ?? rect
@@ -575,6 +573,11 @@ private final class GrammarPopup {
         panel?.orderOut(nil)
         panel = nil
     }
+}
+
+/// The popup is over another app: its first click must press the button, not only bring the window forward.
+private final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 private struct GrammarPopupView: View {
