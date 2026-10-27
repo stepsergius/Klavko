@@ -430,6 +430,26 @@ struct SettingsView: View {
                     grammarSection
 
                     Section {
+                        Toggle(isOn: $settings.emojiByColon) {
+                            Text(tr("Емодзі за назвою після двокрапки", "Emoji by name after a colon"))
+                            Text(tr("Пробіл, двокрапка й назва — «:сміх», «:серце» — показують емодзі біля курсора. ← → — вибрати, Return чи Tab — вставити, Esc — закрити. Назви — мовою розкладки, якою ви друкуєте.",
+                                    "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in."))
+                        }
+                        Toggle(isOn: $settings.emojiSuggestions) {
+                            Text(tr("Підказувати емодзі після слова", "Suggest emoji after a word"))
+                            Text(tr("Після слова, яке називає емодзі («серце», «вогонь»), поруч з’являються ❤️, 🔥. Tab ставить перше після слова.",
+                                    "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word."))
+                        }
+                    } header: {
+                        Text(tr("Емодзі", "Emoji"))
+                    } footer: {
+                        Text(tr("Усі емодзі — дія «Емодзі» на панельці швидких дій: спершу п’ять останніх, далі решта.",
+                                "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         Toggle(isOn: $settings.correctSpelling) {
                             Text(tr("Виправляти помилки", "Fix typos"))
                             Text(tr("Усі мови розкладок: пропущені й переставлені літери, сусідні клавіші "

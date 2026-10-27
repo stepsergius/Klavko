@@ -45,6 +45,9 @@ final class Settings: ObservableObject {
         static let voiceTranslationTarget = "voiceTranslationTarget"
         static let liveGrammar = "liveGrammar"
         static let googleDocsAnswer = "googleDocsAnswer"
+        static let emojiByColon = "emojiByColon"
+        static let emojiSuggestions = "emojiSuggestions"
+        static let recentEmoji = "recentEmoji"
         static let googleDocsLaterSince = "googleDocsLaterSince"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let quickActionsEnabled = "quickActionsEnabled"
@@ -320,6 +323,19 @@ final class Settings: ObservableObject {
             if googleDocsAnswer == "later" { defaults.set(Date(), forKey: Key.googleDocsLaterSince) }
         }
     }
+    /// " :сміх" finds emoji by name.
+    @Published var emojiByColon: Bool {
+        didSet { defaults.set(emojiByColon, forKey: Key.emojiByColon) }
+    }
+    /// After a word that names an emoji ("серце"), the emoji is offered (Tab puts it in).
+    @Published var emojiSuggestions: Bool {
+        didSet { defaults.set(emojiSuggestions, forKey: Key.emojiSuggestions) }
+    }
+    /// Emoji put in through Klavko, the latest first.
+    var recentEmoji: [String] {
+        get { defaults.stringArray(forKey: Key.recentEmoji) ?? [] }
+        set { defaults.set(newValue, forKey: Key.recentEmoji) }
+    }
     /// The answer to go by now: "not now" lasts a week, then Klavko offers again.
     var googleDocsAnswerNow: String {
         guard googleDocsAnswer == "later", let since = defaults.object(forKey: Key.googleDocsLaterSince) as? Date,
@@ -537,6 +553,8 @@ final class Settings: ObservableObject {
         voiceTranslationTarget = defaults.string(forKey: Key.voiceTranslationTarget) ?? "en"
         liveGrammar = defaults.object(forKey: Key.liveGrammar) as? Bool ?? true
         googleDocsAnswer = defaults.string(forKey: Key.googleDocsAnswer) ?? ""
+        emojiByColon = defaults.object(forKey: Key.emojiByColon) as? Bool ?? true
+        emojiSuggestions = defaults.bool(forKey: Key.emojiSuggestions)
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above

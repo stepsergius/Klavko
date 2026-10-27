@@ -17,6 +17,8 @@ final class QuickActionsBar {
     var translate: () -> Void = {}
     /// "Check spelling": the spelling panel, which reads the selection itself.
     var checkText: () -> Void = {}
+    /// The emoji, the ones used lately, and the list near the caret while an emoji is typed by name.
+    var emoji: EmojiInput?
 
     fileprivate let model = QuickActionsModel()
     private var panel: BarPanel?
@@ -79,6 +81,8 @@ final class QuickActionsBar {
             // Let the app finish selecting (a double click selects on the second mouse-up).
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
         default:
+            // The emoji list near the caret stays while its name is typed (the typing engine closes it).
+            if event.type == .keyDown, isShowingEmojiList { return }
             pending?.cancel()
             holding?.cancel()
             hide()
@@ -90,7 +94,8 @@ final class QuickActionsBar {
         guard let settings = settings(), settings.quickActionsEnabled,
               let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier != Bundle.main.bundleIdentifier,
               !settings.quickActionsIgnoredApps.contains(app.bundleIdentifier ?? ""),
-              NSPasteboard.general.string(forType: .string)?.isEmpty == false else { return }
+              NSPasteboard.general.string(forType: .string)?.isEmpty == false || settings.quickActions.contains(.emoji)
+        else { return }
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
         AXUIElementSetAttributeValue(appElement, "AXManualAccessibility" as CFString, kCFBooleanTrue)
         var focused: CFTypeRef?
@@ -101,7 +106,7 @@ final class QuickActionsBar {
         // The field with the focus is the one under the mouse (when the app tells where it is).
         if let frame = Self.frame(of: field), !frame.insetBy(dx: -4, dy: -4).contains(point) { return }
         show(text: "", selection: nil, editable: true, around: Self.rect(from: point, to: point), settings: settings,
-             only: [.paste, .plainPaste])
+             only: [.paste, .plainPaste, .emoji])
     }
 
     /// From the hotkey: the bar for text selected with the keyboard too.
@@ -219,13 +224,92 @@ final class QuickActionsBar {
         model.aiServices = settings.aiServices
         model.keyIndex = byKeyboard ? 0 : nil
         model.page = .main
+        model.emojiNearCaret = false
         model.speaking = speech.isSpeaking
         model.run = { [weak self] action in self?.run(action) }
         model.wrap = { [weak self] open, close in self?.replace { QuickText.wrapped($0, open: open, close: close) } }
         model.ask = { [weak self] service in self?.hideThen { self?.open(in: service) } }
         model.close = { [weak self] in self?.hide() }
         model.anchorMoved = { [weak self] in self?.keepAnchored() }
+        model.insertEmoji = { [weak self] emoji in self?.insertFromList(emoji) }
         present(around: rect, position: settings.quickActionsPosition, takesKeys: byKeyboard)
+    }
+
+    // MARK: Emoji
+
+    /// The bar's Emoji action: all the emoji, the five used lately first; ← → choose, Return puts it in.
+    private func showEmojiPage() {
+        guard let catalog = emoji?.currentCatalog() else { return }
+        let listed = catalog.listed(recent: emoji?.recent ?? [])
+        model.emojiRecentCount = listed.recent.count
+        model.emojis = listed.recent + listed.rest
+        model.page = .emoji
+        model.keyIndex = 1
+        // The arrows go to the bar now (the app with the text stays in front).
+        if let panel, !panel.takesKeys {
+            panel.takesKeys = true
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    /// An emoji picked on the Emoji page: typed where the caret (or the selection) is.
+    private func insertFromList(_ emoji: String) {
+        guard !model.emojiNearCaret else {
+            self.emoji?.clicked(emoji)
+            return
+        }
+        self.emoji?.used(emoji)
+        hideThen { TextInjector.type(emoji) }
+    }
+
+    /// The emoji list near the caret: found by the name typed after " :", or offered after a word.
+    var isShowingEmojiList: Bool { panel?.isVisible == true && model.page == .emoji && model.emojiNearCaret }
+
+    var emojiListContainsMouse: Bool {
+        isShowingEmojiList && panel!.frame.insetBy(dx: -2, dy: -2).contains(NSEvent.mouseLocation)
+    }
+
+    var highlightedEmoji: String? {
+        guard isShowingEmojiList, let index = model.keyIndex, model.emojis.indices.contains(index) else { return nil }
+        return model.emojis[index]
+    }
+
+    func showEmojiList(_ emojis: [String]) {
+        let wasShowing = isShowingEmojiList
+        model.emojis = emojis
+        model.emojiRecentCount = 0
+        model.emojiNearCaret = true
+        model.page = .emoji
+        model.keyIndex = 0
+        model.insertEmoji = { [weak self] emoji in self?.insertFromList(emoji) }
+        model.close = { [weak self] in self?.hide() }
+        model.anchorMoved = { [weak self] in self?.keepAnchored() }
+        guard !wasShowing else { return }
+        // Under the line with the caret, its first emoji at the caret; where the app doesn't tell, at the mouse.
+        let mouse = NSEvent.mouseLocation
+        // A caret's rect is a sliver within the line (TextEdit's ends above the descenders): a little room below it.
+        let caret = Self.caretRect().map { NSRect(x: $0.minX, y: $0.minY - 6, width: $0.width, height: $0.height + 6) }
+        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: .below, takesKeys: false)
+    }
+
+    func hideEmojiList() {
+        if isShowingEmojiList { hide() }
+    }
+
+    func moveInEmojiList(by step: Int) {
+        guard let index = model.keyIndex else { return }
+        model.keyIndex = min(max(index + step, 0), model.emojis.count - 1)
+    }
+
+    /// Where the caret of the focused text field is, in AppKit coordinates.
+    private static func caretRect() -> NSRect? {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(appElement, 0.2)
+        var focused: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+              let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return nil }
+        return details(of: focused as! AXUIElement).bounds
     }
 
     private func present(around rect: NSRect, position: QuickActionsPosition, takesKeys: Bool) {
@@ -329,6 +413,9 @@ final class QuickActionsBar {
         case .ai where model.aiServices.count > 1:
             model.page = .ai
             return
+        case .emoji:
+            showEmojiPage()
+            return
         case .stats:
             let stats = QuickText.stats(text)
             let line = trFormat("Слів: %1$@ · символів: %2$@ · без пробілів: %3$@",
@@ -374,7 +461,7 @@ final class QuickActionsBar {
         case .capitalize: replace { QuickText.capitalized($0, locale: Self.locale(of: $0)) }
         case .sentence: replace { QuickText.sentenceCased($0, locale: Self.locale(of: $0)) }
         case .quotes: replace { QuickText.wrapped($0, open: "«", close: "»") }
-        case .brackets, .stats, .sum: break
+        case .brackets, .stats, .sum, .emoji: break
         }
         }
     }
@@ -559,7 +646,7 @@ private final class BarPanel: NSPanel {
 @MainActor
 fileprivate final class QuickActionsModel: ObservableObject {
     enum Page: Equatable {
-        case main, brackets, ai
+        case main, brackets, ai, emoji
         /// A short answer in the bar itself ("Words: 12…", "Σ 1 234"); `copy`, when set, is copied on a click.
         case result(String, copy: String?)
     }
@@ -579,6 +666,12 @@ fileprivate final class QuickActionsModel: ObservableObject {
     /// Where the selection was when the bar appeared (an AXValue range).
     var range: CFTypeRef?
     var aiServices: [AIService] = []
+    /// The Emoji page: the emoji, the first `emojiRecentCount` of them the latest used.
+    @Published var emojis: [String] = []
+    var emojiRecentCount = 0
+    /// The emoji list near the caret (typed by name, offered after a word): no Back, the keyboard stays with the app.
+    var emojiNearCaret = false
+    var insertEmoji: (String) -> Void = { _ in }
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
     var ask: (AIService) -> Void = { _ in }
@@ -591,6 +684,7 @@ fileprivate final class QuickActionsModel: ObservableObject {
     var itemCount: Int {
         switch page {
         case .main: actions.count
+        case .emoji: (emojiNearCaret ? 0 : 1) + emojis.count
         case .brackets: 1 + QuickText.brackets.count
         case .ai: 1 + aiServices.count
         case .result: 2
@@ -599,6 +693,11 @@ fileprivate final class QuickActionsModel: ObservableObject {
 
     /// What a click on the button at `index` does.
     func perform(_ index: Int) {
+        if page == .emoji {
+            let offset = emojiNearCaret ? 0 : 1
+            if index < offset { page = .main } else if emojis.indices.contains(index - offset) { insertEmoji(emojis[index - offset]) }
+            return
+        }
         if page != .main && index == 0 {
             page = .main
             return
@@ -608,6 +707,7 @@ fileprivate final class QuickActionsModel: ObservableObject {
         case .brackets: let pair = QuickText.brackets[index - 1]; wrap(pair.open, pair.close)
         case .ai: if aiServices.indices.contains(index - 1) { ask(aiServices[index - 1]) }
         case .result(_, let copy): copyResult(copy)
+        case .emoji: break
         }
     }
 
@@ -671,6 +771,8 @@ private struct QuickActionsView: View {
                     }
                     .barAnchor(service == model.aiServices.first)
                 }
+            case .emoji:
+                emojiPage
             case .result(let text, let copy):
                 back
                 separator
@@ -699,6 +801,38 @@ private struct QuickActionsView: View {
             }
         }
         .onChange(of: model.page) { model.copied = false }
+    }
+
+    /// Emoji in a row that scrolls with the keyboard; after the latest used, a separator.
+    private var emojiPage: some View {
+        let offset = model.emojiNearCaret ? 0 : 1
+        let visibleCount = min(model.emojis.count, 12)
+        return HStack(spacing: 0) {
+            if !model.emojiNearCaret {
+                back
+                separator
+            }
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 0) {
+                        ForEach(Array(model.emojis.enumerated()), id: \.offset) { index, emoji in
+                            if index == model.emojiRecentCount && index > 0 { separator }
+                            BarButton(help: "", selected: model.keyIndex == index + offset, padding: 3,
+                                      action: { model.insertEmoji(emoji) }) {
+                                Text(emoji).font(.system(size: 18))
+                            }
+                            .id(index)
+                            .barAnchor(index == 0)
+                        }
+                    }
+                }
+                .frame(width: CGFloat(visibleCount) * 32 + (model.emojiRecentCount > 0 ? 1 : 0))
+                .onChange(of: model.keyIndex) {
+                    guard let key = model.keyIndex, key >= offset else { return }
+                    withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: .center) }
+                }
+            }
+        }
     }
 
     private var separator: some View {
@@ -730,6 +864,7 @@ private struct QuickActionsView: View {
 private struct BarButton<Label: View>: View {
     let help: String
     var selected = false
+    var padding: CGFloat = 9
     let action: () -> Void
     @ViewBuilder let label: () -> Label
     @State private var hovering = false
@@ -738,7 +873,7 @@ private struct BarButton<Label: View>: View {
         Button(action: action) {
             label()
                 .foregroundStyle(hovering || selected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.9)))
-                .padding(.horizontal, 9)
+                .padding(.horizontal, padding)
                 .frame(minWidth: 30, minHeight: 26)
                 .background(RoundedRectangle(cornerRadius: 6).fill(hovering || selected ? Color.accentColor : .clear))
                 .contentShape(Rectangle())

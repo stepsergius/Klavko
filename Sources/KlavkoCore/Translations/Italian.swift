@@ -374,5 +374,11 @@ extension Translations {
         "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document.": "«Non ora»: Klavko te lo ricorderà tra una settimana. Puoi anche attivarlo quando vuoi: ⌘⌥H nel documento.",
         "Offer Again": "Proponi di nuovo",
         "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google Docs mostra il suo testo alle altre app solo con il supporto braille attivo. Klavko propone di attivarlo quando fai clic in un documento. Oppure attivalo tu: ⌘⌥H nel documento, o Strumenti → Accessibilità.",
+        "Emoji by name after a colon": "Emoji per nome dopo i due punti",
+        "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "Uno spazio, i due punti e un nome — «:risata», «:cuore» — mostrano gli emoji vicino al cursore. ← → per scegliere, Invio o Tab per inserirne uno, Esc per chiudere. I nomi sono nella lingua del layout con cui scrivi.",
+        "Suggest emoji after a word": "Suggerisci emoji dopo una parola",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "Dopo una parola che indica un emoji («cuore», «fuoco»), accanto compaiono ❤️ e 🔥. Tab mette il primo dopo la parola.",
+        "Emoji": "Emoji",
+        "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "Tutti gli emoji: l’azione Emoji nella barra delle azioni rapide, prima i cinque usati di recente, poi gli altri.",
     ]
 }

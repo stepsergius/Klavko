@@ -13,7 +13,8 @@ let package = Package(
     ],
     targets: [
         // Pure logic + keyboard layout maps. Testable without permissions.
-        .target(name: "KlavkoCore"),
+        // Emoji/: emoji names in each language (scripts/make-emoji-data.py).
+        .target(name: "KlavkoCore", resources: [.copy("Emoji")]),
         // Menu bar app: event tap, text injection, UI.
         .executableTarget(name: "Klavko", dependencies: [
             "KlavkoCore",

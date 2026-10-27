@@ -374,5 +374,11 @@ extension Translations {
         "“Not Now”: Klavko reminds you in a week. You can also turn it on any time: ⌘⌥H in the document.": "“Şimdi değil”: Klavko bir hafta sonra hatırlatır. İstediğiniz zaman da açabilirsiniz: belgede ⌘⌥H.",
         "Offer Again": "Yeniden öner",
         "Google Docs shows its text to other apps only with braille support on. Klavko offers to turn it on when you click in a document. Or turn it on yourself: ⌘⌥H in the document, or Tools → Accessibility.": "Google Dokümanlar metnini diğer uygulamalara yalnızca braille desteği açıkken gösterir. Bir belgeye tıkladığınızda Klavko bunu açmayı önerir. Ya da kendiniz açın: belgede ⌘⌥H veya Araçlar → Erişilebilirlik.",
+        "Emoji by name after a colon": "İki noktadan sonra adıyla emoji",
+        "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "Boşluk, iki nokta ve bir ad — “:gülme”, “:kalp” — imlecin yanında emojileri gösterir. ← → seçer, Return veya Tab ekler, Esc kapatır. Adlar, yazdığınız klavye düzeninin dilindedir.",
+        "Suggest emoji after a word": "Bir kelimeden sonra emoji öner",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "Bir emojiyi adlandıran kelimeden sonra (“kalp”, “ateş”) yanında ❤️ ve 🔥 belirir. Tab ilkini kelimenin ardına koyar.",
+        "Emoji": "Emoji",
+        "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "Tüm emojiler: Hızlı Eylemler çubuğundaki Emoji eylemi; önce son kullanılan beş tanesi, sonra diğerleri.",
     ]
 }

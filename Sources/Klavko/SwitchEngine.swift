@@ -74,6 +74,28 @@ final class SwitchEngine {
     var onUserKey: () -> Void = {}
     /// Called when the user reverted an automatic fix of a word (the word as they want it).
     var onRevert: (String) -> Void = { _ in }
+    /// Emoji typed by name after a space and a colon (" :сміх") and offered after a word ("серце" → ❤️).
+    var emoji = EmojiHooks()
+
+    /// What the emoji list near the caret does (EmojiInput fills it).
+    struct EmojiHooks {
+        /// " :" starts looking for an emoji by name.
+        var byColon: () -> Bool = { false }
+        /// Emoji offered after a word that names one.
+        var suggestions: () -> Bool = { false }
+        /// The list is on screen (something was found).
+        var isShowing: () -> Bool = { false }
+        /// The name typed after the colon so far (may be empty), in the layout's language.
+        var search: (_ query: String, _ language: String) -> Void = { _, _ in }
+        /// The word just typed (nil: none, the caret is past it), in the layout's language.
+        var word: (_ word: String?, _ language: String) -> Void = { _, _ in }
+        /// ← or →: the next or previous emoji.
+        var move: (Int) -> Void = { _ in }
+        /// The emoji picked in the list (Return or Tab); it's recorded as used.
+        var chosen: () -> String? = { nil }
+        /// The list goes.
+        var end: () -> Void = {}
+    }
 
     private typealias Layout = (source: TISInputSource, map: LayoutMap)
     private typealias Pair = (current: Layout, alternative: Layout)
@@ -157,6 +179,9 @@ final class SwitchEngine {
     /// The fix just undone, re-appliable with the same hotkey until something is typed.
     private var undone: PlacedFix?
 
+    /// The name typed after " :" so far, while looking for an emoji; nil otherwise.
+    private var emojiQuery: String?
+
     /// A one-letter word at the start of a sentence typed in the other layout ("z" for "я"),
     /// left alone until the next word shows which language the sentence is in.
     private struct LoneLetter {
@@ -221,7 +246,9 @@ final class SwitchEngine {
         case .keyDown:
             onUserKey()
             excludedNow = isExcluded()
-            return handleKeyDown(event)
+            let passed = handleKeyDown(event)
+            offerEmojiForWord()
+            return passed
         case .flagsChanged:
             handleFlagsChanged(event)
             return true
@@ -234,6 +261,7 @@ final class SwitchEngine {
     }
 
     func reset() {
+        endEmoji()
         typedSinceJump = false
         contextLength = 0
         atFieldStart = false
@@ -264,6 +292,9 @@ final class SwitchEngine {
             || event.getIntegerValueField(.keyboardEventAutorepeat) != 0 {
             reset()
             return true
+        }
+        if let used = handleEmojiKey(keyCode, flags) {
+            return used
         }
         if keyCode == KeyCode.backspace {
             return handleBackspace()
@@ -313,6 +344,15 @@ final class SwitchEngine {
             reset()
             return true
         }
+        // " :" starts an emoji's name (not "10:30" or "Ось:").
+        if typedCharacter == ":", !excludedNow, emoji.byColon() {
+            if buffer.isEmpty && visible.isEmpty { readContextBeforeCaret() }
+            if visible.last == " " {
+                let passed = handlePunctuation(keystroke, typedCharacter, alternativeCharacter, pair)
+                emojiQuery = ""
+                return passed
+            }
+        }
         if typedCharacter == "\"" && formattingAllowed(config.smartQuotes) {
             return handleStraightQuote(pair)
         }
@@ -323,6 +363,83 @@ final class SwitchEngine {
     }
 
     private func formattingAllowed(_ enabled: Bool) -> Bool { enabled && !excludedNow }
+
+    // MARK: - Emoji
+
+    /// A key while an emoji's name is typed after " :" or while an emoji is offered after a word: true or false
+    /// when it was used here (passed on or not), nil when it's handled as usual.
+    private func handleEmojiKey(_ keyCode: UInt16, _ flags: CGEventFlags) -> Bool? {
+        let plain = flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand]).isEmpty
+        guard var query = emojiQuery else {
+            // An emoji offered after a word: Tab puts it after the word.
+            guard keyCode == KeyCode.tab, plain, emoji.isShowing(), let chosen = emoji.chosen() else { return nil }
+            emoji.end()
+            let text = " " + chosen
+            TextInjector.type(text)
+            endWord()
+            lastWord = []
+            text.forEach { appendVisible(String($0)) }
+            Log.engine.notice("Emoji put after a word")
+            return false
+        }
+        switch keyCode {
+        case 123, 124:  // ← →
+            guard emoji.isShowing() else { break }
+            emoji.move(keyCode == 123 ? -1 : 1)
+            return false
+        case KeyCode.returnKey, KeyCode.keypadEnter, KeyCode.tab:
+            guard plain, emoji.isShowing(), let chosen = emoji.chosen() else { break }
+            // The colon and the name give way to the emoji.
+            let typed = 1 + query.count
+            endEmoji()
+            TextInjector.replace(deleting: typed, with: chosen)
+            replaceVisibleSuffix(typed, with: chosen)
+            endWord()
+            lastWord = []
+            Log.engine.notice("Emoji typed by name")
+            return false
+        case KeyCode.escape:
+            let shown = emoji.isShowing()
+            endEmoji()
+            return shown ? false : nil
+        case KeyCode.backspace:
+            // Deleting the colon ends it.
+            guard !query.isEmpty, let pair = currentPair() else { break }
+            query.removeLast()
+            emojiQuery = query
+            if !visible.isEmpty { visible.removeLast() }
+            emoji.search(query, pair.current.map.language)
+            return true
+        default:
+            let keystroke = Keystroke(keyCode: keyCode, shift: flags.contains(.maskShift), capsLock: flags.contains(.maskAlphaShift))
+            // Letters (and digits, an apostrophe) go on to the app as typed, without Klavko's fixes; anything else
+            // (a space, punctuation) ends the name.
+            guard flags.intersection([.maskControl, .maskAlternate, .maskCommand]).isEmpty, query.count < 30,
+                  let pair = currentPair(), let character = pair.current.map.character(for: keystroke),
+                  character.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "'" || $0 == "’" }) else { break }
+            query += character
+            emojiQuery = query
+            appendVisible(character)
+            emoji.search(query, pair.current.map.language)
+            return true
+        }
+        endEmoji()
+        return nil
+    }
+
+    private func endEmoji() {
+        guard emojiQuery != nil else { return }
+        emojiQuery = nil
+        emoji.end()
+    }
+
+    /// After each key: the word being typed, for an emoji it names (when that's on).
+    private func offerEmojiForWord() {
+        guard emojiQuery == nil, emoji.suggestions() else { return }
+        guard !excludedNow, typedSinceJump, !buffer.isEmpty, let pair = currentPair(),
+              let word = pair.current.map.render(buffer) else { return emoji.word(nil, "") }
+        emoji.word(word, pair.current.map.language)
+    }
 
     private func handleWordCharacter(_ keystroke: Keystroke, _ typedCharacter: String, _ pair: Pair) -> Bool {
         lastWord = []

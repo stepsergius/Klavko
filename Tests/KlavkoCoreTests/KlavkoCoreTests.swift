@@ -1275,3 +1275,66 @@ final class ScreenTextAlignmentTests: XCTestCase {
         XCTAssertEqual(ScreenTextAlignment.spots(of: 0..<5, in: paragraph, lines: lines), [])
     }
 }
+
+final class EmojiCatalogTests: XCTestCase {
+    private func catalog(_ language: String) throws -> EmojiCatalog {
+        try XCTUnwrap(EmojiCatalog.load(language: language, maxVersion: 16.0))
+    }
+
+    func testFindsByUkrainianName() throws {
+        let uk = try catalog("uk")
+        XCTAssertGreaterThan(uk.entries.count, 1800)
+        XCTAssertTrue(uk.search("сміх").contains("😄"))
+        XCTAssertEqual(uk.search("червоне серце").first, "❤️")
+        XCTAssertTrue(uk.search("серц").contains("❤️"))
+    }
+
+    func testFindsByEnglishName() throws {
+        let en = try catalog("en")
+        XCTAssertEqual(en.search("thumbs up").first, "👍")
+        XCTAssertTrue(en.search("smile").contains("😄"))
+        XCTAssertNotEqual(en.search("smile").first, "😼")
+        XCTAssertEqual(en.search("fire").first, "🔥")
+    }
+
+    func testRecentComeFirstAmongEquals() throws {
+        let uk = try catalog("uk")
+        let plain = uk.search("сміх")
+        let last = try XCTUnwrap(plain.last)
+        XCTAssertNotEqual(plain.first, last)
+        let withRecent = uk.search("сміх", recent: [last])
+        // Among the equally good ones, the one used lately goes ahead of the rest.
+        XCTAssertLessThan(try XCTUnwrap(withRecent.firstIndex(of: last)), try XCTUnwrap(plain.firstIndex(of: last)))
+    }
+
+    func testWholeWordMatches() throws {
+        let uk = try catalog("uk")
+        XCTAssertTrue(uk.matches(word: "серце").contains("❤️"))
+        XCTAssertEqual(uk.matches(word: "вогонь").first, "🔥")
+        XCTAssertEqual(uk.matches(word: "серце").first, "❤️")
+        XCTAssertEqual(uk.matches(word: "ще"), [])
+        XCTAssertEqual(uk.matches(word: "столом"), [])
+    }
+
+    func testListedRecentFirst() throws {
+        let uk = try catalog("uk")
+        let listed = uk.listed(recent: ["🔥", "❤️", "not an emoji", "👍", "😄", "🎉", "🙏"])
+        XCTAssertEqual(listed.recent, ["🔥", "❤️", "👍", "😄", "🎉"])
+        XCTAssertFalse(listed.rest.contains("🔥"))
+        XCTAssertTrue(listed.rest.contains("🙏"))
+        XCTAssertEqual(listed.recent.count + listed.rest.count, uk.entries.count)
+    }
+
+    func testRecorded() {
+        XCTAssertEqual(EmojiCatalog.recorded("❤️", in: ["🔥", "❤️", "👍"]), ["❤️", "🔥", "👍"])
+        XCTAssertEqual(EmojiCatalog.recorded("🎉", in: ["🔥", "👍"], limit: 2), ["🎉", "🔥"])
+    }
+
+    func testEveryLanguageLoads() throws {
+        for language in SystemLayouts.supportedLanguages {
+            XCTAssertGreaterThan(try catalog(language).entries.count, 1800, language)
+        }
+        // Emoji of a newer version than the Mac has aren't offered.
+        XCTAssertLessThan(try XCTUnwrap(EmojiCatalog.load(language: "en", maxVersion: 15.0)).entries.count, try catalog("en").entries.count)
+    }
+}

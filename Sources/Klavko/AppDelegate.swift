@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let voiceHistory = VoiceHistoryStore()
     let voiceStats = VoiceStatsStore()
     private let quickActions = QuickActionsBar()
+    private let emojiInput = EmojiInput()
     private let voiceStatsWindow = VoiceStatsWindow()
     private let milestoneWindow = MilestoneWindow()
     private let voiceHistoryWindow = VoiceHistoryWindow()
@@ -150,6 +151,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quickActions.settings = { [weak self] in self?.settings }
         quickActions.translate = { [unowned self] in translator.start() }
         quickActions.checkText = { [unowned self] in grammarPanel.start() }
+        emojiInput.settings = { [weak self] in self?.settings }
+        emojiInput.bar = quickActions
+        quickActions.emoji = emojiInput
+        engine.emoji = emojiInput.hooks()
         quickActions.start()
         engine.onQuickActions = { [unowned self] in
             MainActor.assumeIsolated { quickActions.showForSelection() }

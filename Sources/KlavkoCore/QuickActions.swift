@@ -3,7 +3,7 @@ import Foundation
 /// Quick Actions: a small bar over (or under) text selected with the mouse, with what can be done to it —
 /// copy, search, translate, change case, wrap in brackets, read aloud, ask an AI…
 public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
-    case openLink, copy, cut, paste, plainPaste, search, youtube, music, translate, check, ai, speak,
+    case openLink, copy, cut, paste, plainPaste, emoji, search, youtube, music, translate, check, ai, speak,
          bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, sentence, brackets, quotes, stats, sum
 
     public var id: String { rawValue }
@@ -15,6 +15,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .cut: tr("Вирізати", "Cut")
         case .paste: tr("Вставити", "Paste")
         case .plainPaste: tr("Вставити як звичайний текст", "Paste as Plain Text")
+        case .emoji: tr("Емодзі", "Emoji")
         case .search: tr("Шукати в інтернеті", "Search the Web")
         case .youtube: tr("Шукати на YouTube", "Search YouTube")
         case .music: tr("Шукати в Музиці", "Search in Music")
@@ -43,6 +44,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openLink: "arrow.up.forward.square"
         case .copy, .cut, .paste: nil
         case .plainPaste: "doc.plaintext"
+        case .emoji: "face.smiling"
         case .search: "magnifyingglass"
         case .youtube: "play.rectangle"
         case .music: "music.note"
@@ -79,7 +81,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Only where text can be typed (a text field, a document), not on a web page or in a PDF.
     public var needsEditable: Bool {
         switch self {
-        case .cut, .paste, .plainPaste, .bold, .italic, .underline, .strikethrough,
+        case .cut, .paste, .plainPaste, .emoji, .bold, .italic, .underline, .strikethrough,
              .uppercase, .lowercase, .capitalize, .sentence, .brackets, .quotes: true
         default: false
         }
