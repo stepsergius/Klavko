@@ -7,7 +7,8 @@ import SwiftUI
 /// Quick Actions: after text is selected with the mouse (a drag, a double or triple click), a small dark bar
 /// appears over or under it with what can be done to the text; holding the mouse down in a text field brings
 /// it up with just "Paste". The second button sits right at the mouse, the first to its left, the rest to its
-/// right. Any click elsewhere, a key or scrolling hides it.
+/// right. Any click elsewhere, a key or scrolling hides it. Brought up by the hotkey, it takes the keyboard:
+/// ← → move along it, Return runs the highlighted action, Esc closes it.
 /// The bar never takes the focus: the app with the selection stays in front, so copy and paste go to it.
 @MainActor
 final class QuickActionsBar {
@@ -16,7 +17,7 @@ final class QuickActionsBar {
     var translate: () -> Void = {}
 
     fileprivate let model = QuickActionsModel()
-    private var panel: NSPanel?
+    private var panel: BarPanel?
     private var monitors: [Any] = []
     private var downPoint: NSPoint?
     private var pending: DispatchWorkItem?
@@ -118,7 +119,8 @@ final class QuickActionsBar {
         let mouseRect = Self.rect(from: from, to: to)
         if let selection = SelectionConverter.accessibleSelection() {
             let info = Self.details(of: selection.element)
-            show(text: selection.text, selection: selection, editable: info.editable, around: info.bounds ?? mouseRect, settings: settings)
+            show(text: selection.text, selection: selection, editable: info.editable, around: info.bounds ?? mouseRect,
+                 settings: settings, byKeyboard: byHotkey)
             return
         }
         // Apps that don't share the selection: copy it (the clipboard is put back). Never in Finder, where
@@ -128,7 +130,7 @@ final class QuickActionsBar {
             MainActor.assumeIsolated {
                 guard let self, let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
                 // Unknown: offer the editing actions too (in a page that can't change, they do nothing).
-                self.show(text: text, selection: nil, editable: true, around: mouseRect, settings: settings)
+                self.show(text: text, selection: nil, editable: true, around: mouseRect, settings: settings, byKeyboard: byHotkey)
             }
         }
     }
@@ -184,7 +186,7 @@ final class QuickActionsBar {
     // MARK: The bar
 
     private func show(text: String, selection: SelectionConverter.Selection?, editable: Bool, around rect: NSRect,
-                      settings: Settings, only: Set<QuickAction>? = nil) {
+                      settings: Settings, only: Set<QuickAction>? = nil, byKeyboard: Bool = false) {
         let links = TextLinks.find(in: text)
         let hasClipboardText = NSPasteboard.general.string(forType: .string)?.isEmpty == false
         var actions = settings.quickActions.filter { action in
@@ -213,17 +215,18 @@ final class QuickActionsBar {
         }
         model.actions = actions
         model.aiServices = settings.aiServices
+        model.keyIndex = byKeyboard ? 0 : nil
         model.page = .main
         model.speaking = speech.isSpeaking
         model.run = { [weak self] action in self?.run(action) }
         model.wrap = { [weak self] open, close in self?.replace { QuickText.wrapped($0, open: open, close: close) } }
-        model.ask = { [weak self] service in self?.hide(); self?.open(in: service) }
+        model.ask = { [weak self] service in self?.hideThen { self?.open(in: service) } }
         model.close = { [weak self] in self?.hide() }
         model.anchorMoved = { [weak self] in self?.keepAnchored() }
-        present(around: rect, position: settings.quickActionsPosition)
+        present(around: rect, position: settings.quickActionsPosition, takesKeys: byKeyboard)
     }
 
-    private func present(around rect: NSRect, position: QuickActionsPosition) {
+    private func present(around rect: NSRect, position: QuickActionsPosition, takesKeys: Bool) {
         if panel == nil {
             let controller = NSHostingController(rootView: QuickActionsView(model: model))
             controller.sizingOptions = [.preferredContentSize]
@@ -239,6 +242,7 @@ final class QuickActionsBar {
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
             panel.animationBehavior = .utilityWindow
+            panel.onKey = { [weak self] event in self?.key(event) ?? false }
             self.panel = panel
             NotificationCenter.default.addObserver(forName: NSWindow.didResizeNotification, object: panel, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.keepAnchored() }
@@ -261,7 +265,26 @@ final class QuickActionsBar {
         origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
         origin.y = min(max(origin.y, visible.minY + 4), visible.maxY - size.height - 4)
         panel.setFrameOrigin(origin)
-        panel.orderFrontRegardless()
+        panel.takesKeys = takesKeys
+        if takesKeys {
+            // Key without bringing Klavko forward (the panel doesn't activate): the app with the selection stays
+            // in front and gets the keyboard back when the bar goes.
+            panel.makeKeyAndOrderFront(nil)
+        } else {
+            panel.orderFrontRegardless()
+        }
+    }
+
+    /// The keyboard while the bar has it: true when the key was used.
+    private func key(_ event: NSEvent) -> Bool {
+        guard let index = model.keyIndex else { return false }
+        switch event.keyCode {
+        case 123: model.keyIndex = max(index - 1, 0)  // ←
+        case 124: model.keyIndex = min(index + 1, model.itemCount - 1)  // →
+        case 36, 76: model.perform(index)  // Return, Enter
+        default: hide()  // Esc, or any other key
+        }
+        return true
     }
 
     /// The second button back at the mouse once the bar has measured where it is.
@@ -275,6 +298,19 @@ final class QuickActionsBar {
     func hide() {
         guard let panel, panel.isVisible else { return }
         panel.orderOut(nil)
+        panel.takesKeys = false
+    }
+
+    /// Hides the bar, then does the work: a moment later when the bar had the keyboard, so keys pressed for the
+    /// action (⌘C, ⌘V…) reach the app again.
+    private func hideThen(_ work: @escaping () -> Void) {
+        let hadKeyboard = panel?.isKeyWindow == true
+        hide()
+        if hadKeyboard {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+        } else {
+            work()
+        }
     }
 
     // MARK: Actions
@@ -312,7 +348,7 @@ final class QuickActionsBar {
         default:
             break
         }
-        hide()
+        hideThen { [self] in
         switch action {
         case .openLink: if let link = model.link { NSWorkspace.shared.open(link) }
         case .copy: pressOnSelection(Self.keyC)
@@ -337,6 +373,7 @@ final class QuickActionsBar {
         case .quotes: replace { QuickText.wrapped($0, open: "«", close: "»") }
         case .brackets, .stats, .sum: break
         }
+        }
     }
 
     /// ⌘ and the key, on the text that was selected: some apps drop the selection when the bar is clicked, and
@@ -358,12 +395,13 @@ final class QuickActionsBar {
 
     /// Puts the changed text in place of the selection: through Accessibility where the app allows it,
     /// pasted otherwise (the clipboard is put back).
-    private func replace(_ change: (String) -> String) {
-        hide()
-        let changed = change(model.text)
-        guard changed != model.text else { return }
-        if let selection = model.selection, selection.replace(with: changed) { return }
-        SelectionConverter.paste(changed)
+    private func replace(_ change: @escaping (String) -> String) {
+        hideThen { [self] in
+            let changed = change(model.text)
+            guard changed != model.text else { return }
+            if let selection = model.selection, selection.replace(with: changed) { return }
+            SelectionConverter.paste(changed)
+        }
     }
 
     /// Turkish "i" → "İ" and such: the case rules of the text's own language.
@@ -502,7 +540,16 @@ final class QuickActionsBar {
 }
 
 private final class BarPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
+    /// Only when brought up by the hotkey: then the arrows and Return go to the bar.
+    var takesKeys = false
+    var onKey: (NSEvent) -> Bool = { _ in false }
+
+    override var canBecomeKey: Bool { takesKeys }
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, takesKeys, onKey(event) { return }
+        super.sendEvent(event)
+    }
 }
 
 /// What the bar shows; the view reads it, the bar fills it.
@@ -515,8 +562,14 @@ fileprivate final class QuickActionsModel: ObservableObject {
     }
 
     @Published var actions: [QuickAction] = []
-    @Published var page: Page = .main
+    @Published var page: Page = .main {
+        // From the keyboard, a submenu starts on its first choice (after "Back"), the bar on its first action.
+        didSet { if keyIndex != nil { keyIndex = page == .main ? 0 : 1 } }
+    }
     @Published var speaking = false
+    /// The button the keyboard is on (the bar brought up by the hotkey); nil when it's used with the mouse.
+    @Published var keyIndex: Int?
+    @Published var copied = false
     var text = ""
     var link: URL?
     var selection: SelectionConverter.Selection?
@@ -530,6 +583,39 @@ fileprivate final class QuickActionsModel: ObservableObject {
     /// How far from the bar's left edge the middle of its second button is (the first when it's alone).
     var anchorOffset: CGFloat?
     var anchorMoved: () -> Void = {}
+
+    /// The buttons on the page: in a submenu or an answer, "Back" comes first.
+    var itemCount: Int {
+        switch page {
+        case .main: actions.count
+        case .brackets: 1 + QuickText.brackets.count
+        case .ai: 1 + aiServices.count
+        case .result: 2
+        }
+    }
+
+    /// What a click on the button at `index` does.
+    func perform(_ index: Int) {
+        if page != .main && index == 0 {
+            page = .main
+            return
+        }
+        switch page {
+        case .main: if actions.indices.contains(index) { run(actions[index]) }
+        case .brackets: let pair = QuickText.brackets[index - 1]; wrap(pair.open, pair.close)
+        case .ai: if aiServices.indices.contains(index - 1) { ask(aiServices[index - 1]) }
+        case .result(_, let copy): copyResult(copy)
+        }
+    }
+
+    /// The answer to the clipboard, a tick, then the bar closes.
+    func copyResult(_ copy: String?) {
+        guard let copy else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(copy, forType: .string)
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { self.close() }
+    }
 }
 
 /// The middle of the button that goes at the mouse.
@@ -550,7 +636,6 @@ private extension View {
 
 private struct QuickActionsView: View {
     @ObservedObject var model: QuickActionsModel
-    @State private var copied = false
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -560,23 +645,25 @@ private struct QuickActionsView: View {
                 ForEach(Array(model.actions.enumerated()), id: \.element) { index, action in
                     if index > 0 { separator }
                     BarButton(help: action == .ai && model.aiServices.count == 1 ? model.aiServices[0].title : action.title,
-                              action: { model.run(action) }) { label(action) }
+                              selected: model.keyIndex == index, action: { model.run(action) }) { label(action) }
                         .barAnchor(index == min(1, model.actions.count - 1))
                 }
             case .brackets:
                 back
-                ForEach(QuickText.brackets, id: \.open) { pair in
+                ForEach(Array(QuickText.brackets.enumerated()), id: \.element.open) { index, pair in
                     separator
-                    BarButton(help: pair.open + "…" + pair.close, action: { model.wrap(pair.open, pair.close) }) {
+                    BarButton(help: pair.open + "…" + pair.close, selected: model.keyIndex == index + 1,
+                              action: { model.wrap(pair.open, pair.close) }) {
                         Text(pair.open + " " + pair.close).font(.system(size: 14, weight: .medium, design: .monospaced))
                     }
                     .barAnchor(pair.open == QuickText.brackets[0].open)
                 }
             case .ai:
                 back
-                ForEach(model.aiServices) { service in
+                ForEach(Array(model.aiServices.enumerated()), id: \.element) { index, service in
                     separator
-                    BarButton(help: trFormat("Відкрити в %@", "Open in %@", service.title), action: { model.ask(service) }) {
+                    BarButton(help: trFormat("Відкрити в %@", "Open in %@", service.title), selected: model.keyIndex == index + 1,
+                              action: { model.ask(service) }) {
                         Text(service.title).font(.system(size: 13))
                     }
                     .barAnchor(service == model.aiServices.first)
@@ -584,17 +671,12 @@ private struct QuickActionsView: View {
             case .result(let text, let copy):
                 back
                 separator
-                BarButton(help: copy == nil ? "" : tr("Копіювати", "Copy"), action: {
-                    guard let copy else { return }
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(copy, forType: .string)
-                    copied = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { model.close() }
-                }) {
+                BarButton(help: copy == nil ? "" : tr("Копіювати", "Copy"), selected: model.keyIndex == 1,
+                          action: { model.copyResult(copy) }) {
                     HStack(spacing: 6) {
                         Text(text).font(.system(size: 13).monospacedDigit())
                         if copy != nil {
-                            Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 11))
+                            Image(systemName: model.copied ? "checkmark" : "doc.on.doc").font(.system(size: 11))
                         }
                     }
                 }
@@ -613,7 +695,7 @@ private struct QuickActionsView: View {
                 model.anchorMoved()
             }
         }
-        .onChange(of: model.page) { copied = false }
+        .onChange(of: model.page) { model.copied = false }
     }
 
     private var separator: some View {
@@ -621,7 +703,7 @@ private struct QuickActionsView: View {
     }
 
     private var back: some View {
-        BarButton(help: tr("Назад", "Back"), action: { model.page = .main }) {
+        BarButton(help: tr("Назад", "Back"), selected: model.keyIndex == 0, action: { model.page = .main }) {
             Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
         }
     }
@@ -640,9 +722,11 @@ private struct QuickActionsView: View {
     }
 }
 
-/// A button of the bar: the system's text colour, blue with white text under the mouse like a menu.
+/// A button of the bar: the system's text colour, blue with white text under the mouse (or the keyboard)
+/// like a menu.
 private struct BarButton<Label: View>: View {
     let help: String
+    var selected = false
     let action: () -> Void
     @ViewBuilder let label: () -> Label
     @State private var hovering = false
@@ -650,10 +734,10 @@ private struct BarButton<Label: View>: View {
     var body: some View {
         Button(action: action) {
             label()
-                .foregroundStyle(hovering ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.9)))
+                .foregroundStyle(hovering || selected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.9)))
                 .padding(.horizontal, 9)
                 .frame(minWidth: 30, minHeight: 26)
-                .background(RoundedRectangle(cornerRadius: 6).fill(hovering ? Color.accentColor : .clear))
+                .background(RoundedRectangle(cornerRadius: 6).fill(hovering || selected ? Color.accentColor : .clear))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
