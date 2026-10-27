@@ -221,19 +221,95 @@ final class LiveGrammar {
 
     private func fix(_ issue: GrammarIssue, with replacement: String) {
         popup.close()
-        guard let field, let range = issue.range(in: fieldText) else { return }
+        guard let field else { return }
+        // The click on the popup can take the keyboard focus from the app (Chromium apps then drop it from the
+        // text): give it back, then fix once it has it.
+        NSWorkspace.shared.frontmostApplication?.activate()
+        AXUIElementSetAttributeValue(field, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+        let text = fieldText
+        overlay.hide()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.fix(issue, with: replacement, in: field, text: text)
+        }
+    }
+
+    private func fix(_ issue: GrammarIssue, with replacement: String, in field: AXUIElement, text fieldText: String) {
+        guard let range = issue.range(in: fieldText) else { return }
         let original = String(fieldText[range])
+        let expected = fieldText.replacingCharacters(in: range, with: replacement)
+        let caret = Self.selectedRange(of: field)
         var cfRange = CFRange(location: issue.offset, length: issue.length)
         guard let value = AXValueCreate(.cfRange, &cfRange) else { return }
         AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute as CFString, value)
-        let selection = SelectionConverter.Selection(text: original, element: field)
-        if !selection.replace(with: replacement) {
-            // The range is selected: paste over it (the clipboard is put back).
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { SelectionConverter.paste(replacement) }
-        }
         clear()
-        schedule(after: 0.4)
-        Log.engine.notice("Live grammar: fixed \(issue.ruleID, privacy: .public)")
+        schedule(after: 0.8)
+        // Some apps take a moment to select; some say yes and leave the caret where it was (the fix would then land
+        // next to the word, not over it), so it's put in only once the word itself is selected.
+        Self.wait(until: { Self.selectedText(of: field) == original }) { selected in
+            if selected {
+                let selection = SelectionConverter.Selection(text: original, element: field)
+                if selection.replace(with: replacement), Self.value(of: field) == expected { return self.log(issue, "accessibility") }
+                if Self.value(of: field) != fieldText { return self.log(issue, "accessibility, changed differently") }
+                // Nothing changed (Chromium apps ignore it): paste over the selected word (the clipboard is put back).
+                SelectionConverter.paste(replacement)
+                return self.log(issue, "paste")
+            }
+            // Select the word with the arrow keys from the caret, then paste over it.
+            let now = Self.selectedRange(of: field)
+            guard let caret = now?.length == 0 ? now : caret, caret.length == 0,
+                  let caretIndex = Self.index(caret.location, in: fieldText) else { return self.log(issue, "skipped: no caret") }
+            let wordEnd = range.upperBound
+            let moves = caretIndex <= wordEnd ? fieldText[caretIndex..<wordEnd].count : -fieldText[wordEnd..<caretIndex].count
+            let arrow: CGKeyCode = moves >= 0 ? 124 : 123
+            for _ in 0..<abs(moves) { TextInjector.pressKey(arrow) }
+            for _ in 0..<original.count { TextInjector.pressKey(123, flags: .maskShift) }
+            Self.wait(until: { Self.selectedText(of: field) == original }) { selected in
+                // Pasted only over exactly the word.
+                guard selected else { return Log.engine.error("Live grammar: couldn't select the word, not fixed") }
+                SelectionConverter.paste(replacement)
+                self.log(issue, "arrows")
+            }
+        }
+    }
+
+    /// Checks `condition` a few times over about half a second, then says whether it came true.
+    private static func wait(until condition: @escaping () -> Bool, attempt: Int = 0, then done: @escaping (Bool) -> Void) {
+        if condition() { return done(true) }
+        guard attempt < 8 else { return done(false) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            MainActor.assumeIsolated { wait(until: condition, attempt: attempt + 1, then: done) }
+        }
+    }
+
+    private func log(_ issue: GrammarIssue, _ how: String) {
+        Log.engine.notice("Live grammar: fixed \(issue.ruleID, privacy: .public) by \(how, privacy: .public)")
+    }
+
+    private static func selectedRange(of element: AXUIElement) -> CFRange? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &value) == .success,
+              let value, CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        var range = CFRange()
+        return AXValueGetValue(value as! AXValue, .cfRange, &range) ? range : nil
+    }
+
+    private static func selectedText(of element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value)
+        return value as? String
+    }
+
+    private static func value(of element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &value)
+        return value as? String
+    }
+
+    /// A UTF-16 offset as an index of `text`.
+    private static func index(_ offset: Int, in text: String) -> String.Index? {
+        let utf16 = text.utf16
+        guard offset >= 0, offset <= utf16.count else { return nil }
+        return utf16.index(utf16.startIndex, offsetBy: offset).samePosition(in: text)
     }
 
     private func ignore(_ issue: GrammarIssue) {
@@ -248,6 +324,7 @@ final class LiveGrammar {
 }
 
 /// The focused text field and what's in it, read through Accessibility.
+@MainActor
 private struct FieldState {
     let element: AXUIElement
     let text: String
@@ -255,12 +332,26 @@ private struct FieldState {
     /// Where the text can be seen (the scroll view around it), in AppKit coordinates.
     let visibleFrame: NSRect
     let signature: String
+    /// Filled the first time an underline needs it.
+    private let runCache = RunCache()
+
+    final class RunCache {
+        var value: [(element: AXUIElement, offset: Int, length: Int)]?
+    }
+
+    /// Apps already asked to show their text (Electron apps such as Obsidian, Slack, VS Code show it only when asked).
+    private static var askedApps: Set<pid_t> = []
 
     static func focused() -> FieldState? {
-        let system = AXUIElementCreateSystemWide()
-        AXUIElementSetMessagingTimeout(system, 0.3)
+        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(appElement, 0.3)
+        if !askedApps.contains(app.processIdentifier) {
+            askedApps.insert(app.processIdentifier)
+            AXUIElementSetAttributeValue(appElement, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        }
         var focused: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+        guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
               let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return nil }
         let element = focused as! AXUIElement
         AXUIElementSetMessagingTimeout(element, 0.3)
@@ -300,7 +391,46 @@ private struct FieldState {
                 NSRect(x: whole.minX, y: last.minY, width: last.maxX - whole.minX, height: last.height)]
     }
 
+    /// The field's own answer; in Chromium and Electron apps (Obsidian, Slack…), which answer with an empty
+    /// rectangle, the line of text inside it that holds the range.
     private func bounds(_ location: Int, _ length: Int) -> NSRect? {
+        if let rect = Self.bounds(of: element, location, length) { return rect }
+        guard let run = runs.last(where: { $0.offset <= location }),
+              location + length <= run.offset + run.length else { return nil }
+        return Self.bounds(of: run.element, location - run.offset, length)
+    }
+
+    /// The lines of text inside the field and where each starts in its value (UTF-16 units).
+    private var runs: [(element: AXUIElement, offset: Int, length: Int)] {
+        if let cached = runCache.value { return cached }
+        var result: [(element: AXUIElement, offset: Int, length: Int)] = []
+        var searchFrom = text.startIndex
+        var visited = 0
+        func walk(_ element: AXUIElement, depth: Int) {
+            guard depth < 8, visited < 3000 else { return }
+            for child in Self.children(of: element) {
+                visited += 1
+                if Self.string(child, kAXRoleAttribute) == kAXStaticTextRole, let value = Self.string(child, kAXValueAttribute),
+                   !value.isEmpty, let found = text.range(of: value, range: searchFrom..<text.endIndex) {
+                    result.append((child, text.utf16.distance(from: text.startIndex, to: found.lowerBound), value.utf16.count))
+                    searchFrom = found.upperBound
+                } else {
+                    walk(child, depth: depth + 1)
+                }
+            }
+        }
+        walk(element, depth: 0)
+        runCache.value = result
+        return result
+    }
+
+    private static func children(of element: AXUIElement) -> [AXUIElement] {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value)
+        return value as? [AXUIElement] ?? []
+    }
+
+    private static func bounds(of element: AXUIElement, _ location: Int, _ length: Int) -> NSRect? {
         var range = CFRange(location: location, length: length)
         guard let rangeValue = AXValueCreate(.cfRange, &range) else { return nil }
         var boundsValue: CFTypeRef?
@@ -464,26 +594,30 @@ private struct GrammarPopupView: View {
             Text(issue.message)
                 .font(.system(size: 13))
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 6) {
+            FlowRow(spacing: 6) {
                 ForEach(issue.replacements.prefix(4), id: \.self) { replacement in
                     Button { onFix(replacement) } label: {
                         Text(replacement.isEmpty ? tr("(прибрати)", "(remove)") : replacement)
                             .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
+                            .fixedSize()
                             .padding(.horizontal, 9)
                             .padding(.vertical, 4)
                             .background(Color.accentColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
                 }
-                Spacer(minLength: 8)
                 Button(tr("Пропустити", "Ignore"), action: onIgnore)
                     .buttonStyle(.plain)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
+                    .fixedSize()
+                    .padding(.vertical, 4)
+                    .padding(.leading, 4)
             }
         }
         .padding(12)
-        .frame(width: 320, alignment: .leading)
+        .frame(width: 340, alignment: .leading)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1)))
     }

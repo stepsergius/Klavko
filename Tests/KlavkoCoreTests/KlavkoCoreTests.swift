@@ -1204,3 +1204,35 @@ final class GrammarCheckTests: XCTestCase {
         XCTAssertEqual(GrammarCheck.languageCode(for: nil), "auto")
     }
 }
+
+final class UkrainianCommasTests: XCTestCase {
+    private func fixed(_ text: String) -> String {
+        let issues = UkrainianCommas.issues(in: text)
+        return GrammarCheck.apply(Dictionary(uniqueKeysWithValues: issues.map { ($0.id, $0.replacements[0]) }), of: issues, to: text)
+    }
+
+    func testAddsCommasBeforeClauses() {
+        XCTAssertEqual(fixed("Він сказав що прийде завтра."), "Він сказав, що прийде завтра.")
+        XCTAssertEqual(fixed("Ми підемо гуляти якщо не буде дощу."), "Ми підемо гуляти, якщо не буде дощу.")
+        XCTAssertEqual(fixed("Це книга яку я читав."), "Це книга, яку я читав.")
+        XCTAssertEqual(fixed("Це місто в якому я живу."), "Це місто, в якому я живу.")
+        XCTAssertEqual(fixed("Перевірка як воно працює"), "Перевірка, як воно працює")
+        XCTAssertEqual(fixed("Вона знала де він живе."), "Вона знала, де він живе.")
+        XCTAssertEqual(fixed("Я знаю як це зробити."), "Я знаю, як це зробити.")
+    }
+
+    func testLeavesAloneWhatNeedsNoComma() {
+        for text in ["Що ти робиш?", "Він сказав, що прийде.", "Я прийшов тому що хотів.", "Поки що все добре.",
+                     "Такий як я.", "Про що ти думаєш?", "Я і що?", "Дощ. Що далі?",
+                     "Я читав а також писав."] {
+            XCTAssertEqual(fixed(text), text, text)
+        }
+    }
+
+    func testLanguageToolWinsOverlaps() {
+        let lt = GrammarIssue(offset: 0, length: 5, message: "", replacements: [], kind: .grammar, ruleID: "LT")
+        let own = GrammarIssue(offset: 3, length: 5, message: "", replacements: [], kind: .punctuation, ruleID: "K")
+        let later = GrammarIssue(offset: 9, length: 2, message: "", replacements: [], kind: .punctuation, ruleID: "K2")
+        XCTAssertEqual(UkrainianCommas.merged([lt], with: [own, later]).map(\.ruleID), ["LT", "K2"])
+    }
+}

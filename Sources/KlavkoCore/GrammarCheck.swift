@@ -87,7 +87,8 @@ public enum GrammarCheck {
             if let utf16, match.offset >= 0, match.offset + match.length <= utf16.count,
                case let start = utf16.index(utf16.startIndex, offsetBy: match.offset),
                let original = String(utf16[start..<utf16.index(start, offsetBy: match.length)]) {
-                replacements = replacements.map { inflected($0, like: original) }
+                // A fix that is the word itself (it happens) is no fix.
+                replacements = replacements.map { inflected($0, like: original) }.filter { $0 != original }
             }
             issues.append(GrammarIssue(offset: match.offset, length: match.length, message: match.message,
                                        replacements: replacements,

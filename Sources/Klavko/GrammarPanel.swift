@@ -385,7 +385,7 @@ private struct IssueRow: View {
 }
 
 /// Buttons in rows that wrap.
-private struct FlowRow: Layout {
+struct FlowRow: Layout {
     var spacing: CGFloat = 6
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

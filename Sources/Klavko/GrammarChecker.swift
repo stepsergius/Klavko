@@ -59,7 +59,10 @@ final class GrammarChecker: ObservableObject {
         if fields["language"] == "auto" { fields["preferredVariants"] = "en-US,de-DE,pt-PT" }
         request.httpBody = Self.formEncoded(fields).data(using: .utf8)
         let (data, _) = try await URLSession.shared.data(for: request)
-        return try GrammarCheck.issues(fromResponse: data, text: text)
+        let issues = try GrammarCheck.issues(fromResponse: data, text: text)
+        // LanguageTool knows few Ukrainian comma rules: Klavko's own fill in.
+        guard language == "uk" else { return issues }
+        return UkrainianCommas.merged(issues, with: UkrainianCommas.issues(in: text))
     }
 
     // MARK: Download
