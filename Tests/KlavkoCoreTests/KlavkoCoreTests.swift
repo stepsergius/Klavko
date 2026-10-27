@@ -1289,6 +1289,12 @@ final class EmojiCatalogTests: XCTestCase {
         XCTAssertTrue(uk.search("серц").contains("❤️"))
     }
 
+    func testColonListOnlyWhereMacOSHasNoNames() {
+        XCTAssertTrue(EmojiCatalog.namedByMacOS.contains("en"))
+        XCTAssertFalse(EmojiCatalog.namedByMacOS.contains("uk"))
+        XCTAssertFalse(EmojiCatalog.namedByMacOS.contains("pl"))
+    }
+
     func testFindsByEnglishName() throws {
         let en = try catalog("en")
         XCTAssertEqual(en.search("thumbs up").first, "👍")

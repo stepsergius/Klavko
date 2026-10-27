@@ -45,7 +45,10 @@ final class EmojiInput {
     /// What the typing engine calls.
     func hooks() -> SwitchEngine.EmojiHooks {
         var hooks = SwitchEngine.EmojiHooks()
-        hooks.byColon = { [weak self] in self?.settings()?.emojiByColon ?? false }
+        // Where macOS lists emoji after a colon itself (English, German…), its list alone: two would cover each other.
+        hooks.byColon = { [weak self] language in
+            (self?.settings()?.emojiByColon ?? false) && !EmojiCatalog.namedByMacOS.contains(language)
+        }
         hooks.suggestions = { [weak self] in self?.settings()?.emojiSuggestions ?? false }
         hooks.isShowing = { [weak self] in self?.bar?.isShowingEmojiList ?? false }
         hooks.search = { [weak self] query, language in self?.search(query, language: language) }
