@@ -1236,3 +1236,42 @@ final class UkrainianCommasTests: XCTestCase {
         XCTAssertEqual(UkrainianCommas.merged([lt], with: [own, later]).map(\.ruleID), ["LT", "K2"])
     }
 }
+
+final class ScreenTextAlignmentTests: XCTestCase {
+    private func utf16Range(of word: String, in text: String) -> Range<Int> {
+        let range = text.range(of: word)!
+        let start = text.utf16.distance(from: text.startIndex, to: range.lowerBound)
+        return start..<(start + word.utf16.count)
+    }
+
+    func testFindsAWordReadWrong() {
+        let paragraph = "Тут **жирний текст** і ще одна перевцрка слова, яку треба виправити."
+        let lines = ["Перевірка як воно працює в документі.",
+                     "Тут **жирний текст** і ще одна перевцока слова, яку треба виправити.",
+                     "Третій абзац де є помилка ё кома пропущена."]
+        let spots = ScreenTextAlignment.spots(of: utf16Range(of: "перевцрка", in: paragraph), in: paragraph, lines: lines)
+        XCTAssertEqual(spots, [.init(line: 1, characters: 31..<40)])
+    }
+
+    func testFindsAWordWithItsEndReadWrong() {
+        let paragraph = "Третій абзац де є помилкаа і кома пропущена."
+        let lines = ["Третій абзац де є помилка ё кома пропущена."]
+        let spots = ScreenTextAlignment.spots(of: utf16Range(of: "помилкаа", in: paragraph), in: paragraph, lines: lines)
+        XCTAssertEqual(spots.first?.line, 0)
+        XCTAssertEqual(spots.first?.characters.lowerBound, 18)
+    }
+
+    func testSplitsAWordOverAWrappedLine() {
+        let paragraph = "Перший рядок довгого абзацу, що переноситься далі."
+        let lines = ["Перший рядок довгого абза-", "цу, що переноситься далі."]
+        let spots = ScreenTextAlignment.spots(of: utf16Range(of: "абзацу", in: paragraph), in: paragraph, lines: lines)
+        XCTAssertEqual(spots.map(\.line), [0, 1])
+        XCTAssertEqual(spots.first?.characters.lowerBound, 21)
+    }
+
+    func testNothingWhenTheParagraphIsNotOnScreen() {
+        let paragraph = "Цього абзацу на екрані немає."
+        let lines = ["Зовсім інший текст тут."]
+        XCTAssertEqual(ScreenTextAlignment.spots(of: 0..<5, in: paragraph, lines: lines), [])
+    }
+}

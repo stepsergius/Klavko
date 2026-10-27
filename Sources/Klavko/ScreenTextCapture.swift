@@ -72,7 +72,7 @@ final class ScreenTextCapture {
     }
 
     /// Vision's names for our languages, those it supports, ours first.
-    private static func recognitionLanguages(_ codes: [String]) -> [String] {
+    static func recognitionLanguages(_ codes: [String]) -> [String] {
         let names = ["uk": "uk-UA", "en": "en-US", "ru": "ru-RU", "de": "de-DE", "fr": "fr-FR", "es": "es-ES",
                      "it": "it-IT", "pt": "pt-BR", "pl": "pl-PL", "tr": "tr-TR", "ar": "ar-SA", "he": "he-IL"]
         let supported = (try? VNRecognizeTextRequest().supportedRecognitionLanguages()) ?? []

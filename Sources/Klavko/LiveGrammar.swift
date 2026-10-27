@@ -5,7 +5,8 @@ import SwiftUI
 /// Mistakes underlined while typing, as in Grammarly: after a short pause the paragraphs of the focused text field
 /// that changed are checked with LanguageTool, and each mistake gets a wavy line under it, in a click-through window
 /// over the field. Pointing at one shows what's wrong and the fixes; a click puts the fix in.
-/// Works in apps that show their text to Accessibility (Notes, Mail, Messages, TextEdit, Safari…).
+/// Works in apps that show their text to Accessibility (Notes, Mail, Messages, TextEdit, Safari…), and in Google Docs
+/// with braille support on (Tools → Accessibility): the text comes from there, where the words are from the screen.
 @MainActor
 final class LiveGrammar {
     var checker: GrammarChecker?
@@ -21,6 +22,8 @@ final class LiveGrammar {
     /// Mistakes the user chose to leave: rule and word.
     private var ignored: Set<String> = []
     private var checking: Task<Void, Never>?
+    /// Reading the screen for where the words are (Google Docs).
+    private var reading: Task<Void, Never>?
     private var pending: DispatchWorkItem?
     private var timer: Timer?
     private var monitors: [Any] = []
@@ -79,6 +82,7 @@ final class LiveGrammar {
 
     func clear() {
         checking?.cancel()
+        reading?.cancel()
         overlay.hide()
         popup.close()
         marks = []
@@ -163,14 +167,31 @@ final class LiveGrammar {
         issues = GrammarCheck.awayFromCaret(issues, caret: state.caret)
         field = state.element
         fieldText = state.text
-        marks = issues.compactMap { issue in
-            let rects = state.rects(for: issue)
-            return rects.isEmpty ? nil : (issue, rects)
-        }
         drawnFor = state.signature
         hovered = nil
         popup.close()
-        overlay.show(marks.flatMap { mark in mark.rects.map { ($0, mark.issue.kind.nsColor) } }, clip: state.visibleFrame)
+        guard state.textIsElsewhere else {
+            return show(issues.map { ($0, state.rects(for: $0)) }, clip: state.visibleFrame)
+        }
+        // Google Docs: where the words are is read from the screen.
+        guard !issues.isEmpty else { return show([], clip: state.visibleFrame) }
+        reading?.cancel()
+        reading = Task { [weak self] in
+            guard let self else { return }
+            let languages = ScreenTextCapture.recognitionLanguages(self.languages())
+            guard let lines = await ScreenLines.read(window: state.visibleFrame, of: state.pid, languages: languages),
+                  !Task.isCancelled, self.drawnFor == state.signature else { return }
+            self.show(issues.map { issue in
+                guard let paragraph = paragraphs.last(where: { $0.offset <= issue.offset }) else { return (issue, []) }
+                let start = issue.offset - paragraph.offset
+                return (issue, lines.rects(of: start..<(start + issue.length), in: paragraph.text))
+            }, clip: state.visibleFrame)
+        }
+    }
+
+    private func show(_ found: [(GrammarIssue, [NSRect])], clip: NSRect) {
+        marks = found.filter { !$0.1.isEmpty }.map { (issue: $0.0, rects: $0.1) }
+        overlay.show(marks.flatMap { mark in mark.rects.map { ($0, mark.issue.kind.nsColor) } }, clip: clip)
     }
 
     private func isIgnored(_ issue: GrammarIssue, in text: String) -> Bool {
@@ -354,8 +375,12 @@ final class LiveGrammar {
 @MainActor
 private struct FieldState {
     let element: AXUIElement
+    let pid: pid_t
     let text: String
     let caret: Int?
+    /// The field is out of sight and the app draws the text itself (Google Docs with braille support on):
+    /// where the words are can only be read from the screen. `visibleFrame` is then the window.
+    let textIsElsewhere: Bool
     /// Where the text can be seen (the scroll view around it), in AppKit coordinates.
     let visibleFrame: NSRect
     let signature: String
@@ -405,8 +430,19 @@ private struct FieldState {
            let scrollFrame = frame(of: parent as! AXUIElement) {
             visible = ownFrame.intersection(scrollFrame)
         }
-        let signature = "\(text.hashValue)|\(caret ?? -1)|\(Int(ownFrame.minX)),\(Int(ownFrame.minY)),\(Int(ownFrame.width)),\(Int(ownFrame.height))"
-        return FieldState(element: element, text: text, caret: caret, visibleFrame: visible, signature: signature)
+        // Google Docs keeps its text for screen readers in a field one point high.
+        var window: CFTypeRef?
+        let elsewhere = ownFrame.height <= 2
+        if elsewhere {
+            guard AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &window) == .success,
+                  let window, CFGetTypeID(window) == AXUIElementGetTypeID(),
+                  let windowFrame = frame(of: window as! AXUIElement) else { return nil }
+            visible = windowFrame
+        }
+        let shown = elsewhere ? visible : ownFrame
+        let signature = "\(text.hashValue)|\(caret ?? -1)|\(Int(shown.minX)),\(Int(shown.minY)),\(Int(shown.width)),\(Int(shown.height))"
+        return FieldState(element: element, pid: app.processIdentifier, text: text, caret: caret, textIsElsewhere: elsewhere,
+                          visibleFrame: visible, signature: signature)
     }
 
     /// Where an issue's text is on screen: one rectangle a line (an issue split by a line wrap gets two).
