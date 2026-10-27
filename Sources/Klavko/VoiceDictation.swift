@@ -81,9 +81,12 @@ final class VoiceDictation: ObservableObject {
     /// can't finish (and insert into) the current one.
     private var session = 0
     private var finishingSince: Date?
+    /// Voice input with translation: what was said is inserted in this language.
+    private var translationTarget: String?
 
-    /// The hotkey: starts listening, or finishes and inserts what was heard.
-    func toggle() {
+    /// The hotkey: starts listening, or finishes and inserts what was heard. `translatingInto`: the hotkey of
+    /// voice input with translation (it inserts the translation; while listening, either hotkey finishes).
+    func toggle(translatingInto target: String? = nil) {
         switch stage {
         case .listening:
             finish()
@@ -91,10 +94,10 @@ final class VoiceDictation: ObservableObject {
             // Recognition should take well under a second; if it's stuck, let the key start afresh.
             if let since = finishingSince, Date().timeIntervalSince(since) > 5 {
                 Log.engine.notice("Voice input was stuck finishing; starting over")
-                start()
+                start(translatingInto: target)
             }
         case .idle, .failed:
-            start()
+            start(translatingInto: target)
         }
     }
 
@@ -122,8 +125,9 @@ final class VoiceDictation: ObservableObject {
 
     // MARK: - Recording
 
-    private func start() {
+    private func start(translatingInto target: String? = nil) {
         cancel()
+        translationTarget = target
         text = ""
         completed = false
         let codes = languages()
@@ -132,7 +136,7 @@ final class VoiceDictation: ObservableObject {
         allowed = codes
         // Load Parakeet while the user speaks.
         if let parakeet, parakeet.isDownloaded { parakeet.prepare() }
-        languageTitle = Self.title(first)
+        languageTitle = listeningTitle(first)
         shownLook = look()
         showPanel()
         let current = session
@@ -155,7 +159,7 @@ final class VoiceDictation: ObservableObject {
         if Self.recognizer(code) == nil, let available = others.first(where: { Self.recognizer($0) != nil }) {
             others = others.filter { $0 != available }
             code = available
-            languageTitle = Self.title(code)
+            languageTitle = listeningTitle(code)
         }
         // Google AI hears any language: if macOS has none of the chosen ones, record with any recognizer
         // (its text is only the preview and the fallback).
@@ -420,16 +424,61 @@ final class VoiceDictation: ObservableObject {
         completed = true
         session += 1  // anything still pending belongs to a finished recording now
         if insertOnFinish && !result.isEmpty {
-            insert(result)
             Log.engine.notice("Voice input chose \(language, privacy: .public)")
+            if let target = translationTarget {
+                live?.cancel()
+                translateAndInsert(result, into: target)
+                return
+            }
+            insert(result)
         }
         live?.cancel()
         cleanUp()
     }
 
-    private func insert(_ heard: String) {
-        insertOnFinish = false
+    /// Voice input with translation: the panel stays while the macOS translator works (on this Mac, a moment);
+    /// if it can't, what was said goes in as it was, with the reason on screen, so nothing is lost.
+    private func translateAndInsert(_ heard: String, into target: String) {
         let text = VoiceVocabulary.apply(heard, rules: vocabulary())
+        let source = TranslationDirection.language(of: text, among: allowed + [target]) ?? allowed.first ?? "uk"
+        guard source != target else {
+            insert(text, applyingVocabulary: false)
+            cleanUp()
+            return
+        }
+        languageTitle = tr("перекладаю: ", "translating: ") + Self.title(source) + " → " + Self.title(target)
+        let current = session
+        Task { [weak self] in
+            let outcome: Result<String, Translator.QuietFailure>
+            do {
+                outcome = .success(try await Translator.translateQuietly(text, from: source, to: target))
+            } catch let failure as Translator.QuietFailure {
+                outcome = .failure(failure)
+            } catch {
+                outcome = .failure(Translator.QuietFailure(message: error.localizedDescription))
+            }
+            guard let self, session == current else { return }
+            switch outcome {
+            case .success(let translated):
+                insert(translated, applyingVocabulary: false)
+                Log.engine.notice("Voice input translated \(source, privacy: .public) → \(target, privacy: .public)")
+            case .failure(let failure):
+                insert(text, applyingVocabulary: false)
+                stage = .failed(failure.message)
+            }
+            cleanUp()
+        }
+    }
+
+    /// The language listened in, and the one it goes into when translating.
+    private func listeningTitle(_ code: String) -> String {
+        guard let target = translationTarget, target != code else { return Self.title(code) }
+        return Self.title(code) + " → " + Self.title(target)
+    }
+
+    private func insert(_ heard: String, applyingVocabulary: Bool = true) {
+        insertOnFinish = false
+        let text = applyingVocabulary ? VoiceVocabulary.apply(heard, rules: vocabulary()) : heard
         // Separate from the word before the caret, if there is one.
         let before = CaretContext.textBeforeCaret(limit: 1) ?? ""
         let spaced = (before.last.map { !$0.isWhitespace } ?? false) ? " " + text : text

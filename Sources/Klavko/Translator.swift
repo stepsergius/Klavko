@@ -222,6 +222,41 @@ final class Translator: ObservableObject {
         }
     }
 
+    /// Why a translation without the panel didn't happen, said to the user.
+    struct QuietFailure: Error {
+        let message: String
+    }
+
+    /// Translates with no panel (voice input with translation). Needs macOS 26, and the two languages
+    /// downloaded: without the panel macOS can't ask to download them.
+    nonisolated static func translateQuietly(_ text: String, from source: String, to target: String) async throws -> String {
+        guard #available(macOS 26.0, *) else {
+            throw QuietFailure(message: tr("Голосовий ввід із перекладом потребує macOS 26 або новішої.",
+                                           "Voice input with translation needs macOS 26 or later."))
+        }
+        let from = Locale.Language(identifier: source)
+        let into = Locale.Language(identifier: target)
+        switch await LanguageAvailability().status(from: from, to: into) {
+        case .installed:
+            break
+        case .supported:
+            throw QuietFailure(message: tr("Мови для перекладу ще не завантажені. Перекладіть будь-яке виділення через Klavko — macOS запропонує їх завантажити.",
+                                           "The translation languages aren’t downloaded yet. Translate any selection with Klavko and macOS will offer to download them."))
+        case .unsupported:
+            throw QuietFailure(message: tr("Перекладач macOS не підтримує цю пару мов.", "The macOS translator doesn’t support this language pair."))
+        @unknown default:
+            break
+        }
+        let session = TranslationSession(installedSource: from, target: into)
+        let lines = TranslationLines(text)
+        do {
+            let responses = try await session.translations(from: lines.toTranslate.map { TranslationSession.Request(sourceText: $0) })
+            return lines.assemble(responses.map(\.targetText))
+        } catch {
+            throw QuietFailure(message: message(for: error))
+        }
+    }
+
     private func finish(_ finished: Job, _ stage: Stage) {
         guard job?.id == finished.id else { return }
         self.stage = stage

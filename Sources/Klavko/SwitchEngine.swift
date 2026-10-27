@@ -64,6 +64,7 @@ final class SwitchEngine {
     var onScreenText: () -> Void = {}
     var onQuickActions: () -> Void = {}
     var onVoice: () -> Void = {}
+    var onVoiceTranslate: () -> Void = {}
     /// Esc was pressed: true if something (voice input) used it, so it isn't passed on.
     var onEscape: () -> Bool = { false }
     /// Return / Enter was pressed: true if something (voice input) used it, so it isn't passed on.
@@ -892,6 +893,9 @@ final class SwitchEngine {
         case .voice:
             reset()
             onVoice()
+        case .voiceTranslate:
+            reset()
+            onVoiceTranslate()
         case .quickActions:
             reset()
             onQuickActions()

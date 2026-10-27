@@ -26,7 +26,7 @@ public struct TranslationDirection: Equatable, Sendable {
     }
 
     /// The language `text` is written in, of `candidates`; nil when it has no letters.
-    static func language(of text: String, among candidates: [String]) -> String? {
+    public static func language(of text: String, among candidates: [String]) -> String? {
         let letters = text.unicodeScalars.filter { CharacterSet.letters.contains($0) }
         guard !letters.isEmpty else { return nil }
         let recognizer = NLLanguageRecognizer()

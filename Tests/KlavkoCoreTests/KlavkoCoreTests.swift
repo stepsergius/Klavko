@@ -1120,6 +1120,9 @@ final class QuickTextTests: XCTestCase {
         XCTAssertTrue(AIService.claude.webURL(for: "hi").carriesText)
         XCTAssertFalse(AIService.gemini.webURL(for: "hi").carriesText)
         XCTAssertFalse(AIService.perplexity.webURL(for: "hi").carriesText)
+        XCTAssertEqual(HotkeyAction.voiceTranslate.defaultShortcut, Shortcut(modifiers: [.function, .control], double: false))
+        XCTAssertNotEqual(HotkeyAction.voiceTranslate.defaultShortcut, HotkeyAction.voice.defaultShortcut)
+        XCTAssertEqual(TranslationDirection.language(of: "Привіт, як справи?", among: ["uk", "en"]), "uk")
         XCTAssertEqual(QuickText.sentenceCased("ПРИВІТ, СВІТЕ. ЯК СПРАВИ? ДОБРЕ!\nНОВИЙ РЯДОК 2 РАЗИ"),
                        "Привіт, світе. Як справи? Добре!\nНовий рядок 2 рази")
         XCTAssertEqual(QuickText.sentenceCased("  hello WORLD"), "  Hello world")

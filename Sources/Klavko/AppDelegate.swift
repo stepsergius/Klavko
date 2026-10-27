@@ -137,6 +137,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         engine.onVoice = { [unowned self] in
             MainActor.assumeIsolated { dictation.toggle() }
         }
+        engine.onVoiceTranslate = { [unowned self] in
+            MainActor.assumeIsolated { dictation.toggle(translatingInto: settings.voiceTranslationTarget) }
+        }
         engine.onReturn = { [unowned self] in
             MainActor.assumeIsolated {
                 if dictation.handleReturn() { return true }

@@ -42,6 +42,7 @@ final class Settings: ObservableObject {
         static let voicePanelStyle = "voicePanelStyle"
         static let voicePanelPosition = "voicePanelPosition"
         static let voiceShowText = "voiceShowText"
+        static let voiceTranslationTarget = "voiceTranslationTarget"
         static let saveVoiceHistory = "saveVoiceHistory"
         static let quickActionsEnabled = "quickActionsEnabled"
         static let quickActionsPosition = "quickActionsPosition"
@@ -301,6 +302,10 @@ final class Settings: ObservableObject {
     @Published var voiceShowText: Bool {
         didSet { defaults.set(voiceShowText, forKey: Key.voiceShowText) }
     }
+    /// Voice input with translation inserts what was said in this language.
+    @Published var voiceTranslationTarget: String {
+        didSet { defaults.set(voiceTranslationTarget, forKey: Key.voiceTranslationTarget) }
+    }
 
     var voiceLook: VoiceLook {
         VoiceLook(style: voicePanelStyle, position: voicePanelPosition, showText: voiceShowText)
@@ -509,6 +514,7 @@ final class Settings: ObservableObject {
         voicePanelStyle = defaults.string(forKey: Key.voicePanelStyle).flatMap(VoiceLook.Style.init(rawValue:)) ?? .large
         voicePanelPosition = defaults.string(forKey: Key.voicePanelPosition).flatMap(VoiceLook.Position.init(rawValue:)) ?? .bottom
         voiceShowText = defaults.bool(forKey: Key.voiceShowText)
+        voiceTranslationTarget = defaults.string(forKey: Key.voiceTranslationTarget) ?? "en"
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above

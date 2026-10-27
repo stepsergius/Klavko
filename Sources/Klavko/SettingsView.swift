@@ -649,6 +649,21 @@ struct SettingsView: View {
                     }
 
                     Section {
+                        Picker(tr("Перекладати на", "Translate into"), selection: $settings.voiceTranslationTarget) {
+                            ForEach(Translator.ordered(TranslationDirection.languages), id: \.self) {
+                                Text(Translator.languageName($0)).tag($0)
+                            }
+                        }
+                    } header: {
+                        Text(tr("Голосовий ввід із перекладом", "Voice input with translation"))
+                    } footer: {
+                        Text(tr("Гаряча клавіша «Голосовий ввід із перекладом» (за замовчуванням Fn+⌃) вмикає той самий голосовий ввід, але вставляє сказане вибраною мовою. Перекладає перекладач macOS на цьому Mac, без інтернету.",
+                                "The “Voice input with translation” hotkey (Fn+⌃ by default) starts the same voice input but inserts what you said in the chosen language. The macOS translator does it on this Mac, without the internet."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         HStack {
                             Text(trFormat("Слів сьогодні: %1$@ · усього: %2$@", "Words today: %1$@ · all time: %2$@",
                                           StatsFormat.number(voiceStats.stats.counts(.day).words),
