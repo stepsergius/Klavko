@@ -239,14 +239,11 @@ final class LiveGrammar {
         let original = String(fieldText[range])
         let expected = fieldText.replacingCharacters(in: range, with: replacement)
         let caret = Self.selectedRange(of: field)
-        var cfRange = CFRange(location: issue.offset, length: issue.length)
-        guard let value = AXValueCreate(.cfRange, &cfRange) else { return }
-        AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute as CFString, value)
         clear()
         schedule(after: 0.8)
         // Some apps take a moment to select; some say yes and leave the caret where it was (the fix would then land
         // next to the word, not over it), so it's put in only once the word itself is selected.
-        Self.wait(until: { Self.selectedText(of: field) == original }) { selected in
+        Self.select(original, at: issue.offset, in: field) { selected in
             if selected {
                 let selection = SelectionConverter.Selection(text: original, element: field)
                 if selection.replace(with: replacement), Self.value(of: field) == expected { return self.log(issue, "accessibility") }
@@ -271,6 +268,35 @@ final class LiveGrammar {
                 self.log(issue, "arrows")
             }
         }
+    }
+
+    /// Selects `word`, which is at `offset` of the field's value. Obsidian and other Electron apps count the
+    /// selection differently from the value they show (bold text and links get line breaks around them there):
+    /// where the selection lands tells by how much, and it's tried again that much off.
+    private static func select(_ word: String, at offset: Int, in field: AXUIElement, attempt: Int = 0,
+                               then done: @escaping (Bool) -> Void) {
+        var range = CFRange(location: offset, length: word.utf16.count)
+        guard let value = AXValueCreate(.cfRange, &range) else { return done(false) }
+        AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute as CFString, value)
+        wait(until: { selectedText(of: field) == word }) { selected in
+            if selected { return done(true) }
+            guard attempt < 3, let landed = selectedText(of: field), !landed.isEmpty, let text = Self.value(of: field),
+                  let target = nearest(word, to: offset, in: text), let found = nearest(landed, to: target, in: text),
+                  found != target else { return done(false) }
+            select(word, at: offset + target - found, in: field, attempt: attempt + 1, then: done)
+        }
+    }
+
+    /// Where `part` is in `text` closest to `offset` (UTF-16 units).
+    private static func nearest(_ part: String, to offset: Int, in text: String) -> Int? {
+        var best: Int?
+        var from = text.startIndex
+        while let found = text.range(of: part, range: from..<text.endIndex) {
+            let at = text.utf16.distance(from: text.startIndex, to: found.lowerBound)
+            if best.map({ abs(at - offset) < abs($0 - offset) }) ?? true { best = at }
+            from = text.index(after: found.lowerBound)
+        }
+        return best
     }
 
     /// Checks `condition` a few times over about half a second, then says whether it came true.
