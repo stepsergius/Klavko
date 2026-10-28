@@ -288,8 +288,12 @@ final class SwitchEngine {
         if keyCode == KeyCode.space, flags.contains(.maskControl), !flags.contains(.maskCommand) {
             return true
         }
-        if flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate)
-            || event.getIntegerValueField(.keyboardEventAutorepeat) != 0 {
+        let repeated = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+        // ← or → held down in the emoji list: it keeps going along it.
+        if repeated, keyCode == 123 || keyCode == 124, emojiQuery != nil, let used = handleEmojiKey(keyCode, flags) {
+            return used
+        }
+        if flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate) || repeated {
             reset()
             return true
         }
