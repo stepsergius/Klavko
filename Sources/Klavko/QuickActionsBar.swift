@@ -230,6 +230,7 @@ final class QuickActionsBar {
         model.keyIndex = byKeyboard ? 0 : nil
         model.page = .main
         model.emojiNearCaret = false
+        model.emojiFitted = false
         model.speaking = speech.isSpeaking
         model.run = { [weak self] action in self?.run(action) }
         model.wrap = { [weak self] open, close in self?.replace { QuickText.wrapped($0, open: open, close: close) } }
@@ -250,6 +251,8 @@ final class QuickActionsBar {
         model.emojis = sections.flatMap(\.emojis)
         model.emojiGroups = Self.marks(sections)
         model.groupFocus = nil
+        // All of them scroll (the few after a word fit, which this list must not).
+        model.emojiFitted = false
         model.emojiWidth = fullWidth
         model.page = .emoji
         model.keyIndex = 1
