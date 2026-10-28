@@ -246,8 +246,6 @@ final class QuickActionsBar {
         model.emojiRecentCount = listed.recent.count
         model.emojis = listed.recent + listed.rest
         model.emojiWidth = fullWidth
-        // Where the bar was: its middle stays, the emoji scroll inside.
-        if let panel { anchorX = panel.frame.midX }
         model.page = .emoji
         model.keyIndex = 1
         // The arrows go to the bar now (the app with the text stays in front).
@@ -293,7 +291,8 @@ final class QuickActionsBar {
         model.close = { [weak self] in self?.hide() }
         model.anchorMoved = { [weak self] in self?.keepAnchored() }
         guard !wasShowing else { return }
-        // Where the bar comes up, over (or under) the line with the caret; where the app doesn't tell, at the mouse.
+        // Where the bar comes up, over (or under) the line, its first emoji at the caret; where the app doesn't tell,
+        // at the mouse.
         let mouse = NSEvent.mouseLocation
         // A caret's rect is a sliver within the line (TextEdit's ends above the descenders): a little room below it.
         let caret = Self.caretRect().map { NSRect(x: $0.minX, y: $0.minY - 6, width: $0.width, height: $0.height + 6) }
@@ -845,6 +844,11 @@ private struct QuickActionsView: View {
                     guard let key = model.keyIndex, key >= offset else { return }
                     withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: .center) }
                 }
+                // The first emoji at the colon (the selection), the rest to the right: measured on the row's frame,
+                // which doesn't scroll, so the bar stays put.
+                .background(GeometryReader {
+                    Color.clear.preference(key: BarAnchorKey.self, value: $0.frame(in: .named("bar")).minX + 15)
+                })
             }
         }
         // The bar's 3-point margins aside.
