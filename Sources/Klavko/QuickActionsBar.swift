@@ -341,6 +341,22 @@ final class QuickActionsBar {
                 return NSRect(x: after.minX, y: after.minY, width: 0, height: after.height)
             }
         }
+        // Chromium and Electron (Claude, Slack…) tell it by text markers.
+        var markers: CFTypeRef?
+        var markerBounds: CFTypeRef?
+        if AXUIElementCopyAttributeValue(field, "AXSelectedTextMarkerRange" as CFString, &markers) == .success, let markers,
+           AXUIElementCopyParameterizedAttributeValue(field, "AXBoundsForTextMarkerRange" as CFString, markers,
+                                                      &markerBounds) == .success,
+           let markerBounds, CFGetTypeID(markerBounds) == AXValueGetTypeID(),
+           let mainHeight = NSScreen.screens.first?.frame.height {
+            var rect = CGRect.zero
+            AXValueGetValue(markerBounds as! AXValue, .cgRect, &rect)
+            let flipped = NSRect(x: rect.minX, y: mainHeight - rect.maxY, width: 0, height: rect.height)
+            // An empty field answers with all of it: its start is the caret then.
+            if rect.height > 0, rect.height < 200, NSScreen.screens.contains(where: { $0.frame.contains(flipped.origin) }) {
+                return flipped
+            }
+        }
         // Nothing about the caret: a field of a line or a few, at its start (the mouse may be anywhere).
         if let frame = frame(of: field), frame.height < 120 {
             return NSRect(x: frame.minX + 12, y: frame.minY, width: 0, height: frame.height)
