@@ -83,6 +83,8 @@ final class SwitchEngine {
         var byColon: () -> Bool = { false }
         /// Emoji offered after a word that names one.
         var suggestions: () -> Bool = { false }
+        /// The emoji picked after a word takes its place.
+        var replacesWord: () -> Bool = { false }
         /// The list is on screen (something was found).
         var isShowing: () -> Bool = { false }
         /// The name typed after the colon so far (may be empty), in the layout's language.
@@ -398,12 +400,21 @@ final class SwitchEngine {
                 guard let chosen = emoji.chosen() else { break }
                 emojiPicking = false
                 emoji.end()
-                let text = " " + chosen
-                TextInjector.type(text)
-                endWord()
-                lastWord = []
-                text.forEach { appendVisible(String($0)) }
-                Log.engine.notice("Emoji put after a word")
+                let word = currentPair().flatMap { $0.current.map.render(buffer) } ?? ""
+                if emoji.replacesWord(), !word.isEmpty {
+                    TextInjector.replace(deleting: word.count, with: chosen)
+                    replaceVisibleSuffix(word.count, with: chosen)
+                    endWord()
+                    lastWord = []
+                    Log.engine.notice("Emoji put instead of a word")
+                } else {
+                    let text = " " + chosen
+                    TextInjector.type(text)
+                    endWord()
+                    lastWord = []
+                    text.forEach { appendVisible(String($0)) }
+                    Log.engine.notice("Emoji put after a word")
+                }
                 return false
             case KeyCode.escape where emojiPicking:
                 emojiPicking = false

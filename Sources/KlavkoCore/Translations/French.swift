@@ -377,8 +377,11 @@ extension Translations {
         "Emoji by name after a colon": "Emoji par leur nom après deux-points",
         "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "Une espace, deux-points et un nom — « :rire », « :cœur » — affichent des emoji au curseur. ← → pour choisir, Retour ou Tab pour en insérer un, Échap pour fermer. Les noms sont dans la langue de la disposition utilisée.",
         "Suggest emoji after a word": "Suggérer des emoji après un mot",
-        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "Après un mot qui désigne un emoji (« cœur », « feu »), ❤️ et 🔥 apparaissent à côté. Tab place le premier après le mot.",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in.": "Après un mot qui désigne un emoji (« cœur », « feu »), ❤️ et 🔥 apparaissent au-dessus. Tab insère le premier ; ↑ pour y aller, ← → pour choisir, Retour ou Tab pour en insérer un.",
         "Emoji": "Emoji",
         "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "Tous les emoji : l’action Emoji de la barre d’actions rapides, d’abord les cinq derniers utilisés, puis les autres.",
+        "The chosen emoji": "L’emoji choisi",
+        "Goes after the word": "Se place après le mot",
+        "Replaces the word": "Remplace le mot",
     ]
 }

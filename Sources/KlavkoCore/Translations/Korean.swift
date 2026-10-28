@@ -377,8 +377,11 @@ extension Translations {
         "Emoji by name after a colon": "콜론 뒤에 이름으로 이모지",
         "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "공백, 콜론, 이름(“:smile”, “:heart”)을 입력하면 커서 옆에 이모지가 나타납니다. ← → 선택, Return 또는 Tab 입력, Esc 닫기. 이름은 입력 중인 자판의 언어입니다.",
         "Suggest emoji after a word": "단어 뒤에 이모지 제안",
-        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "이모지를 뜻하는 단어(“heart”, “fire”) 뒤에 ❤️, 🔥가 옆에 나타납니다. Tab을 누르면 첫 번째가 단어 뒤에 들어갑니다.",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in.": "이모지를 뜻하는 단어(“heart”, “fire”) 뒤에 그 위로 ❤️, 🔥가 나타납니다. Tab은 첫 번째를 입력하고, ↑로 목록에 들어가 ← →로 고른 뒤 Return 또는 Tab으로 입력합니다.",
         "Emoji": "이모지",
         "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "모든 이모지: 빠른 동작 막대의 이모지 동작. 최근에 쓴 다섯 개가 먼저, 그다음 나머지.",
+        "The chosen emoji": "고른 이모지",
+        "Goes after the word": "단어 뒤에 넣기",
+        "Replaces the word": "단어 대신 넣기",
     ]
 }

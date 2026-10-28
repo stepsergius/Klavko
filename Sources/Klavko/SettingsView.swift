@@ -437,9 +437,14 @@ struct SettingsView: View {
                         }
                         Toggle(isOn: $settings.emojiSuggestions) {
                             Text(tr("Підказувати емодзі після слова", "Suggest emoji after a word"))
-                            Text(tr("Після слова, яке називає емодзі («серце», «вогонь»), поруч з’являються ❤️, 🔥. Tab ставить перше після слова.",
-                                    "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word."))
+                            Text(tr("Після слова, яке називає емодзі («серце», «вогонь»), над ним з’являються ❤️, 🔥. Tab вставляє перше; ↑ — до них, ← → — вибрати, Return чи Tab — вставити.",
+                                    "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in."))
                         }
+                        Picker(tr("Обране емодзі", "The chosen emoji"), selection: $settings.emojiReplacesWord) {
+                            Text(tr("Ставиться після слова", "Goes after the word")).tag(false)
+                            Text(tr("Замінює слово", "Replaces the word")).tag(true)
+                        }
+                        .disabled(!settings.emojiSuggestions)
                     } header: {
                         Text(tr("Емодзі", "Emoji"))
                     } footer: {

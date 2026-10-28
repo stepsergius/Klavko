@@ -11,7 +11,7 @@ final class EmojiInput {
 
     /// What the list near the caret is for: the name typed after " :" (the colon and it give way to the emoji),
     /// or the word just typed (the emoji goes after it).
-    private enum Showing { case name(String), word }
+    private enum Showing { case name(String), word(String) }
     private var showing: Showing?
     private var catalogs: [String: EmojiCatalog] = [:]
 
@@ -47,6 +47,7 @@ final class EmojiInput {
         var hooks = SwitchEngine.EmojiHooks()
         hooks.byColon = { [weak self] in self?.settings()?.emojiByColon ?? false }
         hooks.suggestions = { [weak self] in self?.settings()?.emojiSuggestions ?? false }
+        hooks.replacesWord = { [weak self] in self?.settings()?.emojiReplacesWord ?? false }
         hooks.isShowing = { [weak self] in self?.bar?.isShowingEmojiList ?? false }
         hooks.search = { [weak self] query, language in self?.search(query, language: language) }
         hooks.word = { [weak self] word, language in self?.offer(for: word, language: language) }
@@ -80,7 +81,7 @@ final class EmojiInput {
             if case .word = showing { end() }
             return
         }
-        showing = .word
+        showing = .word(word)
         // Nothing picked until ↑ (or Tab, the first).
         bar?.showEmojiList(found, highlighted: false, fitted: true)
     }
@@ -97,7 +98,12 @@ final class EmojiInput {
         used(emoji)
         switch showing {
         case .name(let query): TextInjector.replace(deleting: 1 + query.count, with: emoji)
-        case .word: TextInjector.type(" " + emoji)
+        case .word(let word):
+            if settings()?.emojiReplacesWord == true {
+                TextInjector.replace(deleting: word.count, with: emoji)
+            } else {
+                TextInjector.type(" " + emoji)
+            }
         case nil: TextInjector.type(emoji)
         }
         showing = nil

@@ -377,8 +377,11 @@ extension Translations {
         "Emoji by name after a colon": "İki noktadan sonra adıyla emoji",
         "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "Boşluk, iki nokta ve bir ad — “:gülme”, “:kalp” — imlecin yanında emojileri gösterir. ← → seçer, Return veya Tab ekler, Esc kapatır. Adlar, yazdığınız klavye düzeninin dilindedir.",
         "Suggest emoji after a word": "Bir kelimeden sonra emoji öner",
-        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "Bir emojiyi adlandıran kelimeden sonra (“kalp”, “ateş”) yanında ❤️ ve 🔥 belirir. Tab ilkini kelimenin ardına koyar.",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in.": "Bir emojiyi adlandıran kelimeden sonra (“kalp”, “ateş”) üstünde ❤️ ve 🔥 belirir. Tab ilkini ekler; ↑ onlara geçer, ← → seçer, Return veya Tab ekler.",
         "Emoji": "Emoji",
         "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "Tüm emojiler: Hızlı Eylemler çubuğundaki Emoji eylemi; önce son kullanılan beş tanesi, sonra diğerleri.",
+        "The chosen emoji": "Seçilen emoji",
+        "Goes after the word": "Kelimenin ardına gelir",
+        "Replaces the word": "Kelimenin yerine geçer",
     ]
 }

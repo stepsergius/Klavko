@@ -377,8 +377,11 @@ extension Translations {
         "Emoji by name after a colon": "在冒号后按名称输入表情",
         "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in.": "输入空格、冒号和名称（“:smile”“:heart”），光标旁会显示表情。← → 选择，Return 或 Tab 插入，Esc 关闭。名称使用你当前输入布局的语言。",
         "Suggest emoji after a word": "在词语后建议表情",
-        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear next to it. Tab puts the first one after the word.": "输入能表示表情的词（“heart”“fire”）后，旁边会出现 ❤️ 和 🔥。按 Tab 把第一个放在词后。",
+        "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in.": "输入能表示表情的词（“heart”“fire”）后，上方会出现 ❤️ 和 🔥。Tab 插入第一个；↑ 进入列表，← → 选择，Return 或 Tab 插入。",
         "Emoji": "表情",
         "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest.": "全部表情：快捷操作栏中的“表情”操作，先是最近用过的五个，然后是其余的。",
+        "The chosen emoji": "选中的表情",
+        "Goes after the word": "放在词语后面",
+        "Replaces the word": "替换词语",
     ]
 }

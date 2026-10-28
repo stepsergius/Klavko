@@ -47,6 +47,7 @@ final class Settings: ObservableObject {
         static let googleDocsAnswer = "googleDocsAnswer"
         static let emojiByColon = "emojiByColon"
         static let emojiSuggestions = "emojiSuggestions"
+        static let emojiReplacesWord = "emojiReplacesWord"
         static let recentEmoji = "recentEmoji"
         static let googleDocsLaterSince = "googleDocsLaterSince"
         static let saveVoiceHistory = "saveVoiceHistory"
@@ -331,6 +332,10 @@ final class Settings: ObservableObject {
     @Published var emojiSuggestions: Bool {
         didSet { defaults.set(emojiSuggestions, forKey: Key.emojiSuggestions) }
     }
+    /// The emoji picked after a word takes its place ("серце" → ❤️) rather than following it ("серце ❤️").
+    @Published var emojiReplacesWord: Bool {
+        didSet { defaults.set(emojiReplacesWord, forKey: Key.emojiReplacesWord) }
+    }
     /// Emoji put in through Klavko, the latest first.
     var recentEmoji: [String] {
         get { defaults.stringArray(forKey: Key.recentEmoji) ?? [] }
@@ -555,6 +560,7 @@ final class Settings: ObservableObject {
         googleDocsAnswer = defaults.string(forKey: Key.googleDocsAnswer) ?? ""
         emojiByColon = defaults.object(forKey: Key.emojiByColon) as? Bool ?? true
         emojiSuggestions = defaults.bool(forKey: Key.emojiSuggestions)
+        emojiReplacesWord = defaults.bool(forKey: Key.emojiReplacesWord)
         saveVoiceHistory = defaults.bool(forKey: Key.saveVoiceHistory)
         quickActionsEnabled = defaults.object(forKey: Key.quickActionsEnabled) as? Bool ?? true
         quickActionsPosition = defaults.string(forKey: Key.quickActionsPosition).flatMap(QuickActionsPosition.init(rawValue:)) ?? .above
