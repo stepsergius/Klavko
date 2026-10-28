@@ -251,6 +251,7 @@ final class QuickActionsBar {
         model.emojis = sections.flatMap(\.emojis)
         model.emojiGroups = Self.marks(sections)
         model.groupFocus = nil
+        model.emojiListID += 1
         // All of them scroll (the few after a word fit, which this list must not).
         model.emojiFitted = false
         model.emojiWidth = fullWidth
@@ -338,6 +339,7 @@ final class QuickActionsBar {
         model.emojiRecentCount = recentCount
         model.emojiGroups = groups
         model.groupFocus = nil
+        model.emojiListID += 1
         model.emojiWidth = fullWidth
         model.emojiFitted = fitted
         model.emojiNearCaret = true
@@ -820,6 +822,8 @@ final class QuickActionsModel: ObservableObject {
     @Published var groupFocus: Int?
     /// ↓ just went into a group: its first emoji stays at the start, where the group brought it.
     var enteredGroup = false
+    /// A new list of emoji: it starts at its beginning, not where the last one was scrolled to.
+    @Published var emojiListID = 0
     var insertEmoji: (String) -> Void = { _ in }
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
@@ -1013,6 +1017,7 @@ private struct QuickActionsView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHStack(spacing: 0) { emojiButtons(offset: offset) }
                     }
+                    .id(model.emojiListID)
                     .frame(height: 32)
                     .onChange(of: model.keyIndex) {
                         guard let key = model.keyIndex, key >= offset else { return }
@@ -1057,6 +1062,7 @@ private struct QuickActionsView: View {
                 }
                 .padding(.horizontal, 2)
             }
+            .id(model.emojiListID)
             .frame(height: 26)
             .onChange(of: model.currentGroup) {
                 proxy.scrollTo("group\(model.currentGroup)", anchor: .center)
