@@ -81,7 +81,7 @@ final class EmojiInput {
             return
         }
         showing = .word
-        bar?.showEmojiList(found)
+        bar?.showEmojiList(found, fitted: true)
     }
 
     private func end() {

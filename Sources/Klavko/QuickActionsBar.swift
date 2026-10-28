@@ -278,12 +278,14 @@ final class QuickActionsBar {
     }
 
     /// `recentCount`: how many of `emojis` are the latest used (a divider after them). Not `highlighted`: none is
-    /// picked until an arrow is pressed (Return goes on to the app).
-    func showEmojiList(_ emojis: [String], recentCount: Int = 0, highlighted: Bool = true) {
+    /// picked until an arrow is pressed (Return goes on to the app). `fitted`: the few offered after a word, the bar
+    /// as wide as they are and over the caret.
+    func showEmojiList(_ emojis: [String], recentCount: Int = 0, highlighted: Bool = true, fitted: Bool = false) {
         let wasShowing = isShowingEmojiList
         model.emojis = emojis
         model.emojiRecentCount = recentCount
         model.emojiWidth = fullWidth
+        model.emojiFitted = fitted
         model.emojiNearCaret = true
         model.page = .emoji
         model.keyIndex = highlighted ? 0 : nil
@@ -296,8 +298,8 @@ final class QuickActionsBar {
         let mouse = NSEvent.mouseLocation
         // A caret's rect is a sliver within the line (TextEdit's ends above the descenders): a little room below it.
         let caret = Self.caretRect().map { NSRect(x: $0.minX, y: $0.minY - 6, width: $0.width, height: $0.height + 6) }
-        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: settings()?.quickActionsPosition ?? .above,
-                takesKeys: false)
+        let position = fitted ? .above : settings()?.quickActionsPosition ?? .above
+        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: position, takesKeys: false)
     }
 
     func hideEmojiList() {
@@ -716,6 +718,8 @@ fileprivate final class QuickActionsModel: ObservableObject {
     var aiServices: [AIService] = []
     /// How wide the Emoji page is: as the bar with all its actions.
     @Published var emojiWidth: CGFloat = 400
+    /// Only as wide as its emoji (the few offered after a word).
+    @Published var emojiFitted = false
     /// The Emoji page: the emoji, the first `emojiRecentCount` of them the latest used.
     @Published var emojis: [String] = []
     var emojiRecentCount = 0
@@ -857,38 +861,54 @@ private struct QuickActionsView: View {
     private var emojiPage: some View {
         let offset = model.emojiNearCaret ? 0 : 1
         return HStack(spacing: 0) {
+            if model.emojiFitted {
+                HStack(spacing: 0) { emojiButtons(offset: offset) }
+                    .background(firstEmojiAnchor)
+            } else {
+                scrollingEmoji(offset: offset)
+            }
+        }
+    }
+
+    /// All the emoji (or the found ones) in a row as wide as the bar with all its actions.
+    private func scrollingEmoji(offset: Int) -> some View {
+        HStack(spacing: 0) {
             if !model.emojiNearCaret {
                 back
                 separator
             }
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 0) {
-                        ForEach(Array(model.emojis.enumerated()), id: \.offset) { index, emoji in
-                            if index == model.emojiRecentCount && index > 0 {
-                                separator.padding(.horizontal, 6)
-                            }
-                            BarButton(help: "", selected: model.keyIndex == index + offset, padding: 3,
-                                      action: { model.insertEmoji(emoji) }) {
-                                Text(emoji).font(.system(size: 18))
-                            }
-                            .id(index)
-                        }
-                    }
+                    LazyHStack(spacing: 0) { emojiButtons(offset: offset) }
                 }
                 .onChange(of: model.keyIndex) {
                     guard let key = model.keyIndex, key >= offset else { return }
                     withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: .center) }
                 }
-                // The first emoji at the colon (the selection), the rest to the right: measured on the row's frame,
-                // which doesn't scroll, so the bar stays put.
-                .background(GeometryReader {
-                    Color.clear.preference(key: BarAnchorKey.self, value: $0.frame(in: .named("bar")).minX + 15)
-                })
+                // Measured on the row's frame, which doesn't scroll: the bar stays put.
+                .background(firstEmojiAnchor)
             }
         }
         // The bar's 3-point margins aside.
         .frame(width: max(model.emojiWidth - 6, 120))
+    }
+
+    @ViewBuilder private func emojiButtons(offset: Int) -> some View {
+        ForEach(Array(model.emojis.enumerated()), id: \.offset) { index, emoji in
+            if index == model.emojiRecentCount && index > 0 {
+                separator.padding(.horizontal, 6)
+            }
+            BarButton(help: "", selected: model.keyIndex == index + offset, padding: 3,
+                      action: { model.insertEmoji(emoji) }) {
+                Text(emoji).font(.system(size: 18))
+            }
+            .id(index)
+        }
+    }
+
+    /// The first emoji at the colon (the selection, the word), the rest to the right.
+    private var firstEmojiAnchor: some View {
+        GeometryReader { Color.clear.preference(key: BarAnchorKey.self, value: $0.frame(in: .named("bar")).minX + 15) }
     }
 
     private var separator: some View {
