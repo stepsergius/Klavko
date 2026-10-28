@@ -818,6 +818,8 @@ final class QuickActionsModel: ObservableObject {
     @Published var emojiGroups: [GroupMark] = []
     /// The group the keyboard is on (↑ from the emoji); nil: on the emoji.
     @Published var groupFocus: Int?
+    /// ↓ just went into a group: its first emoji stays at the start, where the group brought it.
+    var enteredGroup = false
     var insertEmoji: (String) -> Void = { _ in }
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
@@ -849,6 +851,7 @@ final class QuickActionsModel: ObservableObject {
     /// ↓ (or Return) from a group: to its first emoji.
     func enterGroup() {
         guard let groupFocus else { return }
+        enteredGroup = true
         keyIndex = emojiGroups[groupFocus].start + (emojiNearCaret ? 0 : 1)
         self.groupFocus = nil
     }
@@ -914,6 +917,8 @@ private extension View {
 private struct QuickActionsView: View {
     @ObservedObject var model: QuickActionsModel
     @Environment(\.colorScheme) private var colorScheme
+    /// When the keyboard last moved along the emoji (a held arrow comes every few hundredths of a second).
+    @State private var lastMove = Date.distantPast
 
     var body: some View {
         HStack(spacing: 0) {
@@ -1011,9 +1016,17 @@ private struct QuickActionsView: View {
                     .frame(height: 32)
                     .onChange(of: model.keyIndex) {
                         guard let key = model.keyIndex, key >= offset else { return }
-                        // Into a group: its first emoji stays at the start, where the group brought it.
-                        let anchor: UnitPoint = model.emojiGroups.contains { $0.start == key - offset } ? .leading : .center
-                        withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: anchor) }
+                        let anchor: UnitPoint = model.enteredGroup ? .leading : .center
+                        model.enteredGroup = false
+                        // An arrow held down moves faster than an animation: then the row follows at once.
+                        let now = Date()
+                        let held = now.timeIntervalSince(lastMove) < 0.15
+                        lastMove = now
+                        if held {
+                            proxy.scrollTo(key - offset, anchor: anchor)
+                        } else {
+                            withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: anchor) }
+                        }
                     }
                     // A group chosen: its emoji come up.
                     .onChange(of: model.groupFocus) {
@@ -1046,7 +1059,7 @@ private struct QuickActionsView: View {
             }
             .frame(height: 26)
             .onChange(of: model.currentGroup) {
-                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo("group\(model.currentGroup)", anchor: .center) }
+                proxy.scrollTo("group\(model.currentGroup)", anchor: .center)
             }
         }
     }
