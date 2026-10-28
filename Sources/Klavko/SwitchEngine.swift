@@ -91,7 +91,13 @@ final class SwitchEngine {
         var search: (_ query: String, _ language: String) -> Void = { _, _ in }
         /// The word just typed (nil: none, the caret is past it), in the layout's language.
         var word: (_ word: String?, _ language: String) -> Void = { _, _ in }
-        /// ← or →: the next or previous emoji.
+        /// ↑ to the groups over the whole list; false when there are none.
+        var up: () -> Bool = { false }
+        /// ↓ from a group to its first emoji; false when there are no groups.
+        var down: () -> Bool = { false }
+        /// The keyboard is on the groups.
+        var inGroups: () -> Bool = { false }
+        /// ← or →: the next or previous emoji (or group).
         var move: (Int) -> Void = { _ in }
         /// The emoji picked in the list (Return or Tab); it's recorded as used.
         var chosen: () -> String? = { nil }
@@ -434,7 +440,18 @@ final class SwitchEngine {
             guard emoji.isShowing() else { break }
             emoji.move(keyCode == 123 ? -1 : 1)
             return false
+        case 126:  // ↑ (just the colon): to the groups over the emoji
+            guard plain, query.isEmpty, emoji.up() else { break }
+            return false
+        case 125:  // ↓: from a group to its first emoji
+            guard plain, emoji.down() else { break }
+            return false
         case KeyCode.returnKey, KeyCode.keypadEnter, KeyCode.tab:
+            // On a group: into it, as ↓.
+            if plain, emoji.inGroups() {
+                _ = emoji.down()
+                return false
+            }
             guard plain, emoji.isShowing(), let chosen = emoji.chosen() else { break }
             // The colon and the name give way to the emoji.
             let typed = 1 + query.count

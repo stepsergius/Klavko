@@ -52,6 +52,9 @@ final class EmojiInput {
         hooks.search = { [weak self] query, language in self?.search(query, language: language) }
         hooks.word = { [weak self] word, language in self?.offer(for: word, language: language) }
         hooks.move = { [weak self] step in self?.bar?.moveInEmojiList(by: step) }
+        hooks.up = { [weak self] in self?.bar?.emojiListUp() ?? false }
+        hooks.down = { [weak self] in self?.bar?.emojiListDown() ?? false }
+        hooks.inGroups = { [weak self] in self?.bar?.isOnEmojiGroups ?? false }
         hooks.chosen = { [weak self] in
             guard let self, let emoji = bar?.highlightedEmoji else { return nil }
             used(emoji)
@@ -63,9 +66,9 @@ final class EmojiInput {
 
     private func search(_ query: String, language: String) {
         showing = .name(query)
-        // Just the colon: the latest used, then all the rest.
-        if query.isEmpty, let listed = catalog(language)?.listed(recent: recent) {
-            bar?.showEmojiList(listed.recent + listed.rest, recentCount: listed.recent.count, highlighted: false)
+        // Just the colon: the latest used, then each group, named over them.
+        if query.isEmpty, let sections = catalog(language)?.sections(recent: recent) {
+            bar?.showEmojiSections(sections)
             return
         }
         let found = catalog(language)?.search(query, recent: recent) ?? []

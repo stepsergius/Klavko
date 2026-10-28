@@ -242,9 +242,11 @@ final class QuickActionsBar {
     /// The bar's Emoji action: all the emoji, the five used lately first; ← → choose, Return puts it in.
     private func showEmojiPage() {
         guard let catalog = emoji?.currentCatalog() else { return }
-        let listed = catalog.listed(recent: emoji?.recent ?? [])
-        model.emojiRecentCount = listed.recent.count
-        model.emojis = listed.recent + listed.rest
+        let sections = catalog.sections(recent: emoji?.recent ?? [])
+        model.emojiRecentCount = 0
+        model.emojis = sections.flatMap(\.emojis)
+        model.emojiGroups = Self.marks(sections)
+        model.groupFocus = nil
         model.emojiWidth = fullWidth
         model.page = .emoji
         model.keyIndex = 1
@@ -252,6 +254,30 @@ final class QuickActionsBar {
         if let panel, !panel.takesKeys {
             panel.takesKeys = true
             panel.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    /// Where each part of the whole list starts, and its name.
+    private static func marks(_ sections: [EmojiCatalog.Section]) -> [QuickActionsModel.GroupMark] {
+        var start = 0
+        return sections.map { section in
+            defer { start += section.emojis.count }
+            return QuickActionsModel.GroupMark(title: title(of: section.group), start: start)
+        }
+    }
+
+    static func title(of group: EmojiCatalog.Group?) -> String {
+        switch group {
+        case nil: tr("Останні", "Recent")
+        case .smileys: tr("Смайли та емоції", "Smileys & Emotion")
+        case .people: tr("Люди й тіло", "People & Body")
+        case .animals: tr("Тварини й природа", "Animals & Nature")
+        case .food: tr("Їжа й напої", "Food & Drink")
+        case .travel: tr("Подорожі й місця", "Travel & Places")
+        case .activities: tr("Активності", "Activities")
+        case .objects: tr("Предмети", "Objects")
+        case .symbols: tr("Символи", "Symbols")
+        case .flags: tr("Прапори", "Flags")
         }
     }
 
@@ -273,17 +299,39 @@ final class QuickActionsBar {
     }
 
     var highlightedEmoji: String? {
-        guard isShowingEmojiList, let index = model.keyIndex, model.emojis.indices.contains(index) else { return nil }
+        guard isShowingEmojiList, model.groupFocus == nil, let index = model.keyIndex, model.emojis.indices.contains(index)
+        else { return nil }
         return model.emojis[index]
+    }
+
+    /// The keyboard on the groups over the emoji (the list after a bare colon).
+    var isOnEmojiGroups: Bool { isShowingEmojiList && model.groupFocus != nil }
+
+    /// ↑ in the list near the caret: to the groups; false when it has none.
+    func emojiListUp() -> Bool { isShowingEmojiList && model.focusGroups() }
+
+    /// ↓ in the list near the caret: from a group to its first emoji; false when it has no groups.
+    func emojiListDown() -> Bool {
+        guard isShowingEmojiList, !model.emojiGroups.isEmpty else { return false }
+        model.enterGroup()
+        return true
+    }
+
+    /// The whole list near the caret (after a bare colon): its parts named over it.
+    func showEmojiSections(_ sections: [EmojiCatalog.Section]) {
+        showEmojiList(sections.flatMap(\.emojis), highlighted: false, groups: Self.marks(sections))
     }
 
     /// `recentCount`: how many of `emojis` are the latest used (a divider after them). Not `highlighted`: none is
     /// picked until an arrow is pressed (Return goes on to the app). `fitted`: the few offered after a word, the bar
     /// as wide as they are and over the caret.
-    func showEmojiList(_ emojis: [String], recentCount: Int = 0, highlighted: Bool = true, fitted: Bool = false) {
+    func showEmojiList(_ emojis: [String], recentCount: Int = 0, highlighted: Bool = true, fitted: Bool = false,
+                       groups: [QuickActionsModel.GroupMark] = []) {
         let wasShowing = isShowingEmojiList
         model.emojis = emojis
         model.emojiRecentCount = recentCount
+        model.emojiGroups = groups
+        model.groupFocus = nil
         model.emojiWidth = fullWidth
         model.emojiFitted = fitted
         model.emojiNearCaret = true
@@ -307,6 +355,7 @@ final class QuickActionsBar {
     }
 
     func moveInEmojiList(by step: Int) {
+        if model.groupFocus != nil { return model.moveGroup(by: step) }
         guard let index = model.keyIndex else {
             model.keyIndex = 0
             return
@@ -432,6 +481,14 @@ final class QuickActionsBar {
     /// The keyboard while the bar has it: true when the key was used.
     private func key(_ event: NSEvent) -> Bool {
         guard let index = model.keyIndex else { return false }
+        if model.page == .emoji, !model.emojiGroups.isEmpty {
+            switch event.keyCode {
+            case 126: return model.focusGroups()  // ↑
+            case 125: model.enterGroup(); return true  // ↓
+            case 123, 124 where model.groupFocus != nil: model.moveGroup(by: event.keyCode == 123 ? -1 : 1); return true
+            default: break
+            }
+        }
         switch event.keyCode {
         case 123: model.keyIndex = max(index - 1, 0)  // ←
         case 124: model.keyIndex = min(index + 1, model.itemCount - 1)  // →
@@ -712,7 +769,7 @@ private final class BarPanel: NSPanel {
 
 /// What the bar shows; the view reads it, the bar fills it.
 @MainActor
-fileprivate final class QuickActionsModel: ObservableObject {
+final class QuickActionsModel: ObservableObject {
     enum Page: Equatable {
         case main, brackets, ai, emoji
         /// A short answer in the bar itself ("Words: 12…", "Σ 1 234"); `copy`, when set, is copied on a click.
@@ -743,6 +800,14 @@ fileprivate final class QuickActionsModel: ObservableObject {
     var emojiRecentCount = 0
     /// The emoji list near the caret (typed by name, offered after a word): no Back, the keyboard stays with the app.
     var emojiNearCaret = false
+    /// Where each group starts in `emojis` (the whole list only), named over the emoji.
+    struct GroupMark: Equatable {
+        let title: String
+        let start: Int
+    }
+    @Published var emojiGroups: [GroupMark] = []
+    /// The group the keyboard is on (↑ from the emoji); nil: on the emoji.
+    @Published var groupFocus: Int?
     var insertEmoji: (String) -> Void = { _ in }
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
@@ -751,6 +816,32 @@ fileprivate final class QuickActionsModel: ObservableObject {
     /// How far from the bar's left edge the middle of its second button is (the first when it's alone).
     var anchorOffset: CGFloat?
     var anchorMoved: () -> Void = {}
+
+    /// The group named over the emoji: the one the keyboard is on, or the one with the emoji it's on.
+    var currentGroup: Int {
+        if let groupFocus { return groupFocus }
+        let index = (keyIndex ?? 0) - (emojiNearCaret ? 0 : 1)
+        return emojiGroups.lastIndex { $0.start <= index } ?? 0
+    }
+
+    /// ↑ from the emoji: to the groups. False when there are none.
+    func focusGroups() -> Bool {
+        guard !emojiGroups.isEmpty else { return false }
+        if groupFocus == nil { groupFocus = currentGroup }
+        return true
+    }
+
+    func moveGroup(by step: Int) {
+        guard let groupFocus else { return }
+        self.groupFocus = min(max(groupFocus + step, 0), emojiGroups.count - 1)
+    }
+
+    /// ↓ (or Return) from a group: to its first emoji.
+    func enterGroup() {
+        guard let groupFocus else { return }
+        keyIndex = emojiGroups[groupFocus].start + (emojiNearCaret ? 0 : 1)
+        self.groupFocus = nil
+    }
 
     /// The buttons on the page: in a submenu or an answer, "Back" comes first.
     var itemCount: Int {
@@ -766,6 +857,7 @@ fileprivate final class QuickActionsModel: ObservableObject {
     /// What a click on the button at `index` does.
     func perform(_ index: Int) {
         if page == .emoji {
+            if groupFocus != nil { return enterGroup() }
             let offset = emojiNearCaret ? 0 : 1
             if index < offset { page = .main } else if emojis.indices.contains(index - offset) { insertEmoji(emojis[index - offset]) }
             return
@@ -861,7 +953,8 @@ private struct QuickActionsView: View {
             }
         }
         .padding(.horizontal, 3)
-        .frame(height: 32)
+        // The whole emoji list has its groups named over it.
+        .frame(height: model.page == .emoji && !model.emojiGroups.isEmpty ? 60 : 32)
         // Light or dark with the system.
         .background(RoundedRectangle(cornerRadius: 9).fill(Color(white: colorScheme == .dark ? 0.13 : 0.97).opacity(0.97)))
         .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.primary.opacity(colorScheme == .dark ? 0.12 : 0.1), lineWidth: 0.5))
@@ -888,35 +981,73 @@ private struct QuickActionsView: View {
         }
     }
 
-    /// All the emoji (or the found ones) in a row as wide as the bar with all its actions.
+    /// All the emoji (or the found ones) in a row as wide as the bar with all its actions; the whole list with the
+    /// names of its groups over it.
     private func scrollingEmoji(offset: Int) -> some View {
         HStack(spacing: 0) {
             if !model.emojiNearCaret {
                 back
                 separator
             }
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 0) { emojiButtons(offset: offset) }
+            VStack(spacing: 0) {
+                if !model.emojiGroups.isEmpty {
+                    groupRow
+                    Rectangle().fill(.primary.opacity(0.1)).frame(height: 0.5).padding(.horizontal, 4)
                 }
-                .onChange(of: model.keyIndex) {
-                    guard let key = model.keyIndex, key >= offset else { return }
-                    withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: .center) }
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 0) { emojiButtons(offset: offset) }
+                    }
+                    .frame(height: 32)
+                    .onChange(of: model.keyIndex) {
+                        guard let key = model.keyIndex, key >= offset else { return }
+                        // Into a group: its first emoji stays at the start, where the group brought it.
+                        let anchor: UnitPoint = model.emojiGroups.contains { $0.start == key - offset } ? .leading : .center
+                        withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(key - offset, anchor: anchor) }
+                    }
+                    // A group chosen: its emoji come up.
+                    .onChange(of: model.groupFocus) {
+                        guard let group = model.groupFocus, model.emojiGroups.indices.contains(group) else { return }
+                        withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(model.emojiGroups[group].start, anchor: .leading) }
+                    }
+                    // Measured on the row's frame, which doesn't scroll: the bar stays put.
+                    .background(firstEmojiAnchor)
                 }
-                // Measured on the row's frame, which doesn't scroll: the bar stays put.
-                .background(firstEmojiAnchor)
             }
         }
         // The bar's 3-point margins aside.
         .frame(width: max(model.emojiWidth - 6, 120))
     }
 
+    /// The names of the groups, the current one marked (filled when the keyboard is on it); ↑ goes to them.
+    private var groupRow: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 2) {
+                    ForEach(Array(model.emojiGroups.enumerated()), id: \.offset) { index, mark in
+                        GroupButton(title: mark.title, current: model.currentGroup == index,
+                                    focused: model.groupFocus == index) {
+                            model.groupFocus = index
+                        }
+                        .id("group\(index)")
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+            .frame(height: 26)
+            .onChange(of: model.currentGroup) {
+                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo("group\(model.currentGroup)", anchor: .center) }
+            }
+        }
+    }
+
     @ViewBuilder private func emojiButtons(offset: Int) -> some View {
+        let groupStarts = Set(model.emojiGroups.map(\.start))
         ForEach(Array(model.emojis.enumerated()), id: \.offset) { index, emoji in
-            if index == model.emojiRecentCount && index > 0 {
+            if index > 0, groupStarts.isEmpty ? index == model.emojiRecentCount : groupStarts.contains(index) {
                 separator.padding(.horizontal, 6)
             }
-            BarButton(help: "", selected: model.keyIndex == index + offset, padding: 3,
+            BarButton(help: "", selected: model.groupFocus == nil && model.keyIndex == index + offset, padding: 3,
                       action: { model.insertEmoji(emoji) }) {
                 Text(emoji).font(.system(size: 18))
             }
@@ -950,6 +1081,30 @@ private struct QuickActionsView: View {
                 Text(action.label).font(.system(size: 13))
             }
         }
+    }
+}
+
+/// A group's name over the emoji: the current one on a light pill, blue with white text under the keyboard.
+private struct GroupButton: View {
+    let title: String
+    let current: Bool
+    let focused: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11.5, weight: current ? .semibold : .regular))
+                .foregroundStyle(focused ? AnyShapeStyle(.white) : current ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                .padding(.horizontal, 8)
+                .frame(height: 20)
+                .background(Capsule().fill(focused ? Color.accentColor
+                                           : current || hovering ? Color.primary.opacity(0.08) : .clear))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
 

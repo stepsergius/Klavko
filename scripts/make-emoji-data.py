@@ -15,6 +15,9 @@ EMOJI_VERSION = "16.0"
 LANGUAGES = ["uk", "en", "ru", "de", "fr", "es", "it", "pt", "pl", "tr", "el", "he", "ar"]
 CLDR = "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json"
 SKIN_TONES = {chr(c) for c in range(0x1F3FB, 0x1F400)}
+# Unicode's groups (Component left out), in its order: EmojiCatalog.Group.
+GROUPS = ["Smileys & Emotion", "People & Body", "Animals & Nature", "Food & Drink", "Travel & Places", "Activities",
+          "Objects", "Symbols", "Flags"]
 
 
 def fetch(url):
@@ -27,11 +30,11 @@ def key(emoji):
     return emoji.replace("️", "")
 
 
-def main():
-    OUT.mkdir(parents=True, exist_ok=True)
+def write_order(emoji_test):
+    """order.txt: "emoji \t version \t group", the group a number in GROUPS."""
     order = []
     group = ""
-    for line in fetch(f"https://unicode.org/Public/emoji/{EMOJI_VERSION}/emoji-test.txt").splitlines():
+    for line in emoji_test.splitlines():
         if line.startswith("# group:"):
             group = line.split(":", 1)[1].strip()
         if "; fully-qualified" not in line or group == "Component":
@@ -40,8 +43,14 @@ def main():
         # Skin tones are variants of one emoji: only the plain one is listed.
         if SKIN_TONES & set(emoji):
             continue
-        order.append((emoji, version.lstrip("E")))
-    (OUT / "order.txt").write_text("".join(f"{emoji}\t{version}\n" for emoji, version in order))
+        order.append((emoji, version.lstrip("E"), GROUPS.index(group)))
+    (OUT / "order.txt").write_text("".join(f"{emoji}\t{version}\t{group}\n" for emoji, version, group in order))
+    return order
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    order = write_order(fetch(f"https://unicode.org/Public/emoji/{EMOJI_VERSION}/emoji-test.txt"))
 
     for language in LANGUAGES:
         names = {}
@@ -51,7 +60,7 @@ def main():
             for emoji, entry in data.items():
                 names.setdefault(emoji, entry)
         lines = []
-        for emoji, _ in order:
+        for emoji, _, _ in order:
             entry = names.get(key(emoji))
             if not entry:
                 continue

@@ -383,5 +383,15 @@ extension Translations {
         "The chosen emoji": "Das gewählte Emoji",
         "Goes after the word": "Kommt hinter das Wort",
         "Replaces the word": "Ersetzt das Wort",
+        "Recent": "Zuletzt",
+        "Smileys & Emotion": "Smileys & Emotionen",
+        "People & Body": "Menschen & Körper",
+        "Animals & Nature": "Tiere & Natur",
+        "Food & Drink": "Essen & Trinken",
+        "Travel & Places": "Reisen & Orte",
+        "Activities": "Aktivitäten",
+        "Objects": "Objekte",
+        "Symbols": "Symbole",
+        "Flags": "Flaggen",
     ]
 }

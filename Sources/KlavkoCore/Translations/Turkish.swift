@@ -383,5 +383,15 @@ extension Translations {
         "The chosen emoji": "Seçilen emoji",
         "Goes after the word": "Kelimenin ardına gelir",
         "Replaces the word": "Kelimenin yerine geçer",
+        "Recent": "Son Kullanılanlar",
+        "Smileys & Emotion": "Gülen Yüzler ve Duygular",
+        "People & Body": "İnsanlar ve Vücut",
+        "Animals & Nature": "Hayvanlar ve Doğa",
+        "Food & Drink": "Yiyecek ve İçecek",
+        "Travel & Places": "Seyahat ve Yerler",
+        "Activities": "Etkinlikler",
+        "Objects": "Nesneler",
+        "Symbols": "Semboller",
+        "Flags": "Bayraklar",
     ]
 }

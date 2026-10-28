@@ -383,5 +383,15 @@ extension Translations {
         "The chosen emoji": "고른 이모지",
         "Goes after the word": "단어 뒤에 넣기",
         "Replaces the word": "단어 대신 넣기",
+        "Recent": "최근 사용",
+        "Smileys & Emotion": "스마일리 및 감정",
+        "People & Body": "사람 및 신체",
+        "Animals & Nature": "동물 및 자연",
+        "Food & Drink": "음식 및 음료",
+        "Travel & Places": "여행 및 장소",
+        "Activities": "활동",
+        "Objects": "사물",
+        "Symbols": "기호",
+        "Flags": "깃발",
     ]
 }

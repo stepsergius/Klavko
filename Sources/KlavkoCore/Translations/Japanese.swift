@@ -383,5 +383,15 @@ extension Translations {
         "The chosen emoji": "選んだ絵文字",
         "Goes after the word": "単語の後に入れる",
         "Replaces the word": "単語と置き換える",
+        "Recent": "最近使ったもの",
+        "Smileys & Emotion": "スマイリーと感情",
+        "People & Body": "人と体",
+        "Animals & Nature": "動物と自然",
+        "Food & Drink": "食べ物と飲み物",
+        "Travel & Places": "旅行と場所",
+        "Activities": "アクティビティ",
+        "Objects": "物",
+        "Symbols": "記号",
+        "Flags": "旗",
     ]
 }

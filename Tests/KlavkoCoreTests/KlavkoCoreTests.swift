@@ -1297,6 +1297,18 @@ final class EmojiCatalogTests: XCTestCase {
         XCTAssertEqual(en.search("fire").first, "🔥")
     }
 
+    func testSectionsAreRecentThenGroups() throws {
+        let uk = try catalog("uk")
+        let sections = uk.sections(recent: ["🔥", "😂"])
+        XCTAssertEqual(sections.first, EmojiCatalog.Section(group: nil, emojis: ["🔥", "😂"]))
+        XCTAssertEqual(sections.dropFirst().map(\.group), EmojiCatalog.Group.allCases.map { $0 })
+        XCTAssertEqual(sections[1].emojis.first, "😀")
+        XCTAssertTrue(try XCTUnwrap(sections.first { $0.group == .food }).emojis.contains("🍕"))
+        XCTAssertTrue(try XCTUnwrap(sections.last).emojis.contains("🇺🇦"))
+        // None used yet: the smileys first.
+        XCTAssertEqual(uk.sections(recent: []).first?.group, .smileys)
+    }
+
     func testRecentComeFirstAmongEquals() throws {
         let uk = try catalog("uk")
         let plain = uk.search("сміх")
