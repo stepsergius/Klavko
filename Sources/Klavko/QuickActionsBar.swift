@@ -320,7 +320,43 @@ final class QuickActionsBar {
         var focused: CFTypeRef?
         guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
               let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return nil }
-        return details(of: focused as! AXUIElement).bounds
+        let field = focused as! AXUIElement
+        // Where the caret is, not the mouse: some apps answer with the next character's or the line's width.
+        if let bounds = details(of: field).bounds { return NSRect(x: bounds.minX, y: bounds.minY, width: 0, height: bounds.height) }
+        // Many apps (Telegram, browsers) have no bounds for an empty selection: the character before the caret
+        // ends where it is, the one after starts there.
+        var rangeValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+           let rangeValue, CFGetTypeID(rangeValue) == AXValueGetTypeID() {
+            var range = CFRange()
+            AXValueGetValue(rangeValue as! AXValue, .cfRange, &range)
+            if range.location > 0, let before = bounds(of: CFRange(location: range.location - 1, length: 1), in: field) {
+                return NSRect(x: before.maxX, y: before.minY, width: 0, height: before.height)
+            }
+            if let after = bounds(of: CFRange(location: range.location, length: 1), in: field) {
+                return NSRect(x: after.minX, y: after.minY, width: 0, height: after.height)
+            }
+        }
+        // Nothing about the caret: a field of a line or a few, at its start (the mouse may be anywhere).
+        if let frame = frame(of: field), frame.height < 120 {
+            return NSRect(x: frame.minX + 12, y: frame.minY, width: 0, height: frame.height)
+        }
+        return nil
+    }
+
+    /// Where `range` of the text in `field` is, in AppKit coordinates.
+    private static func bounds(of range: CFRange, in field: AXUIElement) -> NSRect? {
+        var range = range
+        var boundsValue: CFTypeRef?
+        guard let rangeValue = AXValueCreate(.cfRange, &range),
+              AXUIElementCopyParameterizedAttributeValue(field, kAXBoundsForRangeParameterizedAttribute as CFString,
+                                                         rangeValue, &boundsValue) == .success,
+              let boundsValue, CFGetTypeID(boundsValue) == AXValueGetTypeID() else { return nil }
+        var rect = CGRect.zero
+        AXValueGetValue(boundsValue as! AXValue, .cgRect, &rect)
+        guard rect.height > 0, rect.height < 200, let mainHeight = NSScreen.screens.first?.frame.height else { return nil }
+        let flipped = NSRect(x: rect.minX, y: mainHeight - rect.maxY, width: rect.width, height: rect.height)
+        return NSScreen.screens.contains(where: { $0.frame.intersects(flipped) }) ? flipped : nil
     }
 
     private func present(around rect: NSRect, position: QuickActionsPosition, takesKeys: Bool) {
