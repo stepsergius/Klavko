@@ -181,6 +181,8 @@ final class SwitchEngine {
 
     /// The name typed after " :" so far, while looking for an emoji; nil otherwise.
     private var emojiQuery: String?
+    /// ↑ went into the emoji offered after a word: ← → choose, Return or Tab puts one in.
+    private var emojiPicking = false
 
     /// A one-letter word at the start of a sentence typed in the other layout ("z" for "я"),
     /// left alone until the next word shows which language the sentence is in.
@@ -290,7 +292,8 @@ final class SwitchEngine {
         }
         let repeated = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
         // ← or → held down in the emoji list: it keeps going along it.
-        if repeated, keyCode == 123 || keyCode == 124, emojiQuery != nil, let used = handleEmojiKey(keyCode, flags) {
+        if repeated, keyCode == 123 || keyCode == 124, emojiQuery != nil || emojiPicking,
+           let used = handleEmojiKey(keyCode, flags) {
             return used
         }
         if flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate) || repeated {
@@ -376,16 +379,44 @@ final class SwitchEngine {
     private func handleEmojiKey(_ keyCode: UInt16, _ flags: CGEventFlags) -> Bool? {
         let plain = flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand]).isEmpty
         guard var query = emojiQuery else {
-            // An emoji offered after a word: Tab puts it after the word.
-            guard keyCode == KeyCode.tab, plain, emoji.isShowing(), let chosen = emoji.chosen() else { return nil }
-            emoji.end()
-            let text = " " + chosen
-            TextInjector.type(text)
-            endWord()
-            lastWord = []
-            text.forEach { appendVisible(String($0)) }
-            Log.engine.notice("Emoji put after a word")
-            return false
+            // Emoji offered after a word: Tab puts the first after the word; ↑ goes into them, then ← → choose and
+            // Return or Tab puts that one.
+            guard emoji.isShowing() else {
+                emojiPicking = false
+                return nil
+            }
+            switch keyCode {
+            case 126 where plain && !emojiPicking:  // ↑
+                emojiPicking = true
+                emoji.move(1)
+                return false
+            case 123, 124 where emojiPicking:  // ← →
+                emoji.move(keyCode == 123 ? -1 : 1)
+                return false
+            case KeyCode.tab where plain, KeyCode.returnKey where plain && emojiPicking, KeyCode.keypadEnter where emojiPicking:
+                if !emojiPicking { emoji.move(1) }
+                guard let chosen = emoji.chosen() else { break }
+                emojiPicking = false
+                emoji.end()
+                let text = " " + chosen
+                TextInjector.type(text)
+                endWord()
+                lastWord = []
+                text.forEach { appendVisible(String($0)) }
+                Log.engine.notice("Emoji put after a word")
+                return false
+            case KeyCode.escape where emojiPicking:
+                emojiPicking = false
+                emoji.end()
+                return false
+            default:
+                break
+            }
+            if emojiPicking {
+                emojiPicking = false
+                emoji.end()
+            }
+            return nil
         }
         switch keyCode {
         case 123, 124:  // ← →
@@ -433,6 +464,7 @@ final class SwitchEngine {
     }
 
     private func endEmoji() {
+        emojiPicking = false
         guard emojiQuery != nil else { return }
         emojiQuery = nil
         emoji.end()
@@ -440,7 +472,7 @@ final class SwitchEngine {
 
     /// After each key: the word being typed, for an emoji it names (when that's on).
     private func offerEmojiForWord() {
-        guard emojiQuery == nil, emoji.suggestions() else { return }
+        guard emojiQuery == nil, !emojiPicking, emoji.suggestions() else { return }
         guard !excludedNow, typedSinceJump, !buffer.isEmpty, let pair = currentPair(),
               let word = pair.current.map.render(buffer) else { return emoji.word(nil, "") }
         emoji.word(word, pair.current.map.language)

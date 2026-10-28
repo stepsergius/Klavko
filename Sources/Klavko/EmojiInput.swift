@@ -81,7 +81,8 @@ final class EmojiInput {
             return
         }
         showing = .word
-        bar?.showEmojiList(found, fitted: true)
+        // Nothing picked until ↑ (or Tab, the first).
+        bar?.showEmojiList(found, highlighted: false, fitted: true)
     }
 
     private func end() {
