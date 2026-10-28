@@ -398,7 +398,7 @@ final class SwitchEngine {
                 emojiPicking = true
                 emoji.move(1)
                 return false
-            case 123, 124 where emojiPicking:  // ← →
+            case 123 where emojiPicking, 124 where emojiPicking:  // ← →
                 emoji.move(keyCode == 123 ? -1 : 1)
                 return false
             case KeyCode.tab where plain, KeyCode.returnKey where plain && emojiPicking, KeyCode.keypadEnter where emojiPicking:

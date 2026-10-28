@@ -495,7 +495,10 @@ final class QuickActionsBar {
             switch event.keyCode {
             case 126: return model.focusGroups()  // ↑
             case 125: model.enterGroup(); return true  // ↓
-            case 123, 124 where model.groupFocus != nil: model.moveGroup(by: event.keyCode == 123 ? -1 : 1); return true
+            // (`where` on each: on "123, 124" it would hold for 124 alone.)
+            case 123 where model.groupFocus != nil, 124 where model.groupFocus != nil:
+                model.moveGroup(by: event.keyCode == 123 ? -1 : 1)
+                return true
             default: break
             }
         }
