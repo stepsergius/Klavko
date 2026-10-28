@@ -30,6 +30,9 @@ final class QuickActionsBar {
     private let speech = AVSpeechSynthesizer()
     /// Where the second button goes (the mouse), kept when the bar changes width (a submenu, an answer).
     private var anchorX: CGFloat = 0
+    /// The bar's edge next to the text (its bottom over it, its top under it): it stays when the bar grows or
+    /// shrinks (the emoji groups come and go), so the bar never covers the text.
+    private var textEdge: (y: CGFloat, above: Bool) = (0, true)
     /// How wide the bar with all its actions was last: the emoji list is as wide.
     private var fullWidth: CGFloat = 400
 
@@ -468,6 +471,8 @@ final class QuickActionsBar {
         origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
         origin.y = min(max(origin.y, visible.minY + 4), visible.maxY - size.height - 4)
         panel.setFrameOrigin(origin)
+        let above = origin.y >= rect.midY
+        textEdge = (above ? origin.y : origin.y + size.height, above)
         panel.takesKeys = takesKeys
         if takesKeys {
             // Key without bringing Klavko forward (the panel doesn't activate): the app with the selection stays
@@ -503,7 +508,9 @@ final class QuickActionsBar {
         guard let panel, let visible = panel.screen?.visibleFrame else { return }
         let offset = model.anchorOffset ?? panel.frame.width / 2
         let x = min(max(anchorX - offset, visible.minX + 4), visible.maxX - panel.frame.width - 4)
-        if panel.frame.minX != x { panel.setFrameOrigin(NSPoint(x: x, y: panel.frame.minY)) }
+        let height = panel.frame.height
+        let y = min(max(textEdge.above ? textEdge.y : textEdge.y - height, visible.minY + 4), visible.maxY - height - 4)
+        if panel.frame.origin != NSPoint(x: x, y: y) { panel.setFrameOrigin(NSPoint(x: x, y: y)) }
     }
 
     func hide() {
