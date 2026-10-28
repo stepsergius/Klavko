@@ -155,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         emojiInput.bar = quickActions
         quickActions.emoji = emojiInput
         engine.emoji = emojiInput.hooks()
+        engine.onBarUp = { [unowned self] in quickActions.takeKeyboard() }
         quickActions.start()
         engine.onQuickActions = { [unowned self] in
             MainActor.assumeIsolated { quickActions.showForSelection() }

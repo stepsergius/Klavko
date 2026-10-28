@@ -114,6 +114,16 @@ final class QuickActionsBar {
              only: [.paste, .plainPaste, .emoji])
     }
 
+    /// ↑ while the bar is up for text selected with the mouse: the keyboard goes to it (← → choose, Return does it,
+    /// Esc closes), as when the hotkey brought it up. False when there's no such bar.
+    func takeKeyboard() -> Bool {
+        guard let panel, panel.isVisible, !panel.takesKeys, !isShowingEmojiList else { return false }
+        model.keyIndex = model.page == .main ? 0 : 1
+        panel.takesKeys = true
+        panel.makeKeyAndOrderFront(nil)
+        return true
+    }
+
     /// From the hotkey: the bar for text selected with the keyboard too.
     func showForSelection() {
         let mouse = NSEvent.mouseLocation
@@ -326,7 +336,7 @@ final class QuickActionsBar {
 
     /// The whole list near the caret (after a bare colon): its parts named over it.
     func showEmojiSections(_ sections: [EmojiCatalog.Section]) {
-        showEmojiList(sections.flatMap(\.emojis), highlighted: false, groups: Self.marks(sections))
+        showEmojiList(sections.flatMap(\.emojis), groups: Self.marks(sections))
     }
 
     /// `recentCount`: how many of `emojis` are the latest used (a divider after them). Not `highlighted`: none is
@@ -506,6 +516,7 @@ final class QuickActionsBar {
         case 123: model.keyIndex = max(index - 1, 0)  // ←
         case 124: model.keyIndex = min(index + 1, model.itemCount - 1)  // →
         case 36, 76: model.perform(index)  // Return, Enter
+        case 125, 126: break  // ↓ ↑: the bar has one row
         default: hide()  // Esc, or any other key
         }
         return true

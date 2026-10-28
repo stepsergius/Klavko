@@ -74,6 +74,8 @@ final class SwitchEngine {
     var onUserKey: () -> Void = {}
     /// Called when the user reverted an automatic fix of a word (the word as they want it).
     var onRevert: (String) -> Void = { _ in }
+    /// ↑ with the Quick Actions bar up (for text selected with the mouse): the bar takes the keyboard; true if it did.
+    var onBarUp: () -> Bool = { false }
     /// Emoji typed by name after a space and a colon (" :сміх") and offered after a word ("серце" → ❤️).
     var emoji = EmojiHooks()
 
@@ -290,6 +292,11 @@ final class SwitchEngine {
 
         let flags = event.flags
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        // ↑ goes to the Quick Actions bar (not past it to the text) when nothing of Klavko's own is near the caret.
+        if keyCode == 126, flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand]).isEmpty,
+           emojiQuery == nil, !emojiPicking, !emoji.isShowing(), onBarUp() {
+            return false
+        }
         if let action = comboAction(keyCode: keyCode, flags: flags) {
             perform(action)
             return false
