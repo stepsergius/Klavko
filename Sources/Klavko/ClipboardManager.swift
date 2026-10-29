@@ -59,7 +59,7 @@ final class ClipboardManager: ObservableObject {
         guard change != lastChange else { return }
         // Klavko itself is copying the selection for a moment (translation, layout of selected text).
         lastChange = change
-        guard Date() >= SelectionConverter.borrowedUntil else { return }
+        guard Date() >= SelectionConverter.borrowedUntil, change != SelectionConverter.restoredChangeCount else { return }
         guard isEnabled() else { return }
         let types = Set((pasteboard.types ?? []).map(\.rawValue))
         guard types.isDisjoint(with: Self.skippedTypes) else { return }

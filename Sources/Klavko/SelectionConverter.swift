@@ -12,6 +12,8 @@ enum SelectionConverter {
     /// Until when Klavko is using the clipboard itself (copy selection → put back): the clipboard
     /// history doesn't record those changes.
     nonisolated(unsafe) static var borrowedUntil = Date.distantPast
+    /// The clipboard's change count when Klavko last put the user's content back: not a copy either.
+    nonisolated(unsafe) static var restoredChangeCount = -1
 
     private static func borrow() {
         borrowedUntil = Date().addingTimeInterval(1.5)
@@ -137,9 +139,15 @@ enum SelectionConverter {
             let text = pasteboard.string(forType: .string)
             restore(saved, to: pasteboard)
             let countAfterRestore = pasteboard.changeCount
-            // Some apps write the clipboard twice; put the user's content back again if that happens.
+            // The clipboard is the user's again: a ⌘C of theirs right after (the bar shows on selecting) is a copy.
+            borrowedUntil = .distantPast
+            let restored = Date()
+            // Some apps write the clipboard twice; put the user's content back again if that happens. Not when a
+            // key was pressed since: that copy is the user's own ⌘C of the same selection (Telegram).
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if pasteboard.changeCount != countAfterRestore, pasteboard.string(forType: .string) == text {
+                let keySinceRestore = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
+                    < Date().timeIntervalSince(restored)
+                if !keySinceRestore, pasteboard.changeCount != countAfterRestore, pasteboard.string(forType: .string) == text {
                     restore(saved, to: pasteboard)
                 }
             }
@@ -181,5 +189,6 @@ enum SelectionConverter {
             return item
         }
         if !items.isEmpty { pasteboard.writeObjects(items) }
+        restoredChangeCount = pasteboard.changeCount
     }
 }
