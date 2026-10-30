@@ -64,7 +64,10 @@ final class VoiceDictation: ObservableObject {
     /// The microphone's loudness for the panel's wave.
     let meter = VoiceMeter()
 
-    private let audio = AVAudioEngine()
+    private var audio = AVAudioEngine()
+    /// The microphone `audio` was set up for. Another one gets a new engine: an engine keeps the format of the
+    /// first microphone, and buffers in another one's format overran the recording (a crash after switching).
+    private var audioDevice: AudioDeviceID?
     private let ducker = SoundDucker()
     private let fanout = AudioFanout()
     private let spellChecker = MacSpellChecker()
@@ -180,8 +183,19 @@ final class VoiceDictation: ObservableObject {
         fanout.onLevel = { level in
             DispatchQueue.main.async { MainActor.assumeIsolated { meter.push(level) } }
         }
-        Self.use(microphone(), for: audio.inputNode)
-        Self.feed(audio.inputNode, into: fanout)
+        let device = Self.device(for: microphone())
+        if device != audioDevice {
+            audio = AVAudioEngine()
+            audioDevice = device
+            if let device { Self.use(device, for: audio.inputNode) }
+        }
+        let format = audio.inputNode.outputFormat(forBus: 0)
+        guard format.channelCount > 0, format.sampleRate > 0 else {
+            audioDevice = nil
+            stage = .failed(tr("Не вдалося увімкнути мікрофон.", "Couldn’t turn on the microphone."))
+            return
+        }
+        Self.feed(audio.inputNode, format: format, into: fanout)
         recognition.startSegment()
         audio.prepare()
         do {
@@ -558,18 +572,22 @@ final class VoiceDictation: ObservableObject {
 
     // Audio and recognition callbacks come on background threads, so they're built outside the main actor.
 
-    /// Records from the chosen microphone, or from the one chosen in macOS when it's unset or unplugged.
-    private static func use(_ uid: String?, for input: AVAudioInputNode) {
+    /// The chosen microphone, or the one chosen in macOS when it's unset or unplugged.
+    private static func device(for uid: String?) -> AudioDeviceID? {
+        uid.flatMap(AudioDevices.deviceID(uid:)) ?? AudioDevices.defaultInput
+    }
+
+    /// Records from `device` (on a new engine, before its format is read).
+    private static func use(_ device: AudioDeviceID, for input: AVAudioInputNode) {
         guard let unit = input.audioUnit else { return }
-        guard var device = uid.flatMap(AudioDevices.deviceID(uid:)) ?? AudioDevices.defaultInput else { return }
+        var device = device
         let status = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0,
                                           &device, UInt32(MemoryLayout<AudioDeviceID>.size))
         if status != noErr { Log.engine.error("Microphone not set: \(status)") }
     }
 
     /// Sends the microphone's audio to the running recognition (and the recording).
-    private nonisolated static func feed(_ input: AVAudioInputNode, into fanout: AudioFanout) {
-        let format = input.outputFormat(forBus: 0)
+    private nonisolated static func feed(_ input: AVAudioInputNode, format: AVAudioFormat, into fanout: AudioFanout) {
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
             fanout.append(buffer)

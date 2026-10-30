@@ -183,6 +183,7 @@ extension Translations {
         "Confirm ↩": "Potwierdź ↩",
         "No access to the microphone or speech recognition. Allow it in System Settings → Privacy & Security.": "Brak dostępu do mikrofonu lub rozpoznawania mowy. Zezwól na to w Ustawieniach systemowych → Prywatność i ochrona.",
         "On-device speech recognition isn’t available. Turn on Dictation in System Settings → Keyboard so macOS downloads the language models.": "Rozpoznawanie mowy na urządzeniu jest niedostępne. Włącz Dyktowanie w Ustawieniach systemowych → Klawiatura, aby macOS pobrał modele językowe.",
+        "Couldn’t turn on the microphone.": "Nie udało się włączyć mikrofonu.",
         "Couldn’t turn on the microphone: ": "Nie udało się włączyć mikrofonu: ",
         "Speech recognition isn’t working. Check the microphone and Dictation in System Settings → Keyboard.": "Rozpoznawanie mowy nie działa. Sprawdź mikrofon i Dyktowanie w Ustawieniach systemowych → Klawiatura.",
         "checking: ": "sprawdzam: ",
