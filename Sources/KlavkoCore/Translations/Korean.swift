@@ -183,7 +183,7 @@ extension Translations {
         "Confirm ↩": "확인 ↩",
         "No access to the microphone or speech recognition. Allow it in System Settings → Privacy & Security.": "마이크 또는 음성 인식에 대한 접근 권한이 없습니다. 시스템 설정 → 개인정보 보호 및 보안에서 허용하세요.",
         "On-device speech recognition isn’t available. Turn on Dictation in System Settings → Keyboard so macOS downloads the language models.": "온디바이스 음성 인식을 사용할 수 없습니다. macOS가 언어 모델을 내려받도록 시스템 설정 → 키보드에서 받아쓰기를 켜세요.",
-        "Couldn’t turn on the microphone.": "마이크를 켜지 못했습니다.",
+        "the microphone didn’t report its format.": "마이크가 형식을 알려 주지 않았습니다.",
         "Couldn’t turn on the microphone: ": "마이크를 켜지 못했습니다: ",
         "Speech recognition isn’t working. Check the microphone and Dictation in System Settings → Keyboard.": "음성 인식이 작동하지 않습니다. 마이크와 시스템 설정 → 키보드의 받아쓰기를 확인하세요.",
         "checking: ": "확인 중: ",

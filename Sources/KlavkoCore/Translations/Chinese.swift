@@ -183,7 +183,7 @@ extension Translations {
         "Confirm ↩": "确认 ↩",
         "No access to the microphone or speech recognition. Allow it in System Settings → Privacy & Security.": "无法访问麦克风或语音识别。请在“系统设置 → 隐私与安全性”中允许。",
         "On-device speech recognition isn’t available. Turn on Dictation in System Settings → Keyboard so macOS downloads the language models.": "设备上的语音识别不可用。请在“系统设置 → 键盘”中开启“听写”，以便 macOS 下载语言模型。",
-        "Couldn’t turn on the microphone.": "无法开启麦克风。",
+        "the microphone didn’t report its format.": "麦克风未报告其格式。",
         "Couldn’t turn on the microphone: ": "无法开启麦克风： ",
         "Speech recognition isn’t working. Check the microphone and Dictation in System Settings → Keyboard.": "语音识别无法工作。请检查麦克风以及“系统设置 → 键盘”中的“听写”。",
         "checking: ": "正在检查： ",

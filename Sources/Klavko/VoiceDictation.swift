@@ -152,7 +152,15 @@ final class VoiceDictation: ObservableObject {
                                      "No access to the microphone or speech recognition. Allow it in System Settings → Privacy & Security."))
                 return
             }
-            begin(first)
+            // Outside the task: AVAudioEngine reports some failures as Objective-C exceptions, which AppKit
+            // swallows. Swallowed inside a task, the task stayed current on the main thread, and the next
+            // main-actor check crashed Klavko seconds later.
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self, self.session == current else { return }
+                    self.begin(first)
+                }
+            }
         }
     }
 
@@ -187,30 +195,48 @@ final class VoiceDictation: ObservableObject {
         if device != audioDevice {
             audio = AVAudioEngine()
             audioDevice = device
-            if let device { Self.use(device, for: audio.inputNode) }
+            // The microphone chosen in macOS is the engine's own; choosing it again on the unit gave Bluetooth
+            // ones (AirPods) a wrong rate, and they wouldn't start (-10868).
+            if let device, device != AudioDevices.defaultInput { Self.use(device, for: audio.inputNode) }
         }
-        let format = audio.inputNode.outputFormat(forBus: 0)
-        guard format.channelCount > 0, format.sampleRate > 0 else {
+        startMicrophone(attempt: 1, session: session) { [weak self] in
+            guard let self else { return }
+            recognition.startSegment()
+            insertOnFinish = true
+            stage = .listening
+            listeningSince = Date()
+            onStarted()
+            if let level = duckLevel() { ducker.duck(to: level) }
+            schedulePreview(after: 1.0)
+            Log.engine.notice("Voice input started (\(code, privacy: .public))")
+        }
+    }
+
+    /// Starts the microphone, then `started`. A Bluetooth headset that was just recording (AirPods) keeps its
+    /// microphone rate for a moment while a new engine still expects the music one, and won't start (-10868):
+    /// tried again on a new engine a moment later, then the microphone chosen in macOS instead.
+    private func startMicrophone(attempt: Int, session current: Int, started: @escaping () -> Void) {
+        let result = startAudio()
+        if result.ok { return started() }
+        audio.inputNode.removeTap(onBus: 0)
+        Log.engine.error("Microphone didn't start, attempt \(attempt) (\(result.error, privacy: .public))")
+        let device = audioDevice
+        audio = AVAudioEngine()
+        if attempt < 4 {
+            if let device, device != AudioDevices.defaultInput { Self.use(device, for: audio.inputNode) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self, self.session == current else { return }
+                    self.startMicrophone(attempt: attempt + 1, session: current, started: started)
+                }
+            }
+        } else if device != AudioDevices.defaultInput, attempt == 4 {
+            audioDevice = AudioDevices.defaultInput
+            startMicrophone(attempt: 5, session: current, started: started)
+        } else {
             audioDevice = nil
-            stage = .failed(tr("Не вдалося увімкнути мікрофон.", "Couldn’t turn on the microphone."))
-            return
+            stage = .failed(tr("Не вдалося увімкнути мікрофон: ", "Couldn’t turn on the microphone: ") + result.error)
         }
-        Self.feed(audio.inputNode, format: format, into: fanout)
-        recognition.startSegment()
-        audio.prepare()
-        do {
-            try audio.start()
-        } catch {
-            stage = .failed(tr("Не вдалося увімкнути мікрофон: ", "Couldn’t turn on the microphone: ") + error.localizedDescription)
-            return
-        }
-        insertOnFinish = true
-        stage = .listening
-        listeningSince = Date()
-        onStarted()
-        if let level = duckLevel() { ducker.duck(to: level) }
-        schedulePreview(after: 1.0)
-        Log.engine.notice("Voice input started (\(code, privacy: .public))")
     }
 
     private func update() {
@@ -501,6 +527,22 @@ final class VoiceDictation: ObservableObject {
         Log.engine.notice("Voice input inserted \(text.count) chars")
     }
 
+    /// Taps the microphone and starts the engine.
+    private func startAudio() -> (ok: Bool, error: String) {
+        let format = audio.inputNode.inputFormat(forBus: 0)
+        guard format.channelCount > 0, format.sampleRate > 0 else {
+            return (false, tr("мікрофон не повідомив свій формат.", "the microphone didn’t report its format."))
+        }
+        Self.feed(audio.inputNode, into: fanout)
+        audio.prepare()
+        do {
+            try audio.start()
+            return (true, "")
+        } catch {
+            return (false, error.localizedDescription)
+        }
+    }
+
     private func stopAudio() {
         if let since = listeningSince {
             listeningSince = nil
@@ -587,9 +629,10 @@ final class VoiceDictation: ObservableObject {
     }
 
     /// Sends the microphone's audio to the running recognition (and the recording).
-    private nonisolated static func feed(_ input: AVAudioInputNode, format: AVAudioFormat, into fanout: AudioFanout) {
+    private nonisolated static func feed(_ input: AVAudioInputNode, into fanout: AudioFanout) {
         input.removeTap(onBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        // No format: the engine's own. A tap in another rate is an exception, not an error.
+        input.installTap(onBus: 0, bufferSize: 1024, format: nil) { buffer, _ in
             fanout.append(buffer)
         }
     }

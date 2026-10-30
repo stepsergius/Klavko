@@ -183,7 +183,7 @@ extension Translations {
         "Confirm ↩": "Onayla ↩",
         "No access to the microphone or speech recognition. Allow it in System Settings → Privacy & Security.": "Mikrofona veya konuşma tanımaya erişim yok. Sistem Ayarları → Gizlilik ve Güvenlik bölümünden izin verin.",
         "On-device speech recognition isn’t available. Turn on Dictation in System Settings → Keyboard so macOS downloads the language models.": "Cihaz üzerinde konuşma tanıma kullanılamıyor. macOS’in dil modellerini indirmesi için Sistem Ayarları → Klavye bölümünde Dikte’yi açın.",
-        "Couldn’t turn on the microphone.": "Mikrofon açılamadı.",
+        "the microphone didn’t report its format.": "mikrofon biçimini bildirmedi.",
         "Couldn’t turn on the microphone: ": "Mikrofon açılamadı: ",
         "Speech recognition isn’t working. Check the microphone and Dictation in System Settings → Keyboard.": "Konuşma tanıma çalışmıyor. Mikrofonu ve Sistem Ayarları → Klavye bölümündeki Dikte’yi kontrol edin.",
         "checking: ": "denetleniyor: ",
