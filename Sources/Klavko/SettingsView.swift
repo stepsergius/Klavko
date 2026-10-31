@@ -1133,7 +1133,7 @@ private struct SettingsSidebar: View {
 }
 
 /// Dark rounded key label, like "Double", "⌥", "Space".
-private struct Keycap: View {
+struct Keycap: View {
     let text: String
 
     var body: some View {

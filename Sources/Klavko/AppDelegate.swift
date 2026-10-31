@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let emojiInput = EmojiInput()
     private let voiceStatsWindow = VoiceStatsWindow()
     private let milestoneWindow = MilestoneWindow()
+    private let welcomeWindow = WelcomeWindow()
     private let voiceHistoryWindow = VoiceHistoryWindow()
     private let capsLight = CapsLockLight()
     private let supportWindow = SupportWindow()
@@ -262,7 +263,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         monitor?.remaps = settings.keyRemapsEnabled ? settings.keyRemaps : []
         recorder.onRecordingKey = { [weak self] recording in self?.monitor?.remapsPaused = recording }
-        startMonitoring(prompt: true)
+        // The first launch: the welcome window asks for Accessibility itself, not the system prompt at once.
+        let firstLaunch = !settings.usedBefore && !CommandLine.arguments.dropFirst().contains(where: { $0.hasPrefix("--") })
+        startMonitoring(prompt: !firstLaunch)
+        if firstLaunch { showWelcome() }
 
         // Developer check of the exception card's look: open Klavko with --demo-exception-prompt.
         if CommandLine.arguments.contains("--demo-exception-prompt") {
@@ -324,6 +328,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 NSApp.terminate(nil)
             }
         }
+        // Developer checks of the first-launch window: --snapshot-welcome <folder> (a PNG per page), or --show-welcome.
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot-welcome"), index + 1 < CommandLine.arguments.count {
+            WelcomeWindow.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]), welcomeContext())
+        }
+        if CommandLine.arguments.contains("--show-welcome") { showWelcome() }
         // Developer check of the window shown after an update: --snapshot-support <file.png>, or --show-support.
         if let index = CommandLine.arguments.firstIndex(of: "--snapshot-support"), index + 1 < CommandLine.arguments.count {
             SupportWindow.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[index + 1]), version: updater.currentVersion)
@@ -637,6 +646,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         settings.lastRunVersion = current
+    }
+
+    private func welcomeContext() -> WelcomeWindow.Context {
+        WelcomeWindow.Context(
+            menuBarMark: SystemLayouts.currentLanguage().flatMap { Self.flag(language: $0, layoutID: SystemLayouts.currentLayoutID()) },
+            shortcuts: settings.shortcuts, layout: englishLayout(), settings: settings,
+            requestAccessibility: { [weak self] in self?.startMonitoring(prompt: true) },
+            openSettings: { [weak self] in self?.showSettings() })
+    }
+
+    @objc func showWelcome() {
+        welcomeWindow.show(welcomeContext())
     }
 
     @objc private func showSettings() {
