@@ -7,6 +7,7 @@ enum AboutInfo {
     static let author = "Serhii Stepaniuk"
     static let email = "stepsergius@gmail.com"
     static let repository = URL(string: "https://github.com/stepsergius/Klavko")!
+    static let telegram = URL(string: "https://t.me/klavko")!
     /// Where "Thank the author" leads (a jar, Ko-fi, Buy Me a Coffee…); the button is hidden while nil.
     static let donateURL: URL? = URL(string: "https://send.monobank.ua/jar/2CKJVz8jam")
 
@@ -99,8 +100,15 @@ struct AboutSection: View {
 
         Section {
             LabeledContent(tr("Автор", "Author"), value: AboutInfo.author)
-            LabeledContent(tr("Пошта", "Email")) {
-                Link(AboutInfo.email, destination: URL(string: "mailto:\(AboutInfo.email)?subject=Klavko")!)
+            LabeledContent(tr("Зв’язок", "Contact")) {
+                HStack {
+                    Button(tr("Написати автору", "Write to the Author")) {
+                        NSWorkspace.shared.open(URL(string: "mailto:\(AboutInfo.email)?subject=Klavko")!)
+                    }
+                    Button(tr("Група в Telegram", "Telegram Group")) {
+                        NSWorkspace.shared.open(AboutInfo.telegram)
+                    }
+                }
             }
             LabeledContent(tr("Код", "Source code")) {
                 Link("github.com/stepsergius/Klavko", destination: AboutInfo.repository)
