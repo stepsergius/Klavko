@@ -197,6 +197,9 @@ public enum KeyNames {
         101: "F9", 109: "F10", 103: "F11", 111: "F12", 105: "F13", 107: "F14", 113: "F15",
     ]
 
+    /// Space, arrows, F-keys…: named the same in every layout.
+    public static func isSpecial(_ keyCode: UInt16) -> Bool { special[keyCode] != nil }
+
     public static func name(for keyCode: UInt16, layout: LayoutMap?) -> String {
         special[keyCode]
             ?? layout?.character(for: Keystroke(keyCode: keyCode))?.uppercased()

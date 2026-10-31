@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import KlavkoCore
 
 /// Global keyboard/mouse event tap. Needs the Accessibility permission.
 final class KeyboardMonitor {
@@ -8,6 +9,12 @@ final class KeyboardMonitor {
 
     private let handler: Handler
     private var tap: CFMachPort?
+    /// Keys made to act as other keys (Settings → Hotkeys → Key remapping).
+    var remaps: [KeyRemap] = []
+    /// While a key is recorded in Settings: it must arrive as pressed.
+    var remapsPaused = false
+    /// Remapped keys still held: what their key-up becomes.
+    private var remappedDown: [Int64: Int64] = [:]
     private var runLoopSource: CFRunLoopSource?
 
     init(handler: @escaping Handler) {
@@ -19,7 +26,7 @@ final class KeyboardMonitor {
     func start() -> Bool {
         if tap != nil { return true }
 
-        let types: [CGEventType] = [.keyDown, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+        let types: [CGEventType] = [.keyDown, .keyUp, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown]
         let mask = types.reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
         let callback: CGEventTapCallBack = { _, type, event, refcon in
             guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -98,6 +105,10 @@ final class KeyboardMonitor {
             hold(copy)
             return nil
         }
+        // After holding: a held key comes back through here and is remapped then, once.
+        if type == .keyDown || type == .keyUp { remap(type, event) }
+        // Key-ups are watched for remapping only.
+        if type == .keyUp { return Unmanaged.passUnretained(event) }
 
         let start = DispatchTime.now().uptimeNanoseconds
         let pass = handler(type, event)
@@ -106,5 +117,33 @@ final class KeyboardMonitor {
             Log.monitor.notice("Slow event handling: \(elapsedMs) ms")
         }
         return pass ? Unmanaged.passUnretained(event) : nil
+    }
+
+    // MARK: - Remapping
+
+    private static let flags: [(ModifierKey, CGEventFlags)] = [
+        (.control, .maskControl), (.option, .maskAlternate), (.shift, .maskShift), (.command, .maskCommand),
+    ]
+
+    /// Turns the key into the one it's remapped to, in place: the app (and the typing engine) get the new key,
+    /// and a held key repeats as the new one.
+    private func remap(_ type: CGEventType, _ event: CGEvent) {
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        if type == .keyUp {
+            if let target = remappedDown.removeValue(forKey: keyCode) {
+                event.setIntegerValueField(.keyboardEventKeycode, value: target)
+            }
+            return
+        }
+        guard !remaps.isEmpty, !remapsPaused else { return }
+        let held = Set(Self.flags.filter { event.flags.contains($0.1) }.map(\.0))
+        guard let output = KeyRemapping.output(keyCode: UInt16(keyCode), held: held, rules: remaps) else { return }
+        var flags = event.flags
+        for (modifier, flag) in Self.flags {
+            if output.modifiers.contains(modifier) { flags.insert(flag) } else { flags.remove(flag) }
+        }
+        event.setIntegerValueField(.keyboardEventKeycode, value: Int64(output.keyCode))
+        event.flags = flags
+        remappedDown[keyCode] = Int64(output.keyCode)
     }
 }

@@ -6,6 +6,10 @@ import KlavkoCore
 @MainActor
 final class ShortcutRecorder: ObservableObject {
     @Published private(set) var recording: HotkeyAction?
+    /// Which key of a remapping rule is being recorded (`recordKey`).
+    @Published private(set) var recordingKey: String?
+    /// Told when key recording starts and stops: remapping is paused meanwhile, so the key arrives as pressed.
+    var onRecordingKey: (Bool) -> Void = { _ in }
     /// Record which of the two keys of each modifier was pressed ("right ⌘"), not just the modifier.
     private var recordsSides = false
 
@@ -31,9 +35,29 @@ final class ShortcutRecorder: ObservableObject {
         }
     }
 
+    /// Records any key, with the modifiers held or without (Esc too): a rule's key for remapping.
+    func recordKey(_ slot: String, completion: @escaping (KeyCombo) -> Void) {
+        stop()
+        recordingKey = slot
+        onRecordingKey(true)
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            nonisolated(unsafe) let event = event
+            MainActor.assumeIsolated {
+                let combo = KeyCombo(keyCode: event.keyCode, modifiers: Self.modifiers(event.modifierFlags))
+                self?.stop()
+                completion(combo)
+            }
+            return nil
+        }
+    }
+
     func stop() {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        if recordingKey != nil {
+            recordingKey = nil
+            onRecordingKey(false)
+        }
         pendingSingle?.cancel()
         pendingSingle = nil
         recording = nil

@@ -1350,3 +1350,37 @@ final class EmojiCatalogTests: XCTestCase {
         XCTAssertLessThan(try XCTUnwrap(EmojiCatalog.load(language: "en", maxVersion: 15.0)).entries.count, try catalog("en").entries.count)
     }
 }
+
+final class KeyRemapTests: XCTestCase {
+    // 10: «ґ» on the Ukrainian layout (§ on the US one); 39: «є» / apostrophe; 21: 4.
+    let ghe = KeyCombo(keyCode: 10)
+    let apostrophe = KeyCombo(keyCode: 39)
+
+    func testAPlainKeyBecomesAnotherAndKeepsItsModifiers() {
+        let rules = [KeyRemap(from: ghe, to: apostrophe)]
+        XCTAssertEqual(KeyRemapping.output(keyCode: 10, held: [], rules: rules), apostrophe)
+        XCTAssertEqual(KeyRemapping.output(keyCode: 10, held: [.shift], rules: rules), KeyCombo(keyCode: 39, modifiers: [.shift]))
+        XCTAssertNil(KeyRemapping.output(keyCode: 39, held: [], rules: rules))
+    }
+
+    func testACombinationCoversExactlyItsModifiers() {
+        let screenshot = KeyCombo(keyCode: 21, modifiers: [.command, .shift])
+        let rules = [KeyRemap(from: KeyCombo(keyCode: 10, modifiers: [.option]), to: screenshot)]
+        XCTAssertEqual(KeyRemapping.output(keyCode: 10, held: [.option], rules: rules), screenshot)
+        XCTAssertNil(KeyRemapping.output(keyCode: 10, held: [], rules: rules))
+        XCTAssertNil(KeyRemapping.output(keyCode: 10, held: [.option, .shift], rules: rules))
+    }
+
+    func testARuleForTheCombinationWinsOverThePlainKey() {
+        let special = KeyCombo(keyCode: 21, modifiers: [.command])
+        let rules = [KeyRemap(from: ghe, to: apostrophe), KeyRemap(from: KeyCombo(keyCode: 10, modifiers: [.command]), to: special)]
+        XCTAssertEqual(KeyRemapping.output(keyCode: 10, held: [.command], rules: rules), special)
+        XCTAssertEqual(KeyRemapping.output(keyCode: 10, held: [.option], rules: rules), KeyCombo(keyCode: 39, modifiers: [.option]))
+    }
+
+    func testFnIsIgnoredAndSwapsWorkBothWays() {
+        let rules = [KeyRemap(from: ghe, to: apostrophe), KeyRemap(from: ghe, to: apostrophe).reversed]
+        XCTAssertEqual(KeyRemapping.output(keyCode: 39, held: [.function], rules: rules), ghe)
+        XCTAssertEqual(KeyRemapping.adding(KeyRemap(from: ghe, to: ghe), to: rules).filter { $0.from == ghe }.count, 1)
+    }
+}

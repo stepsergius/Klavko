@@ -262,6 +262,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return pass
         }
+        monitor?.remaps = settings.keyRemapsEnabled ? settings.keyRemaps : []
+        recorder.onRecordingKey = { [weak self] recording in self?.monitor?.remapsPaused = recording }
         startMonitoring(prompt: true)
 
         // Developer check of the exception card's look: open Klavko with --demo-exception-prompt.
@@ -442,6 +444,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                             replacements: settings.replacements,
                                             exceptions: Set(settings.exceptions),
                                             manualLanguages: Set(settings.manualLanguages))
+        monitor?.remaps = settings.keyRemapsEnabled ? settings.keyRemaps : []
         updateIcon()
     }
 

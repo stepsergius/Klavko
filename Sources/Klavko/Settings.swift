@@ -17,6 +17,8 @@ final class Settings: ObservableObject {
         static let soundName = "soundName"
         static let excludedApps = "excludedApps"
         static let shortcuts = "shortcuts.v2"
+        static let keyRemaps = "keyRemaps"
+        static let keyRemapsEnabled = "keyRemapsEnabled"
         static let modifierSides = "modifierSides"
         static let loginItemConfigured = "loginItemConfigured"
         static let lastRunVersion = "lastRunVersion"
@@ -441,6 +443,18 @@ final class Settings: ObservableObject {
         didSet { saveShortcuts(); onChange?() }
     }
 
+    /// Keys and combinations made to act as others, everywhere.
+    @Published private(set) var keyRemaps: [KeyRemap] {
+        didSet {
+            if let data = try? JSONEncoder().encode(keyRemaps) { defaults.set(data, forKey: Key.keyRemaps) }
+            onChange?()
+        }
+    }
+
+    @Published var keyRemapsEnabled: Bool {
+        didSet { defaults.set(keyRemapsEnabled, forKey: Key.keyRemapsEnabled); onChange?() }
+    }
+
     /// New shortcuts remember the side of each modifier ("right ⌘"). Off by default.
     @Published var modifierSides: Bool {
         didSet { defaults.set(modifierSides, forKey: Key.modifierSides) }
@@ -599,6 +613,8 @@ final class Settings: ObservableObject {
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         shortcuts = Self.loadShortcuts(defaults.data(forKey: Key.shortcuts))
         modifierSides = defaults.bool(forKey: Key.modifierSides)
+        keyRemaps = defaults.data(forKey: Key.keyRemaps).flatMap { try? JSONDecoder().decode([KeyRemap].self, from: $0) } ?? []
+        keyRemapsEnabled = defaults.object(forKey: Key.keyRemapsEnabled) as? Bool ?? true
         launchAtLogin = SMAppService.mainApp.status == .enabled
 
         // Autostart is on by default, but only from an installed copy: a build folder may move or vanish.
@@ -642,6 +658,17 @@ final class Settings: ObservableObject {
         }
         updated[action] = shortcut
         shortcuts = updated
+    }
+
+    // MARK: - Key remapping
+
+    /// Adds a rule; one for the same key or combination is replaced.
+    func addKeyRemap(_ rule: KeyRemap) {
+        keyRemaps = KeyRemapping.adding(rule, to: keyRemaps)
+    }
+
+    func removeKeyRemap(_ rule: KeyRemap) {
+        keyRemaps.removeAll { $0.id == rule.id }
     }
 
     func resetShortcuts() {

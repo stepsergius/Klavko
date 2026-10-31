@@ -21,6 +21,9 @@ struct SettingsView: View {
     var height: CGFloat = 620
 
     @State private var newException = ""
+    /// The first key of a remapping rule being added, once recorded.
+    @State private var newRemapFrom: KeyCombo?
+    @State private var newRemapTo: KeyCombo?
     @State private var newReplacementFrom = ""
     @State private var newReplacementTo = ""
     /// The Quick Actions row a dragged row is over.
@@ -827,6 +830,26 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    Section {
+                        Toggle(tr("Замінювати клавіші", "Remap keys"), isOn: $settings.keyRemapsEnabled)
+                        ForEach(settings.keyRemaps) { rule in
+                            remapRow(rule)
+                        }
+                        remapAdder
+                    } header: {
+                        Text(tr("Заміна клавіш", "Key remapping"))
+                    } footer: {
+                        Text(tr("Клавіша чи комбінація зліва діє як та, що справа, у всіх програмах і розкладках. "
+                                + "Клацніть «Клавіша…» й натисніть клавішу (можна з ⌃ ⌥ ⇧ ⌘), потім «Чим стане…» й натисніть ту, що має бути замість неї, і «Додати». "
+                                + "Заміна окремої клавіші діє і з модифікаторами: з ⇧ вона друкує велику літеру. "
+                                + "⇄ додає таку саму заміну навпаки. У полях паролів macOS заміна не діє.",
+                                "The key or combination on the left acts as the one on the right, in every app and layout. "
+                                + "Click “Key…” and press a key (with ⌃ ⌥ ⇧ ⌘ if you like), then “What it becomes…” and press the one it should become, and Add. "
+                                + "A single key’s remapping works with modifiers too: with ⇧ it types a capital. "
+                                + "⇄ adds the same remapping the other way round. macOS password fields aren’t remapped."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
                 case .about:
                     AboutSection(settings: settings, updater: updater)
@@ -920,6 +943,85 @@ struct SettingsView: View {
             .opacity(settings.shortcuts[action] == nil ? 0 : 1)
             .disabled(settings.shortcuts[action] == nil)
         }
+    }
+
+    private func remapRow(_ rule: KeyRemap) -> some View {
+        HStack {
+            keycaps(remapParts(rule.from))
+            Image(systemName: "arrow.right").foregroundStyle(.secondary)
+            keycaps(remapParts(rule.to))
+            Spacer()
+            Button {
+                settings.addKeyRemap(rule.reversed)
+            } label: {
+                Image(systemName: "arrow.left.arrow.right")
+            }
+            .buttonStyle(.borderless)
+            .help(tr("Додати таку саму заміну навпаки", "Add the same remapping the other way round"))
+            .disabled(settings.keyRemaps.contains { $0.from == rule.to && $0.to == rule.from })
+            Button {
+                settings.removeKeyRemap(rule)
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(tr("Прибрати заміну", "Remove the remapping"))
+        }
+    }
+
+    /// Two keys to record, each on its own click, then «Додати».
+    private var remapAdder: some View {
+        HStack {
+            remapKeyButton("from", combo: newRemapFrom, empty: tr("Клавіша…", "Key…")) { newRemapFrom = $0 }
+            Image(systemName: "arrow.right").foregroundStyle(.secondary)
+            remapKeyButton("to", combo: newRemapTo, empty: tr("Чим стане…", "What it becomes…")) { newRemapTo = $0 }
+            Spacer()
+            Button(tr("Додати", "Add")) {
+                guard let from = newRemapFrom, let to = newRemapTo else { return }
+                settings.addKeyRemap(KeyRemap(from: from, to: to))
+                newRemapFrom = nil
+                newRemapTo = nil
+            }
+            .disabled(newRemapFrom == nil || newRemapTo == nil || newRemapFrom == newRemapTo)
+        }
+    }
+
+    /// Click, then press the key (with modifiers or without); click again to cancel.
+    private func remapKeyButton(_ slot: String, combo: KeyCombo?, empty: String,
+                                recorded: @escaping (KeyCombo) -> Void) -> some View {
+        Button {
+            if recorder.recordingKey == slot {
+                recorder.stop()
+            } else {
+                recorder.recordKey(slot, completion: recorded)
+            }
+        } label: {
+            if recorder.recordingKey == slot {
+                Text(tr("Натисніть клавішу…", "Press a key…")).foregroundStyle(Color.accentColor)
+            } else if let combo {
+                keycaps(remapParts(combo))
+            } else {
+                Text(empty)
+            }
+        }
+        .buttonStyle(.bordered)
+    }
+
+    private func keycaps(_ parts: [String]) -> some View {
+        HStack(spacing: 4) {
+            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in Keycap(text: part) }
+        }
+    }
+
+    /// The key as the layouts in use name it: «Ґ \\», «Space».
+    private func remapParts(_ combo: KeyCombo) -> [String] {
+        var parts = combo.parts(layout: keyLayout)
+        let english = parts.removeLast()
+        let others = SystemLayouts.enabledLayouts().map(\.map).filter { $0.language != "en" }
+            .compactMap { $0.character(for: Keystroke(keyCode: combo.keyCode))?.uppercased() }
+            .filter { $0 != english && !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        let names = KeyNames.isSpecial(combo.keyCode) ? [english] : Array(NSOrderedSet(array: others + [english])) as! [String]
+        return parts + [names.joined(separator: " ")]
     }
 
     /// The interface language in use first, the others in alphabetical order of their own names.
