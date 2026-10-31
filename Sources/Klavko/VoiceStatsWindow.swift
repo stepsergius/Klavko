@@ -38,8 +38,8 @@ final class MilestoneWindow {
         window.level = .floating
         window.center()
         self.window = window
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        // In front without taking the keyboard: what the user types next still goes where they type.
+        window.orderFrontRegardless()
     }
 }
 

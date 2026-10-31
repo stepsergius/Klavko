@@ -81,9 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         dictation.onStarted = { [unowned self] in voiceStats.started() }
         dictation.onListened = { [unowned self] seconds in voiceStats.listened(seconds) }
-        voiceStats.onMilestone = { [unowned self] words in
-            milestoneWindow.show(words: words, store: voiceStats) { [weak self] in self?.showVoiceStats() }
-        }
+        voiceStats.onMilestone = { [unowned self] words in showMilestoneWhenTyped(words) }
         // A dictated word fixed by hand: offer to spell it that way from now on.
         correctionWatcher.known = { [unowned self] in settings.voiceRules }
         // One word at a time: only the first correction is offered.
@@ -726,6 +724,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func showVoiceHistory() {
         voiceHistoryWindow.show(voiceHistory)
+    }
+
+    /// The congratulations come once the dictated text is in (a window in front would take the rest of it)
+    /// and no new dictation is running; half a minute later at most.
+    private func showMilestoneWhenTyped(_ words: Int, attempt: Int = 0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            guard let self else { return }
+            if (TextInjector.isInjecting || dictation.isActive) && attempt < 30 {
+                showMilestoneWhenTyped(words, attempt: attempt + 1)
+                return
+            }
+            milestoneWindow.show(words: words, store: voiceStats) { [weak self] in self?.showVoiceStats() }
+        }
     }
 
     func showVoiceStats() {
