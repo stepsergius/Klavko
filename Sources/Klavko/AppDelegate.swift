@@ -561,11 +561,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // The actions themselves are on their hotkeys; the menu keeps only what has no hotkey.
         let updateItem = updater.available.map {
             item(trFormat("⬆︎ Оновити Klavko до %@", "⬆︎ Update Klavko to %@", $0.version), #selector(installUpdate))
-        } ?? item(tr("Перевірити оновлення…", "Check for Updates…"), #selector(checkForUpdates))
-        let settingsItem = item(tr("Налаштування…", "Settings…"), #selector(showSettings))
+        } ?? item(tr("Перевірити оновлення", "Check for Updates"), #selector(checkForUpdates))
+        let welcomeItem = item(tr("Як користуватися", "How to Use"), #selector(showWelcome))
+        let settingsItem = item(tr("Налаштування", "Settings"), #selector(showSettings))
         let quitItem = item(tr("Вийти з Klavko", "Quit Klavko"), #selector(quit))
         Self.showShortcuts([(updateItem, nil), (settingsItem, "⌘,"), (quitItem, "⌘Q")])
         menu.addItem(updateItem)
+        menu.addItem(welcomeItem)
         menu.addItem(settingsItem)
         menu.addItem(.separator())
         if AboutInfo.donateURL != nil {

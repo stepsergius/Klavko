@@ -281,8 +281,9 @@ private struct MenuBarSketch: View {
             menuLine(tr("Автоматично виправляти розкладку", "Fix Layout Automatically"), check: true)
             menuLine(tr("Виправляти помилки", "Fix Typos"), check: true)
             Divider().padding(.vertical, 3)
-            menuLine(tr("Перевірити оновлення…", "Check for Updates…"))
-            menuLine(tr("Налаштування…", "Settings…"), picked: true)
+            menuLine(tr("Перевірити оновлення", "Check for Updates"))
+            menuLine(tr("Як користуватися", "How to Use"))
+            menuLine(tr("Налаштування", "Settings"), picked: true)
             Divider().padding(.vertical, 3)
             menuLine(tr("Вийти з Klavko", "Quit Klavko"))
         }
@@ -517,8 +518,8 @@ private struct SettingsPage: View {
     var body: some View {
         VStack(spacing: 22) {
             PageTitle(title: tr("Усе готово", "You’re All Set"),
-                      subtitle: tr("Щоб змінити, що й коли робить Klavko, клацніть його значок у рядку меню й виберіть «Налаштування…».",
-                                   "To change what Klavko does and when, click its icon in the menu bar and choose “Settings…”."))
+                      subtitle: tr("Щоб змінити, що й коли робить Klavko, клацніть його значок у рядку меню й виберіть «Налаштування».",
+                                   "To change what Klavko does and when, click its icon in the menu bar and choose “Settings”."))
             MenuBarSketch(mark: mark, menu: true)
             VStack(alignment: .leading, spacing: 10) {
                 Toggle(tr("Запускати Klavko під час входу в систему", "Open Klavko when you log in"), isOn: $settings.launchAtLogin)
