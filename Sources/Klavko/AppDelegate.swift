@@ -435,7 +435,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func applySettings() {
         refreshCapsLight(force: true)
         settingsWindow?.title = tr("Klavko — Налаштування", "Klavko Settings")
-        engine.config = SwitchEngine.Config(shortcuts: settings.shortcuts,
+        // Voice input off: its hotkeys aren't caught, so fn and the rest work as without Klavko.
+        if !settings.voiceEnabled && dictation.isActive { dictation.cancel() }
+        let shortcuts = settings.voiceEnabled ? settings.shortcuts
+            : settings.shortcuts.filter { $0.key != .voice && $0.key != .voiceTranslate }
+        engine.config = SwitchEngine.Config(shortcuts: shortcuts,
                                             autoSwitch: settings.isEnabled,
                                             triggers: settings.triggers,
                                             switchWhileTyping: settings.switchWhileTyping,

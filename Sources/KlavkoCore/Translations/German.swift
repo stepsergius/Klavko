@@ -126,6 +126,7 @@ extension Translations {
         "Download (~600 MB)": "Laden (~600 MB)",
         "Try again": "Erneut versuchen",
         "Voice input": "Spracheingabe",
+        "Off: the voice hotkeys do nothing, and fn works as usual.": "Aus: Die Sprach-Kurzbefehle tun nichts, und fn funktioniert wie gewohnt.",
         "Offer to remember corrections": "Anbieten, Korrekturen zu merken",
         "When you fix one dictated word by hand, Klavko offers for 5 seconds to write it that way from now on (↩ — yes, Esc — no).": "Wenn du ein diktiertes Wort von Hand korrigierst, bietet Klavko 5 Sekunden lang an, es künftig so zu schreiben (↩ – ja, Esc – nein).",
         "Heard": "Erkannt",

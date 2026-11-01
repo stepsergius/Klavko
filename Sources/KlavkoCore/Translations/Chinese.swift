@@ -126,6 +126,7 @@ extension Translations {
         "Download (~600 MB)": "下载（约 600 MB）",
         "Try again": "重试",
         "Voice input": "语音输入",
+        "Off: the voice hotkeys do nothing, and fn works as usual.": "关闭时，语音快捷键不起作用，fn 照常工作。",
         "Offer to remember corrections": "建议记住修正",
         "When you fix one dictated word by hand, Klavko offers for 5 seconds to write it that way from now on (↩ — yes, Esc — no).": "当你手动修正一个听写的单词时，Klavko 会在 5 秒内建议今后都按此写法书写（↩ 表示是，Esc 表示否）。",
         "Heard": "听到的",

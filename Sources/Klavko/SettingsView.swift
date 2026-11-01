@@ -539,6 +539,13 @@ struct SettingsView: View {
 
                 case .voice:
                     Section {
+                        Toggle(isOn: $settings.voiceEnabled) {
+                            Text(tr("Голосовий ввід", "Voice input"))
+                            Text(tr("Вимкнено — гарячі клавіші голосу нічого не роблять, а fn працює як звичайно.",
+                                    "Off: the voice hotkeys do nothing, and fn works as usual."))
+                        }
+                    }
+                    Section {
                         Picker(tr("Вигляд", "Look"), selection: $settings.voicePanelStyle) {
                             ForEach(VoiceLook.Style.allCases, id: \.self) { Text($0.title).tag($0) }
                         }

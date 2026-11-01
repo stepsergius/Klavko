@@ -126,6 +126,7 @@ extension Translations {
         "Download (~600 MB)": "İndir (~600 MB)",
         "Try again": "Tekrar dene",
         "Voice input": "Sesli giriş",
+        "Off: the voice hotkeys do nothing, and fn works as usual.": "Kapalı: ses kısayolları hiçbir şey yapmaz, fn her zamanki gibi çalışır.",
         "Offer to remember corrections": "Düzeltmeleri hatırlamayı öner",
         "When you fix one dictated word by hand, Klavko offers for 5 seconds to write it that way from now on (↩ — yes, Esc — no).": "Dikte edilen bir kelimeyi elle düzelttiğinizde Klavko, 5 saniye boyunca bundan sonra onu böyle yazmayı önerir (↩ — evet, Esc — hayır).",
         "Heard": "Duyulan",

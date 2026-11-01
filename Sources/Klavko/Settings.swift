@@ -64,6 +64,7 @@ final class Settings: ObservableObject {
         static let duckSound = "duckSound"
         static let duckLevel = "duckLevel"
         static let clipboardEnabled = "clipboardEnabled"
+        static let voiceEnabled = "voiceEnabled"
         static let clipboardKeepDays = "clipboardKeepDays"
         static let clipboardIgnoredApps = "clipboardIgnoredApps"
         static let voiceLanguage = "voiceLanguage"
@@ -361,6 +362,11 @@ final class Settings: ObservableObject {
         }
     }
 
+    /// Voice input on its hotkeys; off, the keys (fn among them) are left to macOS and the apps.
+    @Published var voiceEnabled: Bool {
+        didSet { defaults.set(voiceEnabled, forKey: Key.voiceEnabled); onChange?() }
+    }
+
     /// Keep a clipboard history.
     @Published var clipboardEnabled: Bool {
         didSet { defaults.set(clipboardEnabled, forKey: Key.clipboardEnabled) }
@@ -523,6 +529,7 @@ final class Settings: ObservableObject {
             Key.googleSmart: true,
             Key.checkForUpdates: true,
             Key.clipboardEnabled: true,
+            Key.voiceEnabled: true,
             Key.clipboardKeepDays: 30,
             Key.clipboardIgnoredApps: ["com.1password.1password", "com.agilebits.onepassword7", "com.bitwarden.desktop",
                                        "com.apple.keychainaccess", "com.apple.Passwords", "org.keepassxc.keepassxc"],
@@ -595,6 +602,7 @@ final class Settings: ObservableObject {
         duckLevel = defaults.double(forKey: Key.duckLevel)
         checkForUpdates = defaults.bool(forKey: Key.checkForUpdates)
         clipboardEnabled = defaults.bool(forKey: Key.clipboardEnabled)
+        voiceEnabled = defaults.bool(forKey: Key.voiceEnabled)
         clipboardKeepDays = defaults.integer(forKey: Key.clipboardKeepDays)
         clipboardIgnoredApps = defaults.stringArray(forKey: Key.clipboardIgnoredApps) ?? []
         voiceVocabulary = defaults.data(forKey: Key.voiceVocabulary)
