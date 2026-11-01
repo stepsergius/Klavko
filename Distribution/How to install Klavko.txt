@@ -47,7 +47,8 @@ USING IT
 --------
 • Just type. Typed a word in the wrong layout — Klavko fixes it and
   switches the layout.
-• Settings: click the flag in the menu bar → Settings…
+• Settings: click the flag in the menu bar → Settings.
+  A short tour of what Klavko does is there too: How to Use.
   They are arranged in tabs at the top. The app language (English,
   Українська and others) is on the General tab.
 
@@ -60,6 +61,9 @@ Hotkeys (can be changed in Settings):
 • ⌥⌘V — clipboard history: find something copied earlier, ↩ — paste.
 • fn (🌐) — voice input: press, speak, press again — the text appears at
   the cursor. Return inserts too. Esc — cancel.
+• fn + ⌃ — voice input with translation: speak in one language, the
+  translated text is inserted.
+• ⌃⌥G — check the spelling and grammar of the selected text (LanguageTool).
 
 Voice input:
 • On the first recording macOS asks for access to the microphone and to
@@ -102,6 +106,28 @@ Clipboard history:
   Esc — close.
 • The history stays on your Mac only (30 days by default). Passwords from
   password managers are never recorded. Settings — Clipboard tab.
+
+Quick Actions:
+• Select text and a bar appears over it: copy, search, translate, change
+  case, wrap in quotes or brackets, bold and italic, send to ChatGPT,
+  Claude or Perplexity. Which actions and their order — Quick Actions tab.
+
+Emoji:
+• A space, a colon and a name — “:laugh”, “:heart” — show emoji at the
+  cursor. ← → — choose, Return or Tab — insert, Esc — close.
+
+Spelling and grammar check:
+• LanguageTool checks the text right on your Mac. It is downloaded once
+  in Settings; underlining mistakes while you type is turned on there too.
+
+Key remapping:
+• Any key or combination can act as another, in every app: Hotkeys tab →
+  Key…, What it becomes… → Add.
+
+QUESTIONS AND IDEAS
+-------------------
+The Klavko group on Telegram: https://t.me/klavko — write about bugs,
+ideas and questions.
 
 IF SOMETHING DOESN’T WORK
 -------------------------

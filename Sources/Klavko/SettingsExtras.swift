@@ -56,6 +56,29 @@ struct WhatsNewSection: View {
     }
 
     private static let versions: [Version] = [
+        Version(number: "1.0.0", uk: [
+            "**Швидкі дії над виділеним текстом:** панель із копіюванням, пошуком, перекладом, регістром, лапками й дужками, жирним і курсивом, ChatGPT, Claude і Perplexity; дії можна переставляти в налаштуваннях.",
+            "**Емодзі за назвою:** пробіл, двокрапка й назва («:сміх», «:серце») показують емодзі біля курсора; після слова Klavko може сам запропонувати емодзі.",
+            "**Перевірка правопису й граматики** з LanguageTool на цьому Mac: ⌃⌥G або «Швидкі дії», а за бажанням — підкреслення під час набору, також в Obsidian і Google Docs.",
+            "**Голосовий ввід із перекладом:** Fn+⌃ — диктуєте однією мовою, вставляється перекладений текст (перекладач macOS, без інтернету).",
+            "**Вигляд голосового вводу на вибір:** острівець біля камери, маленька панель із текстом або «без вікна».",
+            "**Статистика голосового вводу** в «Налаштування → Голос» і привітання на 1 000, 10 000 слів і далі — уже після того, як текст вставлено.",
+            "**Заміна клавіш:** будь-яка клавіша чи комбінація може працювати як інша, в усіх програмах.",
+            "**Вітальне вікно** при першому запуску; відкрити його знову — «Як користуватися» в меню.",
+            "**Група в Telegram** для запитань, помилок і пропозицій — кнопка в «Про Klavko».",
+            "Голосовий ввід з AirPods більше не збоїть після зміни мікрофона.",
+        ], en: [
+            "**Quick Actions for selected text:** a bar with copy, search, translate, case, quotes and brackets, bold and italic, ChatGPT, Claude and Perplexity; reorder the actions in Settings.",
+            "**Emoji by name:** a space, a colon and a name (“:laugh”, “:heart”) show emoji at the caret; after a word Klavko can suggest emoji itself.",
+            "**Spelling and grammar check** with LanguageTool on this Mac: ⌃⌥G or Quick Actions, and, if you like, underlines while you type, also in Obsidian and Google Docs.",
+            "**Voice input with translation:** Fn+⌃ — speak in one language, the translated text is inserted (the macOS translator, offline).",
+            "**Choose how voice input looks:** an island by the camera, a small panel with the text, or no window.",
+            "**Voice input statistics** in Settings → Voice, and congratulations at 1,000, 10,000 words and on — once the text is in.",
+            "**Key remapping:** any key or combination can act as another, in every app.",
+            "**A welcome window** on the first launch; open it again with How to Use in the menu.",
+            "**A Telegram group** for questions, bugs and ideas — a button in About.",
+            "Voice input with AirPods no longer fails after the microphone changes.",
+        ]),
         Version(number: "0.15.0", uk: [
             "**QR-коди** в «Тексті з екрана» (⌃Q): виділіть QR-код — Klavko покаже, що в ньому; посилання відкривається клавішею Enter.",
             "**Історія голосового вводу:** надиктоване зберігається з датою й часом (лише на цьому Mac); кожен запис можна скопіювати чи видалити.",
