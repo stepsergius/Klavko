@@ -1433,3 +1433,57 @@ final class MergingStoredDataTests: XCTestCase {
         XCTAssertEqual(merged.topWords(.day, now: day).first?.count, 2)
     }
 }
+
+final class SettingsBackupTests: XCTestCase {
+    private let remap = KeyRemap(from: KeyCombo(keyCode: 50), to: KeyCombo(keyCode: 10))
+
+    func testRoundTripsThroughAFile() throws {
+        let backup = SettingsBackup(keyRemaps: [remap], exceptions: ["npm"], excludedApps: ["com.apple.Terminal"],
+                                    replacements: [Replacement(from: "зсу", to: "ЗСУ")],
+                                    voiceVocabulary: [Replacement(from: "клавко", to: "Klavko")])
+        XCTAssertEqual(try SettingsBackup.read(backup.data()), backup)
+    }
+
+    func testKeepsEveryKindOfSettingThroughAFile() throws {
+        let shortcuts = Data(#"{"undo":null,"switch":{"keyCode":49,"modifiers":["option"]}}"#.utf8)
+        let values: [String: Any] = ["playSound": true, "duckLevel": 0.2, "clipboardKeepDays": 30, "soundName": "Pop",
+                                     "voiceLanguages": ["uk", "en"], "counts": ["так": 2], "shortcuts.v2": shortcuts]
+        var backup = SettingsBackup()
+        for (key, value) in values { backup.preferences[key] = JSONValue(defaultsValue: value) }
+        let read = try SettingsBackup.read(backup.data())
+        XCTAssertEqual(read.preferences["playSound"]?.defaultsValue as? Bool, true)
+        XCTAssertEqual(read.preferences["duckLevel"]?.defaultsValue as? Double, 0.2)
+        XCTAssertEqual(read.preferences["clipboardKeepDays"]?.defaultsValue as? Int, 30)
+        XCTAssertEqual(read.preferences["soundName"]?.defaultsValue as? String, "Pop")
+        XCTAssertEqual(read.preferences["voiceLanguages"]?.defaultsValue as? [String], ["uk", "en"])
+        XCTAssertEqual(read.preferences["counts"]?.defaultsValue as? [String: Int], ["так": 2])
+        let data = try XCTUnwrap(read.preferences["shortcuts.v2"]?.defaultsValue as? Data)
+        XCTAssertEqual(try JSONSerialization.jsonObject(with: data) as? NSDictionary,
+                       try JSONSerialization.jsonObject(with: shortcuts) as? NSDictionary)
+        XCTAssertTrue(String(decoding: try backup.data(), as: UTF8.self).contains(#""$json""#))
+    }
+
+    func testRefusesOtherFiles() {
+        XCTAssertThrowsError(try SettingsBackup.read(Data(#"{"exceptions": ["npm"]}"#.utf8)))
+        XCTAssertThrowsError(try SettingsBackup.read(Data(#"{"app": "Klavko", "format": 99}"#.utf8)))
+        XCTAssertEqual(try SettingsBackup.read(Data(#"{"app": "Klavko", "exceptions": ["ye"]}"#.utf8)).exceptions, ["ye"])
+    }
+
+    func testRestoringAddsAndTakesTheFilesRuleForTheSameWord() {
+        let mine = SettingsBackup(keyRemaps: [remap], exceptions: ["npm"],
+                                  replacements: [Replacement(from: "кл", to: "Клавко")],
+                                  voiceVocabulary: [Replacement(from: "Зсу", to: "зсу")])
+        let file = SettingsBackup(keyRemaps: [KeyRemap(from: remap.from, to: remap.to)], exceptions: ["NPM", "ye", ""],
+                                  excludedApps: ["com.apple.Terminal"],
+                                  replacements: [Replacement(from: "кл", to: "Klavko")],
+                                  voiceVocabulary: [Replacement(from: "зсу", to: "ЗСУ")])
+        let (merged, changes) = mine.merged(with: file)
+        XCTAssertEqual(changes, 4)
+        XCTAssertEqual(merged.keyRemaps, [remap])
+        XCTAssertEqual(merged.exceptions, ["npm", "ye"])
+        XCTAssertEqual(merged.excludedApps, ["com.apple.Terminal"])
+        XCTAssertEqual(merged.replacements, [Replacement(from: "кл", to: "Klavko")])
+        XCTAssertEqual(merged.voiceVocabulary, [Replacement(from: "зсу", to: "ЗСУ")])
+        XCTAssertEqual(merged.merged(with: file).changes, 0)
+    }
+}

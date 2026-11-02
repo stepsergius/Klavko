@@ -776,6 +776,51 @@ final class Settings: ObservableObject {
         voiceVocabulary.removeAll { $0 == rule }
     }
 
+    // MARK: - Moving settings
+
+    /// Kept in the file's own lists, merged rather than replaced.
+    private static let ruleKeys: Set = [Key.keyRemaps, Key.exceptions, Key.excludedApps, Key.replacements, Key.voiceVocabulary]
+    /// What belongs to this Mac or to this copy of Klavko, not to the user's choices; also keys only read once
+    /// to carry an old value over.
+    private static let localKeys: Set = [Key.lastRunVersion, Key.loginItemConfigured, Key.loginItemPath,
+                                         Key.skippedUpdateVersion, Key.revertCounts, Key.googleDocsAnswer,
+                                         Key.googleDocsLaterSince, Key.typography, Key.voiceLanguage, "shortcuts"]
+
+    /// Every setting, for a file; the Google AI key only if asked for.
+    func backup(withGoogleKey: Bool = false) -> SettingsBackup {
+        var backup = SettingsBackup(keyRemaps: keyRemaps, exceptions: exceptions, excludedApps: excludedApps,
+                                    replacements: replacements, voiceVocabulary: voiceVocabulary)
+        let domain = defaults.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "app.klavko.Klavko") ?? [:]
+        for (key, value) in domain where !Self.ruleKeys.contains(key) && !Self.localKeys.contains(key)
+            && !key.hasPrefix("NS") && !key.hasPrefix("Apple") {
+            backup.preferences[key] = JSONValue(defaultsValue: value)
+        }
+        backup.launchAtLogin = launchAtLogin
+        if withGoogleKey, let key = GeminiKey.load(), !key.isEmpty { backup.googleKey = key }
+        return backup
+    }
+
+    /// Takes the settings from a file: the rules are added to the user's, everything else replaced.
+    /// Klavko reads its settings when it starts, so it is started again afterwards.
+    func restore(_ restored: SettingsBackup) {
+        let (merged, _) = backup().merged(with: restored)
+        if merged.keyRemaps != keyRemaps { keyRemaps = merged.keyRemaps }
+        if merged.exceptions != exceptions { exceptions = merged.exceptions }
+        if merged.excludedApps != excludedApps { excludedApps = merged.excludedApps }
+        if merged.replacements != replacements { replacements = merged.replacements }
+        if merged.voiceVocabulary != voiceVocabulary { voiceVocabulary = merged.voiceVocabulary }
+        // A setting missing from the file was left as it comes there; here too.
+        for key in backup().preferences.keys where restored.preferences[key] == nil {
+            defaults.removeObject(forKey: key)
+        }
+        for (key, value) in restored.preferences where !Self.ruleKeys.contains(key) && !Self.localKeys.contains(key) {
+            if let value = value.defaultsValue { defaults.set(value, forKey: key) }
+        }
+        if let login = restored.launchAtLogin { launchAtLogin = login }
+        if let key = restored.googleKey { _ = GeminiKey.save(key) }
+        defaults.synchronize()
+    }
+
     // MARK: - Excluded apps
 
     func isExcluded(_ bundleID: String) -> Bool {

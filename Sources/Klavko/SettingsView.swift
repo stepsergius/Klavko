@@ -63,6 +63,72 @@ struct SettingsView: View {
         }
     }
 
+    /// Saves every setting to a file the user chooses; the Google AI key only if they tick the box.
+    private func saveBackup() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = tr("Klavko налаштування", "Klavko settings") + ".json"
+        let withKey = NSButton(checkboxWithTitle: tr("Додати ключ Google AI (не давайте такий файл іншим)",
+                                                     "Include the Google AI key (don’t give such a file to others)"),
+                               target: nil, action: nil)
+        if GeminiKey.load()?.isEmpty == false {
+            withKey.frame.size = withKey.fittingSize
+            let box = NSView(frame: NSRect(x: 0, y: 0, width: withKey.frame.width + 40, height: withKey.frame.height + 16))
+            withKey.frame.origin = NSPoint(x: 20, y: 8)
+            box.addSubview(withKey)
+            panel.accessoryView = box
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try settings.backup(withGoogleKey: withKey.state == .on).data().write(to: url, options: .atomic)
+        } catch {
+            alert(tr("Не вдалося зберегти файл", "Couldn’t save the file"), error.localizedDescription)
+        }
+    }
+
+    /// Takes the settings from a file saved by «Зберегти у файл», then starts Klavko again with them.
+    private func restoreBackup() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let restored: SettingsBackup
+        do {
+            restored = try SettingsBackup.read(Data(contentsOf: url))
+        } catch SettingsBackup.Failure.newerFormat {
+            return alert(tr("Файл із новішої версії Klavko", "The file is from a newer Klavko"),
+                         tr("Оновіть Klavko й спробуйте ще раз.", "Update Klavko and try again."))
+        } catch {
+            return alert(tr("Це не файл налаштувань Klavko", "This isn’t a Klavko settings file"),
+                         tr("Виберіть файл, збережений кнопкою «Зберегти у файл».", "Choose a file saved with “Save to File”."))
+        }
+        let confirm = NSAlert()
+        confirm.messageText = tr("Відновити налаштування з файлу?", "Restore settings from the file?")
+        confirm.informativeText = tr("Усі налаштування стануть такими, як у файлі; правила з файлу додадуться до ваших. Klavko перезапуститься.",
+                                     "All settings become as in the file; the file’s rules are added to yours. Klavko will restart.")
+        confirm.addButton(withTitle: tr("Відновити", "Restore"))
+        confirm.addButton(withTitle: tr("Скасувати", "Cancel"))
+        guard confirm.runModal() == .alertFirstButtonReturn else { return }
+        settings.restore(restored)
+        Self.restartKlavko()
+    }
+
+    /// Opens Klavko again once this process has quit.
+    private static func restartKlavko() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", "while /bin/kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do /bin/sleep 0.2; done; "
+                             + "/usr/bin/open \"$0\"", Bundle.main.bundlePath]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+
+    private func alert(_ message: String, _ details: String) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.informativeText = details
+        alert.runModal()
+    }
+
     private func addException() {
         // Several words at once: "npm, ye ок".
         let words = newException.split(whereSeparator: { $0 == " " || $0 == "," || $0 == ";" })
@@ -329,6 +395,26 @@ struct SettingsView: View {
                     Section(tr("Не виправляти автоматично в програмах", "Don’t fix automatically in these apps")) {
                         appList(settings.excludedApps, remove: { settings.toggleExcluded($0) },
                                 add: { pickApps(adding: settings.excludedApps) { settings.toggleExcluded($0) } })
+                    }
+
+                    Section {
+                        HStack {
+                            Button(tr("Зберегти у файл…", "Save to File…"), action: saveBackup)
+                            Button(tr("Відновити з файлу…", "Restore from File…"), action: restoreBackup)
+                        }
+                    } header: {
+                        Text(tr("Перенесення налаштувань", "Moving settings"))
+                    } footer: {
+                        Text(tr("У файлі — усі налаштування Klavko: гарячі клавіші, звуки, голосовий ввід, швидкі дії, буфер, "
+                                + "заміна клавіш, винятки, заміни слів і словник. Зручно для нового Mac або щоб поділитися з колегою. "
+                                + "Відновлення додає правила з файлу до ваших, а решту налаштувань бере з файлу. "
+                                + "Історія буфера й голосу у файл не потрапляє; дозволи macOS і завантажені моделі потрібні на новому Mac знову.",
+                                "The file holds all of Klavko’s settings: hotkeys, sounds, voice input, Quick Actions, clipboard, "
+                                + "key remapping, exceptions, word replacements and the vocabulary. Handy for a new Mac or to share with a colleague. "
+                                + "Restoring adds the file’s rules to yours and takes every other setting from the file. "
+                                + "Clipboard and voice history aren’t in the file; a new Mac needs the macOS permissions and downloaded models again."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
                 case .layout:
