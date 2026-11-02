@@ -1384,3 +1384,45 @@ final class KeyRemapTests: XCTestCase {
         XCTAssertEqual(KeyRemapping.adding(KeyRemap(from: ghe, to: ghe), to: rules).filter { $0.from == ghe }.count, 1)
     }
 }
+
+final class MergingStoredDataTests: XCTestCase {
+    func testVoiceHistoryMergeKeepsBothNewestFirst() {
+        var stored = VoiceHistory()
+        stored.add("старе", at: Date(timeIntervalSince1970: 100))
+        var fresh = VoiceHistory()
+        fresh.add("нове", at: Date(timeIntervalSince1970: 200))
+        let merged = fresh.merged(with: stored)
+        XCTAssertEqual(merged.entries.map(\.text), ["нове", "старе"])
+        XCTAssertEqual(merged.merged(with: stored).entries.count, 2)
+    }
+
+    func testClipboardMergeKeepsOneCopyAndItsPin() {
+        var stored = ClipboardHistory()
+        var pinned = ClipItem(kind: .text, text: "a", date: Date(timeIntervalSince1970: 100))
+        pinned.pinned = true
+        stored.add(pinned, maxItems: 10, maxAge: nil)
+        stored.add(ClipItem(kind: .text, text: "b", date: Date(timeIntervalSince1970: 150)), maxItems: 10, maxAge: nil)
+        var fresh = ClipboardHistory()
+        fresh.add(ClipItem(kind: .text, text: "a", date: Date(timeIntervalSince1970: 300)), maxItems: 10, maxAge: nil)
+        let merged = fresh.merged(with: stored)
+        XCTAssertEqual(merged.items.map(\.text), ["a", "b"])
+        XCTAssertTrue(merged.items[0].pinned)
+    }
+
+    func testVoiceStatsMergeAddsCounts() {
+        let day = Date(timeIntervalSince1970: 1_793_600_000)
+        var stored = VoiceStats()
+        stored.addStart(at: day)
+        stored.addInserted("привіт світ", at: day)
+        stored.addKey(printable: true, interval: 0.5)
+        var fresh = VoiceStats()
+        fresh.addStart(at: day)
+        fresh.addInserted("привіт", at: day)
+        let merged = stored.merged(with: fresh)
+        XCTAssertEqual(merged.counts(.all, now: day).words, 3)
+        XCTAssertEqual(merged.counts(.all, now: day).starts, 2)
+        XCTAssertEqual(merged.typedCharacters, 1)
+        XCTAssertEqual(merged.topWords(.day, now: day).first?.word, "привіт")
+        XCTAssertEqual(merged.topWords(.day, now: day).first?.count, 2)
+    }
+}

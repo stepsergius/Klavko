@@ -92,6 +92,19 @@ public struct VoiceStats: Codable, Equatable, Sendable {
         if printable { typedCharacters += 1 }
     }
 
+    /// Both in one: what was kept on disk and what was counted before it could be read.
+    public func merged(with other: VoiceStats) -> VoiceStats {
+        var result = self
+        result.days.merge(other.days, uniquingKeysWith: +)
+        for (month, words) in other.monthWords { result.monthWords[month, default: [:]].merge(words, uniquingKeysWith: +) }
+        for (day, words) in other.dayWords { result.dayWords[day, default: [:]].merge(words, uniquingKeysWith: +) }
+        if let today = result.dayWords.keys.max() { result.dayWords = result.dayWords.filter { $0.key == today } }
+        result.typedCharacters += other.typedCharacters
+        result.typingSeconds += other.typingSeconds
+        result.lastMilestone = max(lastMilestone, other.lastMilestone)
+        return result
+    }
+
     // MARK: Reading
 
     public func counts(_ period: Period, now: Date = Date(), calendar: Calendar = .current) -> Counts {

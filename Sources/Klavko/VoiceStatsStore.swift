@@ -8,10 +8,7 @@ final class VoiceStatsStore: ObservableObject {
     /// A word milestone just reached (1 000, 10 000…): time to congratulate.
     var onMilestone: (Int) -> Void = { _ in }
 
-    private let file: URL = {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return support.appendingPathComponent("Klavko/voice-stats.json")
-    }()
+    private let file = StoredFile<VoiceStats>("voice-stats.json")
     /// Off for the developer's sample statistics, which must never overwrite the real ones.
     private var persists = true
     private var lastKey: UInt64?
@@ -19,8 +16,11 @@ final class VoiceStatsStore: ObservableObject {
     private var saveTimer: Timer?
 
     init() {
-        if let data = try? Data(contentsOf: file), let stored = try? JSONDecoder().decode(VoiceStats.self, from: data) {
-            stats = stored
+        if let stored = file.load() { stats = stored }
+        file.onReadable = { [weak self] stored in
+            guard let self, self.persists else { return }
+            self.stats = stored.merged(with: self.stats)
+            self.save()
         }
         // Typing is counted key by key: written down once a minute, not on every key.
         saveTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
@@ -84,11 +84,6 @@ final class VoiceStatsStore: ObservableObject {
     private func save() {
         typingUnsaved = false
         guard persists else { return }
-        do {
-            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(stats).write(to: file, options: [.atomic, .completeFileProtection])
-        } catch {
-            Log.engine.error("Voice statistics not saved: \(error.localizedDescription, privacy: .public)")
-        }
+        file.save(stats)
     }
 }

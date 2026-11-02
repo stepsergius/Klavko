@@ -162,6 +162,22 @@ public struct ClipboardHistory: Codable, Sendable {
         return dropped
     }
 
+    /// Both histories in one, newest first: what was kept on disk and what was copied before it could be read.
+    /// The same content is kept once, pinned if either copy was.
+    public func merged(with other: ClipboardHistory) -> ClipboardHistory {
+        var byFingerprint: [String: ClipItem] = [:]
+        for item in items + other.items {
+            guard var existing = byFingerprint[item.fingerprint] else {
+                byFingerprint[item.fingerprint] = item
+                continue
+            }
+            existing.pinned = existing.pinned || item.pinned
+            if item.date > existing.date { existing.date = item.date }
+            byFingerprint[item.fingerprint] = existing
+        }
+        return ClipboardHistory(items: byFingerprint.values.sorted { $0.date > $1.date })
+    }
+
     /// Pinned first, then newest; matching every word of `query` (any case) and the kind, if given.
     public func search(_ query: String, kind: ClipItem.Kind? = nil) -> [ClipItem] {
         let words = query.lowercased().split(whereSeparator: \.isWhitespace)

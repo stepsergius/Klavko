@@ -6,14 +6,14 @@ import KlavkoCore
 final class VoiceHistoryStore: ObservableObject {
     @Published private(set) var history = VoiceHistory()
 
-    private let file: URL = {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return support.appendingPathComponent("Klavko/voice-history.json")
-    }()
+    private let file = StoredFile<VoiceHistory>("voice-history.json")
 
     init() {
-        if let data = try? Data(contentsOf: file), let stored = try? JSONDecoder().decode(VoiceHistory.self, from: data) {
-            history = stored
+        if let stored = file.load() { history = stored }
+        file.onReadable = { [weak self] stored in
+            guard let self else { return }
+            self.history = self.history.merged(with: stored)
+            self.save()
         }
     }
 
@@ -33,11 +33,6 @@ final class VoiceHistoryStore: ObservableObject {
     }
 
     private func save() {
-        do {
-            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(history).write(to: file, options: [.atomic, .completeFileProtection])
-        } catch {
-            Log.engine.error("Voice history not saved: \(error.localizedDescription, privacy: .public)")
-        }
+        file.save(history)
     }
 }

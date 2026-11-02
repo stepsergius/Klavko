@@ -30,13 +30,18 @@ final class ClipboardManager: ObservableObject {
     private var saveWork: DispatchWorkItem?
     private let folder: URL
     private var imagesFolder: URL { folder.appendingPathComponent("Images", isDirectory: true) }
-    private var indexFile: URL { folder.appendingPathComponent("history.json") }
+    private let file = StoredFile<ClipboardHistory>("Clipboard/history.json")
 
     init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         folder = support.appendingPathComponent("Klavko/Clipboard", isDirectory: true)
         lastChange = NSPasteboard.general.changeCount
-        load()
+        if let stored = file.load() { history = stored }
+        file.onReadable = { [weak self] stored in
+            guard let self else { return }
+            self.history = self.history.merged(with: stored)
+            self.prune()
+        }
     }
 
     /// Checks the clipboard twice a second (macOS has no notification for it).
@@ -181,12 +186,6 @@ final class ClipboardManager: ObservableObject {
         }
     }
 
-    private func load() {
-        guard let data = try? Data(contentsOf: indexFile),
-              let stored = try? JSONDecoder().decode(ClipboardHistory.self, from: data) else { return }
-        history = stored
-    }
-
     private func scheduleSave() {
         saveWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
@@ -197,12 +196,6 @@ final class ClipboardManager: ObservableObject {
     }
 
     private func save() {
-        do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(history)
-            try data.write(to: indexFile, options: [.atomic, .completeFileProtection])
-        } catch {
-            Log.engine.error("Clipboard history not saved: \(error.localizedDescription, privacy: .public)")
-        }
+        file.save(history)
     }
 }

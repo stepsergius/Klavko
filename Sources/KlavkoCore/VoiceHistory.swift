@@ -36,6 +36,13 @@ public struct VoiceHistory: Codable, Equatable, Sendable {
         entries = []
     }
 
+    /// Both histories in one, newest first: what was kept on disk and what was dictated before it could be read.
+    public func merged(with other: VoiceHistory) -> VoiceHistory {
+        let ids = Set(entries.map(\.id))
+        let all = (entries + other.entries.filter { !ids.contains($0.id) }).sorted { $0.date > $1.date }
+        return VoiceHistory(entries: Array(all.prefix(Self.limit)))
+    }
+
     /// Entries with every word of `query` in them, ignoring case and accents; all of them for an empty query.
     public func search(_ query: String) -> [Entry] {
         let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
