@@ -451,6 +451,7 @@ extension Translations {
         "Restore": "恢复",
         "Cancel": "取消",
         "Include the Google AI key (don’t give such a file to others)": "包含 Google AI 密钥（不要把这样的文件给别人）",
-        "The file holds all of Klavko’s settings: hotkeys, sounds, voice input, Quick Actions, clipboard, key remapping, exceptions, word replacements and the vocabulary. Handy for a new Mac or to share with a colleague. Restoring adds the file’s rules to yours and takes every other setting from the file. Clipboard and voice history aren’t in the file; a new Mac needs the macOS permissions and downloaded models again.": "文件包含 Klavko 的全部设置：快捷键、声音、语音输入、快捷操作、剪贴板、按键重新映射、例外、单词替换和词汇表。适合换新 Mac 或分享给同事。恢复时，文件中的规则会添加到你现有的规则中，其他设置以文件为准。剪贴板和语音历史不在文件中；新 Mac 需要重新授予 macOS 权限并下载模型。",
+        "The file holds all of Klavko’s settings: hotkeys, sounds, voice input, Quick Actions, clipboard, key remapping, exceptions, word replacements and the vocabulary. Handy for a new Mac or to share with a colleague. Restoring adds the file’s rules to yours and takes every other setting from the file; from a Klavko for Windows file only the words are taken. Clipboard and voice history aren’t in the file; a new Mac needs the macOS permissions and downloaded models again.": "文件包含 Klavko 的全部设置：快捷键、声音、语音输入、快捷操作、剪贴板、按键重新映射、例外、单词替换和词汇表。适合换新 Mac 或分享给同事。恢复时，文件中的规则会添加到你现有的规则中，其他设置以文件为准。从 Windows 版 Klavko 的文件中只取单词。剪贴板和语音历史不在文件中；新 Mac 需要重新授予 macOS 权限并下载模型。",
+        "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "这是 Windows 版 Klavko 的文件：其中的例外、单词替换和语音输入词汇表将被添加。Klavko 将重新启动。",
     ]
 }

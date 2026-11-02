@@ -103,8 +103,11 @@ struct SettingsView: View {
         }
         let confirm = NSAlert()
         confirm.messageText = tr("Відновити налаштування з файлу?", "Restore settings from the file?")
-        confirm.informativeText = tr("Усі налаштування стануть такими, як у файлі; правила з файлу додадуться до ваших. Klavko перезапуститься.",
-                                     "All settings become as in the file; the file’s rules are added to yours. Klavko will restart.")
+        confirm.informativeText = restored.isFromThisSystem
+            ? tr("Усі налаштування стануть такими, як у файлі; правила з файлу додадуться до ваших. Klavko перезапуститься.",
+                 "All settings become as in the file; the file’s rules are added to yours. Klavko will restart.")
+            : tr("Це файл Klavko для Windows: з нього додадуться винятки, заміни слів і словник голосового вводу. Klavko перезапуститься.",
+                 "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.")
         confirm.addButton(withTitle: tr("Відновити", "Restore"))
         confirm.addButton(withTitle: tr("Скасувати", "Cancel"))
         guard confirm.runModal() == .alertFirstButtonReturn else { return }
@@ -407,11 +410,11 @@ struct SettingsView: View {
                     } footer: {
                         Text(tr("У файлі — усі налаштування Klavko: гарячі клавіші, звуки, голосовий ввід, швидкі дії, буфер, "
                                 + "заміна клавіш, винятки, заміни слів і словник. Зручно для нового Mac або щоб поділитися з колегою. "
-                                + "Відновлення додає правила з файлу до ваших, а решту налаштувань бере з файлу. "
+                                + "Відновлення додає правила з файлу до ваших, а решту налаштувань бере з файлу; з файлу Klavko для Windows беруться лише слова. "
                                 + "Історія буфера й голосу у файл не потрапляє; дозволи macOS і завантажені моделі потрібні на новому Mac знову.",
                                 "The file holds all of Klavko’s settings: hotkeys, sounds, voice input, Quick Actions, clipboard, "
                                 + "key remapping, exceptions, word replacements and the vocabulary. Handy for a new Mac or to share with a colleague. "
-                                + "Restoring adds the file’s rules to yours and takes every other setting from the file. "
+                                + "Restoring adds the file’s rules to yours and takes every other setting from the file; from a Klavko for Windows file only the words are taken. "
                                 + "Clipboard and voice history aren’t in the file; a new Mac needs the macOS permissions and downloaded models again."))
                             .font(.caption)
                             .foregroundStyle(.secondary)

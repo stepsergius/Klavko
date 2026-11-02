@@ -17,6 +17,10 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
     public var launchAtLogin: Bool?
     /// Only when the user chose to put it in: it is a secret.
     public var googleKey: String?
+    /// "mac", or "windows" for a file of Klavko for Windows: only its words (exceptions, word replacements,
+    /// the voice vocabulary) mean the same here, so only they are read.
+    public private(set) var system = "mac"
+    public var isFromThisSystem: Bool { system == "mac" }
 
     public init(keyRemaps: [KeyRemap] = [], exceptions: [String] = [], excludedApps: [String] = [],
                 replacements: [Replacement] = [], voiceVocabulary: [Replacement] = []) {
@@ -32,7 +36,7 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case app, format, keyRemaps, exceptions, excludedApps, replacements, voiceVocabulary, preferences, launchAtLogin, googleKey
+        case app, format, system, keyRemaps, exceptions, excludedApps, replacements, voiceVocabulary, preferences, launchAtLogin, googleKey
     }
 
     public enum Failure: Error { case notKlavko, newerFormat }
@@ -42,11 +46,17 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         guard (try? c.decode(String.self, forKey: .app)) == "Klavko" else { throw Failure.notKlavko }
         guard (try c.decodeIfPresent(Int.self, forKey: .format) ?? 1) <= Self.format else { throw Failure.newerFormat }
+        system = (try? c.decodeIfPresent(String.self, forKey: .system)) ?? "mac"
+        exceptions = (try? c.decodeIfPresent([String].self, forKey: .exceptions)) ?? []
+        replacements = (try? c.decodeIfPresent([Replacement].self, forKey: .replacements)) ?? []
+        voiceVocabulary = (try? c.decodeIfPresent([Replacement].self, forKey: .voiceVocabulary)) ?? []
+        guard system == "mac" else {
+            keyRemaps = []
+            excludedApps = []
+            return
+        }
         keyRemaps = try c.decodeIfPresent([KeyRemap].self, forKey: .keyRemaps) ?? []
-        exceptions = try c.decodeIfPresent([String].self, forKey: .exceptions) ?? []
         excludedApps = try c.decodeIfPresent([String].self, forKey: .excludedApps) ?? []
-        replacements = try c.decodeIfPresent([Replacement].self, forKey: .replacements) ?? []
-        voiceVocabulary = try c.decodeIfPresent([Replacement].self, forKey: .voiceVocabulary) ?? []
         preferences = try c.decodeIfPresent([String: JSONValue].self, forKey: .preferences) ?? [:]
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin)
         googleKey = try c.decodeIfPresent(String.self, forKey: .googleKey)
@@ -56,6 +66,7 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode("Klavko", forKey: .app)
         try c.encode(Self.format, forKey: .format)
+        try c.encode(system, forKey: .system)
         try c.encode(keyRemaps, forKey: .keyRemaps)
         try c.encode(exceptions, forKey: .exceptions)
         try c.encode(excludedApps, forKey: .excludedApps)

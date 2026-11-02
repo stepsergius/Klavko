@@ -1463,6 +1463,19 @@ final class SettingsBackupTests: XCTestCase {
         XCTAssertTrue(String(decoding: try backup.data(), as: UTF8.self).contains(#""$json""#))
     }
 
+    func testTakesOnlyTheWordsFromAWindowsFile() throws {
+        let file = try SettingsBackup.read(Data(#"""
+            {"app": "Klavko", "format": 1, "system": "windows", "exceptions": ["Ye"],
+             "replacements": [{"from": "кл", "to": "Klavko"}], "voiceVocabulary": [], "startsWithWindows": true,
+             "settings": {"LayoutSound": "Pop", "KeyRemaps": [{"From": {"VirtualKey": 192}}]}}
+            """#.utf8))
+        XCTAssertFalse(file.isFromThisSystem)
+        XCTAssertEqual(file.exceptions, ["Ye"])
+        XCTAssertEqual(file.replacements, [Replacement(from: "кл", to: "Klavko")])
+        XCTAssertTrue(file.preferences.isEmpty && file.keyRemaps.isEmpty && file.launchAtLogin == nil)
+        XCTAssertTrue(try SettingsBackup.read(SettingsBackup().data()).isFromThisSystem)
+    }
+
     func testRefusesOtherFiles() {
         XCTAssertThrowsError(try SettingsBackup.read(Data(#"{"exceptions": ["npm"]}"#.utf8)))
         XCTAssertThrowsError(try SettingsBackup.read(Data(#"{"app": "Klavko", "format": 99}"#.utf8)))

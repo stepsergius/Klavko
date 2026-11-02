@@ -800,7 +800,8 @@ final class Settings: ObservableObject {
         return backup
     }
 
-    /// Takes the settings from a file: the rules are added to the user's, everything else replaced.
+    /// Takes the settings from a file: the rules are added to the user's, everything else replaced (from a file
+    /// of Klavko for Windows, only the words).
     /// Klavko reads its settings when it starts, so it is started again afterwards.
     func restore(_ restored: SettingsBackup) {
         let (merged, _) = backup().merged(with: restored)
@@ -809,6 +810,8 @@ final class Settings: ObservableObject {
         if merged.excludedApps != excludedApps { excludedApps = merged.excludedApps }
         if merged.replacements != replacements { replacements = merged.replacements }
         if merged.voiceVocabulary != voiceVocabulary { voiceVocabulary = merged.voiceVocabulary }
+        // A Windows file gives only its words.
+        guard restored.isFromThisSystem else { defaults.synchronize(); return }
         // A setting missing from the file was left as it comes there; here too.
         for key in backup().preferences.keys where restored.preferences[key] == nil {
             defaults.removeObject(forKey: key)
