@@ -346,8 +346,22 @@ final class VoiceDictation: ObservableObject {
                 var language = "parakeet"
                 if (LanguageGuess.looksRussian(text) && !russianAllowed) || (text.isEmpty && ukrainianAllowed) {
                     Log.engine.notice("Parakeet result unusable; redoing with the Ukrainian recognizer")
-                    text = ukrainianAllowed ? await Self.recognize(file: file, language: "uk") : ""
-                    language = "uk (macOS)"
+                    let ukrainian = ukrainianAllowed ? await Self.recognize(file: file, language: "uk") : ""
+                    if !ukrainian.isEmpty {
+                        text = ukrainian
+                        language = "uk (macOS)"
+                    } else {
+                        // No Ukrainian recognizer on this Mac, or it heard nothing: what was heard still goes in,
+                        // the live text if it reads as Ukrainian, else Parakeet's own.
+                        Log.engine.notice("The Ukrainian recognizer gave nothing; keeping the first result")
+                        let live = liveResult.text
+                        let liveIsUkrainian = live.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) }
+                            && !LanguageGuess.looksRussian(live)
+                        if liveIsUkrainian || text.isEmpty {
+                            text = live
+                            language = liveResult.language
+                        }
+                    }
                 }
                 guard session == current else { return }
                 complete(with: text, language: language)
@@ -463,6 +477,7 @@ final class VoiceDictation: ObservableObject {
         guard !completed else { return }
         completed = true
         session += 1  // anything still pending belongs to a finished recording now
+        if insertOnFinish && result.isEmpty { Log.engine.notice("Voice input heard nothing to insert") }
         if insertOnFinish && !result.isEmpty {
             Log.engine.notice("Voice input chose \(language, privacy: .public)")
             if let target = translationTarget {
@@ -567,7 +582,10 @@ final class VoiceDictation: ObservableObject {
     /// Recognizes a whole recording. macOS reports each phrase after a pause from scratch, so partial
     /// results are joined like in live recognition. "" if nothing was heard or the language is unavailable.
     static func recognize(file: URL, language code: String) async -> String {
-        guard let recognizer = recognizer(code) else { return "" }
+        guard let recognizer = recognizer(code) else {
+            Log.engine.notice("No on-device recognizer for \(code, privacy: .public)")
+            return ""
+        }
         let request = SFSpeechURLRecognitionRequest(url: file)
         request.requiresOnDeviceRecognition = true
         request.addsPunctuation = true
