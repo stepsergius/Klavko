@@ -61,8 +61,8 @@ public enum VoiceVocabulary {
         let old = words(inserted)
         let new = words(current)
         guard !old.isEmpty, !new.isEmpty, old.count <= 400, new.count <= 2000 else { return [] }
-        let oldKeys = old.map { $0.lowercased() }
-        let newKeys = new.map { $0.lowercased() }
+        let oldKeys = old.map(key)
+        let newKeys = new.map(key)
 
         // Longest common subsequence of the words, case ignored.
         let n = old.count, m = new.count
@@ -91,7 +91,7 @@ public enum VoiceVocabulary {
         var found: [(at: Int, rule: Replacement)] = []
         // Case-only changes are matches in the alignment ("зсу" = "ЗСУ"); they count too,
         // except one letter's case ("київ" → "Київ", "Ми" → "ми"): that's just a capital, not a spelling.
-        for pair in pairs where old[pair.old] != new[pair.new] && !differsInOneLettersCase(old[pair.old], new[pair.new]) {
+        for pair in pairs where plain(old[pair.old]) != plain(new[pair.new]) && !differsInOneLettersCase(old[pair.old], new[pair.new]) {
             found.append((pair.old, Replacement(from: old[pair.old], to: new[pair.new])))
         }
         // Real gaps: matched words on both sides inside the dictated text; one word for one word.
@@ -105,7 +105,7 @@ public enum VoiceVocabulary {
         if let first = pairs.first, first.old == 1, first.new >= 1 {
             let oldGap = old[0..<first.old]
             let newGap = new[(first.new - first.old)..<first.new]
-            if oldGap.map({ $0.lowercased() }) != newGap.map({ $0.lowercased() }) {
+            if oldGap.map(key) != newGap.map(key) {
                 found.append((0, Replacement(from: oldGap.joined(separator: " "), to: newGap.joined(separator: " "))))
             }
         }
@@ -113,12 +113,21 @@ public enum VoiceVocabulary {
             let count = n - 1 - last.old
             let oldGap = old[(last.old + 1)...]
             let newGap = new[(last.new + 1)..<(last.new + 1 + count)]
-            if oldGap.map({ $0.lowercased() }) != newGap.map({ $0.lowercased() }) {
+            if oldGap.map(key) != newGap.map(key) {
                 found.append((last.old + 1, Replacement(from: oldGap.joined(separator: " "), to: newGap.joined(separator: " "))))
             }
         }
         var seen = Set<Replacement>()
-        return found.sorted { $0.at < $1.at }.map(\.rule).filter { $0.from != $0.to && seen.insert($0).inserted }
+        return found.sorted { $0.at < $1.at }.map(\.rule).filter { plain($0.from) != plain($0.to) && seen.insert($0).inserted }
+    }
+
+    /// Apostrophes all alike: «дев'ять» and «дев’ять» are the same word, whichever one the app typed.
+    private static func plain(_ word: String) -> String {
+        String(word.map { TextRules.apostrophes.contains($0) ? "’" : $0 })
+    }
+
+    private static func key(_ word: String) -> String {
+        plain(word).lowercased()
     }
 
     /// Words with their inner apostrophes and hyphens, without the punctuation around them.

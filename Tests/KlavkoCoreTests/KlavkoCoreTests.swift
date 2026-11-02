@@ -1385,6 +1385,13 @@ final class KeyRemapTests: XCTestCase {
     }
 }
 
+final class VoiceCorrectionApostropheTests: XCTestCase {
+    func testAnotherApostropheIsNotACorrection() {
+        XCTAssertEqual(VoiceVocabulary.corrections(inserted: "Десять дев'ять, вісім.", now: "Десять дев’ять, вісім."), [])
+        XCTAssertEqual(VoiceVocabulary.corrections(inserted: "п'ять дев'ять", now: "пʼять девять").map(\.to), ["девять"])
+    }
+}
+
 final class MergingStoredDataTests: XCTestCase {
     func testVoiceHistoryMergeKeepsBothNewestFirst() {
         var stored = VoiceHistory()
