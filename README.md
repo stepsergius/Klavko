@@ -8,7 +8,13 @@ Klavko switches the keyboard layout by itself when a word was typed in the wrong
 
 ## Download
 
-**[⬇︎ Latest version](../../releases/latest)** — download `Klavko-….zip`, unzip it and follow “How to install Klavko.txt” in the archive (Ukrainian: «Як встановити Klavko.txt»).
+**With [Homebrew](https://brew.sh):**
+
+```bash
+brew install --cask stepsergius/klavko/klavko
+```
+
+**Or by hand:** **[⬇︎ Latest version](../../releases/latest)** — download `Klavko-….zip`, unzip it and follow “How to install Klavko.txt” in the archive (Ukrainian: «Як встановити Klavko.txt»).
 
 Requirements: macOS 14 or later (translation needs macOS 15), at least two keyboard layouts of the supported languages (see “Layout languages”). The app isn’t notarized by Apple, so macOS warns on the first launch — the guide explains how to open it.
 
@@ -101,6 +107,7 @@ Klavko is free. If it helps you, you can [thank the author](https://send.monoban
 swift test               # logic tests
 scripts/install.sh       # build, install to /Applications and launch
 scripts/share.sh         # archive to share (dist/Klavko-<version>.zip)
+scripts/update-tap.sh    # after a release: point the Homebrew cask at it
 scripts/check-translations.py  # are all interface texts translated in Sources/KlavkoCore/Translations
 ```
 

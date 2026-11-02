@@ -8,7 +8,13 @@ Klavko сам перемикає розкладку, коли слово наб�
 
 ## Завантажити
 
-**[⬇︎ Остання версія](../../releases/latest)** — завантажте `Klavko-….zip`, розпакуйте й дотримуйтеся інструкції «Як встановити Klavko.txt» з архіву (англійською — «How to install Klavko.txt»).
+**Через [Homebrew](https://brew.sh):**
+
+```bash
+brew install --cask stepsergius/klavko/klavko
+```
+
+**Або вручну:** **[⬇︎ Остання версія](../../releases/latest)** — завантажте `Klavko-….zip`, розпакуйте й дотримуйтеся інструкції «Як встановити Klavko.txt» з архіву (англійською — «How to install Klavko.txt»).
 
 Потрібно: macOS 14 або новіша (для перекладу — macOS 15), щонайменше дві розкладки з підтримуваних мов (див. «Мови розкладок»). Програма не нотаризована Apple, тому під час першого запуску macOS попередить — в інструкції описано, як її відкрити.
 
@@ -101,6 +107,7 @@ Klavko безкоштовний. Якщо він вам допомагає, мо
 swift test               # тести логіки
 scripts/install.sh       # зібрати, встановити в /Applications і запустити
 scripts/share.sh         # архів для поширення (dist/Klavko-<версія>.zip)
+scripts/update-tap.sh    # після релізу: оновити рецепт Homebrew
 scripts/check-translations.py  # чи всі тексти інтерфейсу перекладені в Sources/KlavkoCore/Translations
 ```
 
