@@ -56,6 +56,17 @@ struct WhatsNewSection: View {
     }
 
     private static let versions: [Version] = [
+        Version(number: "1.0.1", uk: [
+            "**Вимикач голосового вводу** в «Налаштування → Голос»: коли вимкнено, гарячі клавіші голосу нічого не роблять, а fn працює як звичайно.",
+            "Історія буфера обміну, історія й статистика голосового вводу більше не зникають після перезавантаження Mac.",
+            "Голосовий ввід більше не губить надиктоване, коли на Mac немає українського розпізнавання macOS.",
+            "Картка «Запам’ятати для голосового вводу?» більше не з’являється, коли в слові змінився лише апостроф.",
+        ], en: [
+            "**A voice input switch** in Settings → Voice: when it’s off, the voice hotkeys do nothing and fn works as usual.",
+            "Clipboard history, voice input history and statistics no longer disappear after the Mac restarts.",
+            "Voice input no longer loses what you said when the Mac has no macOS Ukrainian recognizer.",
+            "The “Remember for voice input?” card no longer appears when only an apostrophe changed.",
+        ]),
         Version(number: "1.0.0", uk: [
             "**Швидкі дії над виділеним текстом:** панель із копіюванням, пошуком, перекладом, регістром, лапками й дужками, жирним і курсивом, ChatGPT, Claude і Perplexity; дії можна переставляти в налаштуваннях.",
             "**Емодзі за назвою:** пробіл, двокрапка й назва («:сміх», «:серце») показують емодзі біля курсора; після слова Klavko може сам запропонувати емодзі.",
