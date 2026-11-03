@@ -224,7 +224,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
             object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.engine.reloadLayouts() }
+                MainActor.assumeIsolated {
+                    self?.engine.reloadLayouts()
+                    self?.forgetRemovedLayouts()
+                }
             }
         // Flag in the menu bar follows the active layout.
         DistributedNotificationCenter.default().addObserver(
@@ -233,12 +236,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 MainActor.assumeIsolated {
                     self?.refreshFlag()
                     self?.refreshCapsLight()
+                    self?.rememberAppLayout()
                 }
             }
-        // Typing in another app starts from scratch.
+        // Typing in another app starts from scratch; the app may have a layout of its own.
+        frontApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.engine.reset() }
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+                let app = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier
+                MainActor.assumeIsolated {
+                    self?.engine.reset()
+                    self?.switchToAppLayout(app)
+                }
             }
 
         monitor = KeyboardMonitor { [weak self, engine] type, event in
@@ -434,6 +443,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func applySettings() {
         refreshCapsLight(force: true)
+        followKeyboardFocus()
         settingsWindow?.title = tr("Klavko — Налаштування", "Klavko Settings")
         // Voice input off: its hotkeys aren't caught, so fn and the rest work as without Klavko.
         if !settings.voiceEnabled && dictation.isActive { dictation.cancel() }
@@ -560,6 +570,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             exclude.representedObject = bundleID
             exclude.state = settings.isExcluded(bundleID) ? .on : .off
             menu.addItem(exclude)
+            if settings.appLayoutsEnabled, let current = SystemLayouts.allLayouts().first(where: { $0.id == SystemLayouts.currentLayoutID() }) {
+                let pin = item(trFormat("Завжди «%1$@» у «%2$@»", "Always “%1$@” in “%2$@”", current.name, app.localizedName ?? bundleID),
+                               #selector(togglePinnedLayout(_:)))
+                pin.representedObject = (bundleID, current.id)
+                pin.state = settings.appLayouts.pinned[bundleID] == current.id ? .on : .off
+                menu.addItem(pin)
+            }
         }
 
         menu.addItem(.separator())
@@ -634,6 +651,84 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleSpelling() {
         settings.correctSpelling.toggle()
+    }
+
+    // MARK: - A layout of its own in each app
+
+    /// The app in front, to remember the layout it had once it's left.
+    private var frontApp: String?
+
+    /// Klavko's own windows (settings, clipboard history) keep no layout and switch none.
+    private func isOwnApp(_ bundleID: String?) -> Bool { bundleID == nil || bundleID == Bundle.main.bundleIdentifier }
+
+    /// `app` came to the front: the layout on now stays with the app left, and `app` gets its own back.
+    private func switchToAppLayout(_ app: String?) {
+        defer { frontApp = app }
+        guard settings.appLayoutsEnabled else { return }
+        let current = SystemLayouts.currentLayoutID()
+        if let previous = frontApp, previous != app, !isOwnApp(previous), let current { settings.appLayouts.remember(current, in: previous) }
+        guard let app, !isOwnApp(app), let wanted = settings.appLayouts.layout(for: app), wanted != current,
+              let layout = SystemLayouts.allLayouts().first(where: { $0.id == wanted }) else { return }
+        SystemLayouts.select(layout.source)
+        Log.engine.notice("Layout of the app: \(wanted, privacy: .public)")
+    }
+
+    /// The layout changed (by hand, a hotkey or a fix): it is the one of the app typed in now.
+    private func rememberAppLayout() {
+        guard settings.appLayoutsEnabled, let app = frontApp, !isOwnApp(app),
+              let current = SystemLayouts.currentLayoutID() else { return }
+        settings.appLayouts.remember(current, in: app)
+    }
+
+    /// Raycast, Spotlight and the like take the keyboard in a panel without becoming the active app, and give
+    /// it back without the app under them being activated again: macOS says nothing of either, so while app
+    /// layouts are on, the app with the keyboard is looked up a few times a second.
+    private var focusTimer: Timer?
+
+    private func followKeyboardFocus() {
+        if settings.appLayoutsEnabled {
+            guard focusTimer == nil else { return }
+            focusTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkKeyboardFocus() }
+            }
+        } else {
+            focusTimer?.invalidate()
+            focusTimer = nil
+        }
+    }
+
+    private func checkKeyboardFocus() {
+        let app = Self.appWithKeyboard() ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        if app != frontApp { switchToAppLayout(app) }
+    }
+
+    private static let systemWide: AXUIElement = {
+        let element = AXUIElementCreateSystemWide()
+        // An app that doesn't answer mustn't hold up the menu bar.
+        AXUIElementSetMessagingTimeout(element, 0.1)
+        return element
+    }()
+
+    /// The app whose window has the keyboard, panels included.
+    private static func appWithKeyboard() -> String? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &value) == .success,
+              let value, CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(value as! AXUIElement, &pid) == .success else { return nil }
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+    }
+
+    private func forgetRemovedLayouts() {
+        let ids = Set(SystemLayouts.allLayouts().map(\.id))
+        guard !ids.isEmpty else { return }
+        settings.appLayouts.keepOnly(layouts: ids)
+    }
+
+    /// From the menu: the app in front always gets the layout on now, or no longer.
+    @objc private func togglePinnedLayout(_ sender: NSMenuItem) {
+        guard let (app, layout) = sender.representedObject as? (String, String) else { return }
+        settings.appLayouts.pinned[app] = settings.appLayouts.pinned[app] == layout ? nil : layout
     }
 
     @objc private func toggleExcluded(_ sender: NSMenuItem) {

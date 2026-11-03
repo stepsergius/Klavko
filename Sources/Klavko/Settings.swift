@@ -18,6 +18,9 @@ final class Settings: ObservableObject {
         static let excludedApps = "excludedApps"
         static let shortcuts = "shortcuts.v2"
         static let layoutShortcuts = "layoutShortcuts"
+        static let appLayoutsEnabled = "appLayoutsEnabled"
+        static let pinnedAppLayouts = "pinnedAppLayouts"
+        static let rememberedAppLayouts = "rememberedAppLayouts"
         static let keyRemaps = "keyRemaps"
         static let keyRemapsEnabled = "keyRemapsEnabled"
         static let modifierSides = "modifierSides"
@@ -450,6 +453,22 @@ final class Settings: ObservableObject {
         didSet { saveShortcuts(); onChange?() }
     }
 
+    /// A layout of its own in each app, switched to when the app comes to the front. Off by default.
+    @Published var appLayoutsEnabled: Bool {
+        didSet { defaults.set(appLayoutsEnabled, forKey: Key.appLayoutsEnabled); onChange?() }
+    }
+
+    /// The layouts pinned to apps and the ones last used in each.
+    @Published var appLayouts: AppLayouts {
+        didSet {
+            guard appLayouts != oldValue else { return }
+            if appLayouts.pinned != oldValue.pinned { defaults.set(appLayouts.pinned, forKey: Key.pinnedAppLayouts) }
+            if appLayouts.remembered != oldValue.remembered {
+                defaults.set(try? JSONEncoder().encode(appLayouts.remembered), forKey: Key.rememberedAppLayouts)
+            }
+        }
+    }
+
     /// A hotkey that switches into one keyboard layout, by its macOS input source ID ("left ⌘" → Ukrainian).
     @Published private(set) var layoutShortcuts: [String: Shortcut] {
         didSet {
@@ -629,6 +648,11 @@ final class Settings: ObservableObject {
         copySoundName = defaults.string(forKey: Key.copySoundName) ?? "Tink"
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         shortcuts = Self.loadShortcuts(defaults.data(forKey: Key.shortcuts))
+        appLayoutsEnabled = defaults.bool(forKey: Key.appLayoutsEnabled)
+        appLayouts = AppLayouts(
+            pinned: defaults.dictionary(forKey: Key.pinnedAppLayouts) as? [String: String] ?? [:],
+            remembered: defaults.data(forKey: Key.rememberedAppLayouts)
+                .flatMap { try? JSONDecoder().decode([AppLayouts.Remembered].self, from: $0) } ?? [])
         layoutShortcuts = defaults.data(forKey: Key.layoutShortcuts)
             .flatMap { try? JSONDecoder().decode([String: Shortcut].self, from: $0) } ?? [:]
         modifierSides = defaults.bool(forKey: Key.modifierSides)
@@ -810,7 +834,9 @@ final class Settings: ObservableObject {
     /// to carry an old value over.
     private static let localKeys: Set = [Key.lastRunVersion, Key.loginItemConfigured, Key.loginItemPath,
                                          Key.skippedUpdateVersion, Key.revertCounts, Key.googleDocsAnswer,
-                                         Key.googleDocsLaterSince, Key.typography, Key.voiceLanguage, "shortcuts"]
+                                         Key.googleDocsLaterSince, Key.typography, Key.voiceLanguage, "shortcuts",
+                                         // The habits of this Mac; the pinned layouts go along.
+                                         Key.rememberedAppLayouts]
 
     /// Every setting, for a file; the Google AI key only if asked for.
     func backup(withGoogleKey: Bool = false) -> SettingsBackup {

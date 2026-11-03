@@ -455,5 +455,10 @@ extension Translations {
         "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "Bu bir Windows için Klavko dosyası: istisnaları, sözcük değiştirmeleri ve sesli giriş sözlüğü eklenecek. Klavko yeniden başlayacak.",
         "Switch to a layout": "Bir düzene geç",
         "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is.": "Her düzen için ayrı bir tuş: örneğin sol ⌘ Ukraynaca, sağ ⌘ İngilizce. Tıklayın ve ⌃ ⌥ ⇧ ⌘ ile bir tuşa ya da yalnızca bir değiştirici tuşa basın; tuş, tarafıyla birlikte kaydedilir. Değiştirici tuş yalnızca tek başına basılıp bırakıldığında düzeni değiştirir: ⌘C ya da ⌘-tıklama düzeni değiştirmez.",
+        "A layout of its own in each app": "Her uygulamada kendi düzeni",
+        "Always one layout in these apps": "Bu uygulamalarda hep aynı düzen",
+        "Always “%1$@” in “%2$@”": "“%2$@” içinde hep “%1$@”",
+        "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko her uygulamada hangi düzenle yazdığınızı hatırlar ve geri döndüğünüzde onu açar: Telegram’da Ukraynaca, Terminal’de İngilizce. Sabitlenen düzen, orada daha önce ne seçmiş olursanız olun her zaman açılır; şu anki düzeni Klavko menüsünden de sabitleyebilirsiniz.",
+        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ macOS’ta “Bir belgenin girdi kaynağına otomatik olarak geç” açık (Sistem Ayarları → Klavye → Girdi Kaynakları). İkisi birden düzeni değiştirmesin diye onu ya da bu anahtarı kapatın.",
     ]
 }

@@ -1511,3 +1511,36 @@ final class SettingsBackupTests: XCTestCase {
         XCTAssertEqual(merged.merged(with: file).changes, 0)
     }
 }
+
+final class AppLayoutsTests: XCTestCase {
+    private let ukrainian = "com.apple.keylayout.Ukrainian-PC", english = "com.apple.keylayout.ABC"
+
+    func testEachAppGetsTheLayoutLastUsedThere() {
+        var layouts = AppLayouts()
+        XCTAssertNil(layouts.layout(for: "ru.keepcoder.Telegram"))
+        layouts.remember(ukrainian, in: "ru.keepcoder.Telegram")
+        layouts.remember(english, in: "com.apple.Terminal")
+        layouts.remember(english, in: "ru.keepcoder.Telegram")
+        layouts.remember(ukrainian, in: "ru.keepcoder.Telegram")
+        XCTAssertEqual(layouts.layout(for: "ru.keepcoder.Telegram"), ukrainian)
+        XCTAssertEqual(layouts.layout(for: "com.apple.Terminal"), english)
+        XCTAssertEqual(layouts.remembered.map(\.app), ["com.apple.Terminal", "ru.keepcoder.Telegram"])
+    }
+
+    func testAPinnedLayoutWins() {
+        var layouts = AppLayouts(pinned: ["com.apple.Terminal": english])
+        layouts.remember(ukrainian, in: "com.apple.Terminal")
+        XCTAssertEqual(layouts.layout(for: "com.apple.Terminal"), english)
+    }
+
+    func testForgetsTheLongestUnusedAppsAndRemovedLayouts() {
+        var layouts = AppLayouts(pinned: ["com.apple.Terminal": "gone"])
+        for index in 0...AppLayouts.limit { layouts.remember(english, in: "app\(index)") }
+        XCTAssertEqual(layouts.remembered.count, AppLayouts.limit)
+        XCTAssertNil(layouts.layout(for: "app0"))
+        layouts.remember(ukrainian, in: "app5")
+        layouts.keepOnly(layouts: [ukrainian])
+        XCTAssertEqual(layouts.remembered.map(\.app), ["app5"])
+        XCTAssertTrue(layouts.pinned.isEmpty)
+    }
+}

@@ -455,5 +455,10 @@ extension Translations {
         "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "这是 Windows 版 Klavko 的文件：其中的例外、单词替换和语音输入词汇表将被添加。Klavko 将重新启动。",
         "Switch to a layout": "切换到输入法",
         "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is.": "为每个输入法设置专属按键：例如左 ⌘ 切换到乌克兰语，右 ⌘ 切换到英语。点按后按下带 ⌃ ⌥ ⇧ ⌘ 的按键，或只按一个修饰键——它会连同左右一起记住。修饰键只有单独按下并松开时才会切换：⌘C 或按住 ⌘ 点按不会改变输入法。",
+        "A layout of its own in each app": "每个应用使用自己的输入法",
+        "Always one layout in these apps": "这些应用中始终使用同一输入法",
+        "Always “%1$@” in “%2$@”": "在“%2$@”中始终使用“%1$@”",
+        "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko 会记住你在每个应用中使用的输入法，回到该应用时自动切换：Telegram 中用乌克兰语，终端中用英语。固定的输入法总会启用，无论你之前在那里选了什么；当前输入法也可以在 Klavko 菜单中固定。",
+        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ macOS 中已打开“自动切换到文稿的输入法”（系统设置 → 键盘 → 输入法）。请关闭它或此开关，以免两者同时切换输入法。",
     ]
 }

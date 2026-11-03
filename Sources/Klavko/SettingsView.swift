@@ -467,6 +467,36 @@ struct SettingsView: View {
                     }
 
                     Section {
+                        Toggle(tr("Своя розкладка в кожній програмі", "A layout of its own in each app"), isOn: $settings.appLayoutsEnabled)
+                        if settings.appLayoutsEnabled {
+                            if Self.macSwitchesPerDocument() {
+                                Text(tr("⚠️ У macOS увімкнено «Автоматично перемикатися на джерело введення документа» (Параметри → Клавіатура → Джерела введення). Вимкніть його або цей перемикач, щоб розкладку не перемикали обидва.",
+                                        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout."))
+                                    .font(.caption)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(tr("Завжди одна розкладка в програмах", "Always one layout in these apps"))
+                                ForEach(settings.appLayouts.pinned.keys.sorted { Self.appName($0).localizedCaseInsensitiveCompare(Self.appName($1)) == .orderedAscending }, id: \.self) { app in
+                                    pinnedLayoutRow(app)
+                                }
+                                Button(tr("Додати програму…", "Add App…")) {
+                                    guard let layout = SystemLayouts.currentLayoutID() else { return }
+                                    pickApps(adding: Array(settings.appLayouts.pinned.keys)) { settings.appLayouts.pinned[$0] = layout }
+                                }
+                                .controlSize(.small)
+                            }
+                        }
+                    } footer: {
+                        Text(tr("Klavko запам’ятовує, якою розкладкою ви писали в кожній програмі, і вмикає її, коли ви туди повертаєтеся: у Telegram — українську, у Терміналі — англійську. "
+                                + "Закріплена розкладка вмикається завжди, що б ви не вибирали там раніше; закріпити розкладку, яка зараз увімкнена, можна й у меню Klavko.",
+                                "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. "
+                                + "A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         HStack {
                             TextField("", text: $newException, prompt: Text(tr("Нові слова через пробіл або кому", "New words, separated by spaces or commas")))
                                 .labelsHidden()
@@ -1022,6 +1052,36 @@ struct SettingsView: View {
         shortcutPicker(action.title, shortcut: settings.shortcuts[action], isRecording: recorder.recording == action,
                        record: { recorder.start(action, recordsSides: settings.modifierSides) { settings.setShortcut($0, for: action) } },
                        clear: { settings.setShortcut(nil, for: action) })
+    }
+
+    /// An app with its pinned layout: a menu to change it and ✕ to unpin.
+    private func pinnedLayoutRow(_ app: String) -> some View {
+        HStack {
+            if let icon = Self.appIcon(app) {
+                Image(nsImage: icon).resizable().frame(width: 18, height: 18)
+            }
+            Text(Self.appName(app))
+            Spacer()
+            Picker("", selection: Binding(get: { settings.appLayouts.pinned[app] ?? "" },
+                                          set: { settings.appLayouts.pinned[app] = $0 })) {
+                ForEach(SystemLayouts.allLayouts(), id: \.id) { Text($0.name).tag($0.id) }
+            }
+            .labelsHidden()
+            .frame(width: 180)
+            Button {
+                settings.appLayouts.pinned[app] = nil
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(trFormat("Прибрати «%@»", "Remove “%@”", Self.appName(app)))
+        }
+    }
+
+    /// macOS's own "Automatically switch to a document's input source" is on.
+    static func macSwitchesPerDocument() -> Bool {
+        let properties = CFPreferencesCopyAppValue("AppleGlobalTextInputProperties" as CFString, "com.apple.HIToolbox" as CFString)
+        return ((properties as? [String: Any])?["TextInputGlobalPropertyPerContextInputMode"] as? NSNumber)?.boolValue == true
     }
 
     private func layoutShortcutRow(id: String, name: String) -> some View {

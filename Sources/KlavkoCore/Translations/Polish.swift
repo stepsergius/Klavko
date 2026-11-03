@@ -455,5 +455,10 @@ extension Translations {
         "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "To plik Klavko dla Windows: zostaną dodane jego wyjątki, zamiany słów i słownik wprowadzania głosowego. Klavko uruchomi się ponownie.",
         "Switch to a layout": "Przełącz na układ",
         "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is.": "Osobny klawisz dla każdego układu: na przykład lewy ⌘ — ukraiński, prawy ⌘ — angielski. Kliknij i naciśnij klawisz z ⌃ ⌥ ⇧ ⌘ albo sam modyfikator — zapamiętywany jest razem ze stroną. Modyfikator przełącza tylko wtedy, gdy zostanie naciśnięty i puszczony sam: ⌘C czy ⌘-kliknięcie nie zmieniają układu.",
+        "A layout of its own in each app": "Własny układ w każdej aplikacji",
+        "Always one layout in these apps": "Zawsze ten sam układ w tych aplikacjach",
+        "Always “%1$@” in “%2$@”": "Zawsze „%1$@” w „%2$@”",
+        "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko zapamiętuje, w jakim układzie pisałeś w każdej aplikacji, i włącza go, gdy do niej wracasz: ukraiński w Telegramie, angielski w Terminalu. Przypięty układ włącza się zawsze, cokolwiek wybrałeś tam wcześniej; bieżący układ można przypiąć także w menu Klavko.",
+        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ W macOS włączone jest „Automatycznie przełączaj na źródło wprowadzania dokumentu” (Ustawienia systemowe → Klawiatura → Źródła wprowadzania). Wyłącz je albo ten przełącznik, żeby układu nie zmieniały oba.",
     ]
 }

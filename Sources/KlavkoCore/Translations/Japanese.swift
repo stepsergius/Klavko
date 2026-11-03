@@ -455,5 +455,10 @@ extension Translations {
         "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "これは Windows 版 Klavko のファイルです：例外、単語の置き換え、音声入力の語彙が追加されます。Klavko は再起動します。",
         "Switch to a layout": "入力ソースに切り替え",
         "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is.": "入力ソースごとに専用のキーを設定できます。例：左 ⌘ でウクライナ語、右 ⌘ で英語。クリックして ⌃ ⌥ ⇧ ⌘ と組み合わせたキー、または修飾キーだけを押します。修飾キーは左右の区別も記憶されます。修飾キーは単独で押して離したときだけ切り替わり、⌘C や ⌘ クリックでは入力ソースは変わりません。",
+        "A layout of its own in each app": "アプリごとに入力ソースを切り替え",
+        "Always one layout in these apps": "これらのアプリでは常に同じ入力ソース",
+        "Always “%1$@” in “%2$@”": "“%2$@” では常に “%1$@”",
+        "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko はアプリごとに使った入力ソースを記憶し、戻ったときにそれに切り替えます。例：Telegram ではウクライナ語、ターミナルでは英語。固定した入力ソースは、以前に何を選んでいても常に使われます。現在の入力ソースは Klavko のメニューからも固定できます。",
+        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ macOS で「書類の入力ソースに自動的に切り替える」がオンになっています（システム設定 → キーボード → 入力ソース）。両方が切り替えないよう、どちらかをオフにしてください。",
     ]
 }

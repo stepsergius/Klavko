@@ -455,5 +455,10 @@ extension Translations {
         "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.": "È un file di Klavko per Windows: verranno aggiunte le sue eccezioni, sostituzioni di parole e il vocabolario dell’input vocale. Klavko si riavvierà.",
         "Switch to a layout": "Passa a un layout",
         "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is.": "Un tasto per ogni layout: per esempio ⌘ sinistro per l’ucraino, ⌘ destro per l’inglese. Fai clic e premi un tasto con ⌃ ⌥ ⇧ ⌘, oppure solo un modificatore: viene ricordato con il suo lato. Un modificatore cambia layout solo se premuto e rilasciato da solo: ⌘C o un ⌘-clic lasciano il layout com’è.",
+        "A layout of its own in each app": "Un layout per ogni app",
+        "Always one layout in these apps": "Sempre lo stesso layout in queste app",
+        "Always “%1$@” in “%2$@”": "Sempre “%1$@” in “%2$@”",
+        "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko ricorda con quale layout hai scritto in ogni app e lo riattiva quando ci torni: ucraino in Telegram, inglese nel Terminale. Un layout fissato viene sempre attivato, qualunque cosa tu abbia scelto prima; il layout attuale si può fissare anche dal menu di Klavko.",
+        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ In macOS è attivo “Passa automaticamente alla sorgente di input di un documento” (Impostazioni di Sistema → Tastiera → Sorgenti di input). Disattiva quello o questo interruttore, così non cambiano il layout entrambi.",
     ]
 }
