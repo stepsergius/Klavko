@@ -927,6 +927,22 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     Section {
+                        ForEach(SystemLayouts.allLayouts(), id: \.id) { layout in
+                            layoutShortcutRow(id: layout.id, name: layout.name)
+                        }
+                    } header: {
+                        Text(tr("Увімкнути розкладку", "Switch to a layout"))
+                    } footer: {
+                        Text(tr("Своя клавіша для кожної розкладки: наприклад, лівий ⌘ — українська, правий ⌘ — англійська. "
+                                + "Клацніть і натисніть клавішу з ⌃ ⌥ ⇧ ⌘ або сам модифікатор — він запам’ятовується разом зі стороною. "
+                                + "Модифікатор перемикає, лише коли його натиснули й відпустили окремо: ⌘C чи ⌘-клік розкладку не змінюють.",
+                                "A key of its own for each layout: for example, left ⌘ for Ukrainian, right ⌘ for English. "
+                                + "Click and press a key with ⌃ ⌥ ⇧ ⌘, or a modifier alone — it is remembered with its side. "
+                                + "A modifier switches only when pressed and released on its own: ⌘C or a ⌘-click leaves the layout as it is."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Section {
                         Toggle(tr("Замінювати клавіші", "Remap keys"), isOn: $settings.keyRemapsEnabled)
                         ForEach(settings.keyRemaps) { rule in
                             remapRow(rule)
@@ -1003,20 +1019,29 @@ struct SettingsView: View {
     }
 
     private func shortcutRow(_ action: HotkeyAction) -> some View {
+        shortcutPicker(action.title, shortcut: settings.shortcuts[action], isRecording: recorder.recording == action,
+                       record: { recorder.start(action, recordsSides: settings.modifierSides) { settings.setShortcut($0, for: action) } },
+                       clear: { settings.setShortcut(nil, for: action) })
+    }
+
+    private func layoutShortcutRow(id: String, name: String) -> some View {
+        shortcutPicker(name, shortcut: settings.layoutShortcuts[id], isRecording: recorder.recordingLayout == id,
+                       record: { recorder.startLayout(id, recordsSides: settings.modifierSides) { settings.setLayoutShortcut($0, for: id) } },
+                       clear: { settings.setLayoutShortcut(nil, for: id) })
+    }
+
+    private func shortcutPicker(_ title: String, shortcut: Shortcut?, isRecording: Bool,
+                                record: @escaping () -> Void, clear: @escaping () -> Void) -> some View {
         HStack {
-            Text(action.title)
+            Text(title)
             Spacer()
             Button {
-                if recorder.recording == action {
-                    recorder.stop()
-                } else {
-                    recorder.start(action, recordsSides: settings.modifierSides) { settings.setShortcut($0, for: action) }
-                }
+                if isRecording { recorder.stop() } else { record() }
             } label: {
-                if recorder.recording == action {
+                if isRecording {
                     Text(tr("Натисніть…", "Press keys…"))
                         .foregroundStyle(Color.accentColor)
-                } else if let shortcut = settings.shortcuts[action] {
+                } else if let shortcut {
                     HStack(spacing: 4) {
                         ForEach(Array(shortcut.parts(layout: keyLayout).enumerated()), id: \.offset) { _, part in
                             Keycap(text: part)
@@ -1029,15 +1054,13 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             .help(tr("Клацніть, щоб змінити", "Click to change"))
 
-            Button {
-                settings.setShortcut(nil, for: action)
-            } label: {
+            Button(action: clear) {
                 Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
             .help(tr("Прибрати гарячу клавішу", "Remove the hotkey"))
-            .opacity(settings.shortcuts[action] == nil ? 0 : 1)
-            .disabled(settings.shortcuts[action] == nil)
+            .opacity(shortcut == nil ? 0 : 1)
+            .disabled(shortcut == nil)
         }
     }
 

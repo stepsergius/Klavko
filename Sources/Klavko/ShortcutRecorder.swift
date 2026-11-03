@@ -6,12 +6,18 @@ import KlavkoCore
 @MainActor
 final class ShortcutRecorder: ObservableObject {
     @Published private(set) var recording: HotkeyAction?
+    /// The keyboard layout (input source ID) whose switching hotkey is being recorded.
+    @Published private(set) var recordingLayout: String?
+    /// A shortcut of any kind is being recorded: Klavko's hotkeys must not fire meanwhile.
+    var isRecordingShortcut: Bool { recording != nil || recordingLayout != nil }
     /// Which key of a remapping rule is being recorded (`recordKey`).
     @Published private(set) var recordingKey: String?
     /// Told when key recording starts and stops: remapping is paused meanwhile, so the key arrives as pressed.
     var onRecordingKey: (Bool) -> Void = { _ in }
     /// Record which of the two keys of each modifier was pressed ("right ⌘"), not just the modifier.
     private var recordsSides = false
+    /// Sides for modifier taps even when `recordsSides` is off (a layout's "right ⌘").
+    private var recordsTapSides = false
 
     private var monitor: Any?
     private var detector = ModifierTapDetector()
@@ -24,7 +30,19 @@ final class ShortcutRecorder: ObservableObject {
     func start(_ action: HotkeyAction, recordsSides: Bool = false, completion: @escaping (Shortcut) -> Void) {
         stop()
         recording = action
+        begin(recordsSides: recordsSides, completion: completion)
+    }
+
+    /// A layout's hotkey: modifiers pressed alone keep their side, so left ⌘ and right ⌘ can switch into two layouts.
+    func startLayout(_ id: String, recordsSides: Bool = false, completion: @escaping (Shortcut) -> Void) {
+        stop()
+        recordingLayout = id
+        begin(recordsSides: recordsSides, tapSides: true, completion: completion)
+    }
+
+    private func begin(recordsSides: Bool, tapSides: Bool = false, completion: @escaping (Shortcut) -> Void) {
         self.recordsSides = recordsSides
+        recordsTapSides = tapSides
         self.completion = completion
         detector = ModifierTapDetector()
         // Local monitors run on the main thread; every key is swallowed while recording.
@@ -61,6 +79,7 @@ final class ShortcutRecorder: ObservableObject {
         pendingSingle?.cancel()
         pendingSingle = nil
         recording = nil
+        recordingLayout = nil
         completion = nil
     }
 
@@ -84,7 +103,7 @@ final class ShortcutRecorder: ObservableObject {
             if event.modifierFlags.contains(.function) { held.insert(.function) }
             let physical = ModifierSide.held(in: UInt64(event.modifierFlags.rawValue))
             for tap in detector.modifiersChanged(held, sides: physical, at: event.timestamp) {
-                let sides = recordsSides ? Shortcut.sides(tap.sides) : [:]
+                let sides = recordsSides || recordsTapSides ? Shortcut.sides(tap.sides) : [:]
                 switch tap {
                 case .single(let chord, _):
                     pendingSingle?.cancel()

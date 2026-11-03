@@ -231,6 +231,17 @@ final class ModifierTapDetectorTests: XCTestCase {
         XCTAssertEqual(detector.modifiersChanged([], at: 0.3), [.single([.command], sides: [.command: [.right]]),
                                                                  .double([.command], sides: [:])])
     }
+
+    func testLeftAndRightCommandAloneAreTwoShortcuts() {
+        let left = Shortcut(modifiers: [.command], double: false, sides: [.command: .left])
+        let right = Shortcut(modifiers: [.command], double: false, sides: [.command: .right])
+        var detector = ModifierTapDetector()
+        _ = detector.modifiersChanged([.command], sides: [.command: [.right]], at: 0)
+        let taps = detector.modifiersChanged([], at: 0.1)
+        XCTAssertTrue(taps.contains(where: right.matches))
+        XCTAssertFalse(taps.contains(where: left.matches))
+        XCTAssertEqual(right.parts(layout: nil), [tr("правий ", "right ") + "⌘"])
+    }
 }
 
 /// A tiny dictionary with known word frequencies, to test ranking and confidence rules exactly.

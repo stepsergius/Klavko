@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = item
 
         engine.isPaused = { [unowned self] in
-            MainActor.assumeIsolated { recorder.recording != nil }
+            MainActor.assumeIsolated { recorder.isRecordingShortcut }
         }
         engine.isExcluded = { [unowned self] in
             MainActor.assumeIsolated {
@@ -440,6 +440,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let shortcuts = settings.voiceEnabled ? settings.shortcuts
             : settings.shortcuts.filter { $0.key != .voice && $0.key != .voiceTranslate }
         engine.config = SwitchEngine.Config(shortcuts: shortcuts,
+                                            layoutShortcuts: settings.layoutShortcuts,
                                             autoSwitch: settings.isEnabled,
                                             triggers: settings.triggers,
                                             switchWhileTyping: settings.switchWhileTyping,

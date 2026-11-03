@@ -21,6 +21,8 @@ enum FixKind {
 final class SwitchEngine {
     struct Config {
         var shortcuts: [HotkeyAction: Shortcut] = [:]
+        /// Hotkeys that switch into one keyboard layout, by its input source ID.
+        var layoutShortcuts: [String: Shortcut] = [:]
         var autoSwitch = true
         var triggers: Set<SwitchTrigger> = Set(SwitchTrigger.allCases)
         var switchWhileTyping = true
@@ -297,8 +299,8 @@ final class SwitchEngine {
            emojiQuery == nil, !emojiPicking, !emoji.isShowing(), onBarUp() {
             return false
         }
-        if let action = comboAction(keyCode: keyCode, flags: flags) {
-            perform(action)
+        if let hotkey = comboHotkey(keyCode: keyCode, flags: flags) {
+            perform(hotkey)
             return false
         }
         // ⌃Space / ⌃⌥Space switch the input source: the caret stays, so keep what we know.
@@ -855,16 +857,23 @@ final class SwitchEngine {
         return true
     }
 
-    private func comboAction(keyCode: UInt16, flags: CGEventFlags) -> HotkeyAction? {
+    /// What a hotkey does: one of Klavko's actions, or switching into a layout.
+    private enum Hotkey {
+        case action(HotkeyAction)
+        case layout(String)
+    }
+
+    private func comboHotkey(keyCode: UInt16, flags: CGEventFlags) -> Hotkey? {
         let modifiers = Self.modifiers(flags)
         guard !modifiers.isEmpty else { return nil }
         let held = ModifierSide.held(in: flags.rawValue)
-        return shortcutsBySide.first { $0.value.matches(keyCode: keyCode, modifiers: modifiers, held: held) }?.key
+        return shortcutsBySide.first { $0.shortcut.matches(keyCode: keyCode, modifiers: modifiers, held: held) }?.hotkey
     }
 
     /// Shortcuts that name a side first: "right ⌘" wins over a plain "⌘" pressed with the right key.
-    private var shortcutsBySide: [(key: HotkeyAction, value: Shortcut)] {
-        config.shortcuts.sorted { $0.value.sides.count > $1.value.sides.count }
+    private var shortcutsBySide: [(hotkey: Hotkey, shortcut: Shortcut)] {
+        (config.shortcuts.map { (Hotkey.action($0.key), $0.value) } + config.layoutShortcuts.map { (Hotkey.layout($0.key), $0.value) })
+            .sorted { $0.shortcut.sides.count > $1.shortcut.sides.count }
     }
 
     private func handleFlagsChanged(_ event: CGEvent) {
@@ -880,8 +889,8 @@ final class SwitchEngine {
         let taps = modifierTaps.modifiersChanged(held, sides: ModifierSide.held(in: event.flags.rawValue),
                                                  at: ProcessInfo.processInfo.systemUptime)
         for tap in taps {
-            if let action = shortcutsBySide.first(where: { $0.value.matches(tap) })?.key {
-                perform(action)
+            if let hotkey = shortcutsBySide.first(where: { $0.shortcut.matches(tap) })?.hotkey {
+                perform(hotkey)
             }
         }
     }
@@ -1039,6 +1048,17 @@ final class SwitchEngine {
     }
 
     // MARK: - Hotkeys
+
+    private func perform(_ hotkey: Hotkey) {
+        switch hotkey {
+        case .action(let action):
+            perform(action)
+        case .layout(let id):
+            guard let layout = SystemLayouts.allLayouts().first(where: { $0.id == id }) else { return }
+            Log.engine.notice("Hotkey: layout \(id, privacy: .public)")
+            SystemLayouts.select(layout.source)
+        }
+    }
 
     private func perform(_ action: HotkeyAction) {
         Log.engine.notice("Hotkey: \(action.rawValue, privacy: .public)")

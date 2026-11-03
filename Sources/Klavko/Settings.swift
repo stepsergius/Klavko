@@ -17,6 +17,7 @@ final class Settings: ObservableObject {
         static let soundName = "soundName"
         static let excludedApps = "excludedApps"
         static let shortcuts = "shortcuts.v2"
+        static let layoutShortcuts = "layoutShortcuts"
         static let keyRemaps = "keyRemaps"
         static let keyRemapsEnabled = "keyRemapsEnabled"
         static let modifierSides = "modifierSides"
@@ -449,6 +450,14 @@ final class Settings: ObservableObject {
         didSet { saveShortcuts(); onChange?() }
     }
 
+    /// A hotkey that switches into one keyboard layout, by its macOS input source ID ("left ⌘" → Ukrainian).
+    @Published private(set) var layoutShortcuts: [String: Shortcut] {
+        didSet {
+            defaults.set(try? JSONEncoder().encode(layoutShortcuts), forKey: Key.layoutShortcuts)
+            onChange?()
+        }
+    }
+
     /// Keys and combinations made to act as others, everywhere.
     @Published private(set) var keyRemaps: [KeyRemap] {
         didSet {
@@ -620,6 +629,8 @@ final class Settings: ObservableObject {
         copySoundName = defaults.string(forKey: Key.copySoundName) ?? "Tink"
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         shortcuts = Self.loadShortcuts(defaults.data(forKey: Key.shortcuts))
+        layoutShortcuts = defaults.data(forKey: Key.layoutShortcuts)
+            .flatMap { try? JSONDecoder().decode([String: Shortcut].self, from: $0) } ?? [:]
         modifierSides = defaults.bool(forKey: Key.modifierSides)
         keyRemaps = defaults.data(forKey: Key.keyRemaps).flatMap { try? JSONDecoder().decode([KeyRemap].self, from: $0) } ?? []
         keyRemapsEnabled = defaults.object(forKey: Key.keyRemapsEnabled) as? Bool ?? true
@@ -666,6 +677,19 @@ final class Settings: ObservableObject {
         }
         updated[action] = shortcut
         shortcuts = updated
+        // One hotkey does one thing.
+        if let shortcut, layoutShortcuts.values.contains(shortcut) {
+            layoutShortcuts = layoutShortcuts.filter { $0.value != shortcut }
+        }
+    }
+
+    func setLayoutShortcut(_ shortcut: Shortcut?, for layoutID: String) {
+        var updated = layoutShortcuts.filter { shortcut == nil || $0.value != shortcut }
+        updated[layoutID] = shortcut
+        layoutShortcuts = updated
+        if let shortcut, shortcuts.values.contains(shortcut) {
+            shortcuts = shortcuts.filter { $0.value != shortcut }
+        }
     }
 
     // MARK: - Key remapping
@@ -681,6 +705,8 @@ final class Settings: ObservableObject {
 
     func resetShortcuts() {
         shortcuts = Self.loadShortcuts(nil)
+        let taken = Set(shortcuts.values)
+        if layoutShortcuts.values.contains(where: taken.contains) { layoutShortcuts = layoutShortcuts.filter { !taken.contains($0.value) } }
     }
 
     /// Stored as {action: shortcut or null}; an action missing from storage gets its default.
