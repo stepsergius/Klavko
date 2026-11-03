@@ -52,16 +52,21 @@ public enum LanguageGuess {
 /// Live recognition after a pause: macOS may start the next phrase from scratch within the same
 /// recognition, without marking the previous one final. Spotting that keeps the earlier text.
 public enum UtteranceJoiner {
-    /// True when `next` is a new phrase rather than a revision of `previous`:
-    /// it is much shorter and starts with a different first word.
+    /// True when `next` is a new phrase rather than a revision of `previous`: `previous` ended in a line break
+    /// ("новий рядок", which macOS does itself) that `next` doesn't have, or `next` starts with a different
+    /// first word and is much shorter or follows a finished sentence.
     public static func isRestart(previous: String, next: String) -> Bool {
-        guard let oldFirst = firstWord(previous), let newFirst = firstWord(next) else { return false }
-        return next.count * 2 < previous.count && oldFirst != newFirst
+        let ended = previous.trimmingCharacters(in: .whitespaces)
+        if ended.last?.isNewline == true { return !next.contains(where: \.isNewline) }
+        guard let oldFirst = firstWord(previous), let newFirst = firstWord(next), oldFirst != newFirst else { return false }
+        return next.count * 2 < previous.count || ended.last.map { ".!?…".contains($0) } ?? false
     }
 
-    /// `parts` joined with spaces, skipping empty ones.
+    /// `parts` joined with spaces (none after a line break), skipping empty ones.
     public static func join(_ parts: String...) -> String {
-        parts.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")
+        parts.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.reduce("") { joined, part in
+            joined.isEmpty ? part : joined + (joined.last!.isNewline || part.first!.isNewline ? "" : " ") + part
+        }
     }
 
     private static func firstWord(_ text: String) -> String? {

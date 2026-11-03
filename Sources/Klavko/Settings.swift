@@ -48,6 +48,7 @@ final class Settings: ObservableObject {
         static let voicePanelStyle = "voicePanelStyle"
         static let voicePanelPosition = "voicePanelPosition"
         static let voiceShowText = "voiceShowText"
+        static let voiceCommands = "voiceCommands"
         static let voiceTranslationTarget = "voiceTranslationTarget"
         static let liveGrammar = "liveGrammar"
         static let googleDocsAnswer = "googleDocsAnswer"
@@ -316,6 +317,10 @@ final class Settings: ObservableObject {
     @Published var voiceShowText: Bool {
         didSet { defaults.set(voiceShowText, forKey: Key.voiceShowText) }
     }
+    /// Spoken punctuation and line breaks ("кома", "новий абзац") are done, not written.
+    @Published var voiceCommands: Bool {
+        didSet { defaults.set(voiceCommands, forKey: Key.voiceCommands) }
+    }
     /// Voice input with translation inserts what was said in this language.
     @Published var voiceTranslationTarget: String {
         didSet { defaults.set(voiceTranslationTarget, forKey: Key.voiceTranslationTarget) }
@@ -550,6 +555,7 @@ final class Settings: ObservableObject {
             // Code editors: "...", quotes and capitals mean something else in code.
             Key.offerVoiceCorrections: true,
             Key.voiceShowText: true,
+            Key.voiceCommands: true,
             Key.saveVoiceHistory: true,
             Key.duckSound: true,
             Key.duckLevel: 0.2,
@@ -604,6 +610,7 @@ final class Settings: ObservableObject {
         voicePanelStyle = defaults.string(forKey: Key.voicePanelStyle).flatMap(VoiceLook.Style.init(rawValue:)) ?? .large
         voicePanelPosition = defaults.string(forKey: Key.voicePanelPosition).flatMap(VoiceLook.Position.init(rawValue:)) ?? .bottom
         voiceShowText = defaults.bool(forKey: Key.voiceShowText)
+        voiceCommands = defaults.bool(forKey: Key.voiceCommands)
         voiceTranslationTarget = defaults.string(forKey: Key.voiceTranslationTarget) ?? "en"
         liveGrammar = defaults.object(forKey: Key.liveGrammar) as? Bool ?? true
         googleDocsAnswer = defaults.string(forKey: Key.googleDocsAnswer) ?? ""

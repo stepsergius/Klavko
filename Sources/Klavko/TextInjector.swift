@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 /// Types and deletes text by posting synthetic keyboard events.
 ///
@@ -17,6 +18,7 @@ enum TextInjector {
 
     private static let source = CGEventSource(stateID: .privateState)
     private static let backspaceKeyCode: CGKeyCode = 51
+    private static let returnKeyCode: CGKeyCode = 36
     private static let maxChunk = 16
 
     static func replace(deleting count: Int, with text: String) {
@@ -29,6 +31,28 @@ enum TextInjector {
         typeChunks(text)
         postSentinel()
     }
+
+    /// Types `text` with each line break as a key: ⇧Return, which starts a new line in chats too (where Return
+    /// sends the message). Editors in web apps (Claude, Notion…) take in typed text a moment later; a key that
+    /// comes sooner splits the line as it was, without that text: so each line break waits a little.
+    static func typeLines(_ text: String) {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard lines.count > 1 else { return type(text) }
+        pendingSentinels += 1  // the user's keys wait until the last line is in
+        func step(_ i: Int) {
+            if i > 0 { postKey(returnKeyCode, flags: .maskShift) }
+            typeChunks(lines[i])
+            guard i + 1 < lines.count else {
+                pendingSentinels = max(0, pendingSentinels - 1)
+                postSentinel()
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + lineBreakPause) { step(i + 1) }
+        }
+        step(0)
+    }
+
+    private static let lineBreakPause: TimeInterval = 0.12
 
     /// Presses a key with exactly these modifiers (e.g. ⌘C), ignoring keys the user still holds.
     static func pressKey(_ keyCode: CGKeyCode, flags: CGEventFlags = []) {

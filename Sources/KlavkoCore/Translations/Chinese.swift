@@ -460,5 +460,8 @@ extension Translations {
         "Always “%1$@” in “%2$@”": "在“%2$@”中始终使用“%1$@”",
         "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too.": "Klavko 会记住你在每个应用中使用的输入法，回到该应用时自动切换：Telegram 中用乌克兰语，终端中用英语。固定的输入法总会启用，无论你之前在那里选了什么；当前输入法也可以在 Klavko 菜单中固定。",
         "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout.": "⚠️ macOS 中已打开“自动切换到文稿的输入法”（系统设置 → 键盘 → 输入法）。请关闭它或此开关，以免两者同时切换输入法。",
+        "Voice commands": "语音命令",
+        "Say one on its own, and Klavko puts in the mark, not the word: ": "单独说出，Klavko 会输入符号而不是词语：",
+        ". “Literally comma” writes the word itself.": "。说“Literally comma”会写下这个词本身。",
     ]
 }

@@ -48,6 +48,8 @@ final class VoiceDictation: ObservableObject {
     var preferredLanguage: () -> String = { "uk" }
     /// The user's spellings ("зсу" → "ЗСУ"), applied to everything recognized.
     var vocabulary: () -> [Replacement] = { [] }
+    /// Spoken punctuation and line breaks are done ("кома" → ","), in the languages spoken.
+    var commandsOn: () -> Bool = { true }
     /// Called with the text after it was typed (key tracking starts afresh; corrections get watched).
     var onInserted: (String) -> Void = { _ in }
     /// The microphone is on (for the statistics), and how long it was on once it goes off.
@@ -242,7 +244,7 @@ final class VoiceDictation: ObservableObject {
     private func update() {
         guard let live else { return }
         // With Parakeet the panel shows its text (in whatever language is spoken), not macOS's guess.
-        if !(parakeet?.isDownloaded == true && parakeetUsable) { text = VoiceVocabulary.apply(live.text, rules: vocabulary()) }
+        if !(parakeet?.isDownloaded == true && parakeetUsable) { text = finished(live.text) }
         if live.failedForGood, stage == .listening {
             stopAudio()
             stage = .failed(tr("Розпізнавання мовлення не працює. Перевірте мікрофон і Диктування в System Settings → Keyboard.",
@@ -344,7 +346,9 @@ final class VoiceDictation: ObservableObject {
                 guard let self else { return }
                 var text = try await parakeetText(parakeet, file: file, hint: hint)
                 var language = "parakeet"
-                if (LanguageGuess.looksRussian(text) && !russianAllowed) || (text.isEmpty && ukrainianAllowed) {
+                // Short Ukrainian with no і, ї, є, ґ looks Russian too: real Ukrainian words keep it.
+                let russian = LanguageGuess.looksRussian(text) && !(ukrainianAllowed && isUkrainian(text))
+                if (russian && !russianAllowed) || (text.isEmpty && ukrainianAllowed) {
                     Log.engine.notice("Parakeet result unusable; redoing with the Ukrainian recognizer")
                     let ukrainian = ukrainianAllowed ? await Self.recognize(file: file, language: "uk") : ""
                     if !ukrainian.isEmpty {
@@ -403,6 +407,12 @@ final class VoiceDictation: ObservableObject {
                                   preferred: preferredLanguage(), spellChecker: spellChecker)?.text ?? text
     }
 
+    /// Text with no letters only Russian has whose words are nearly all Ukrainian ("я працюю новий рядок я сплю").
+    private func isUkrainian(_ text: String) -> Bool {
+        !text.lowercased().contains { "ыэъё".contains($0) }
+            && LanguageGuess.wordShare(text, language: "uk", spellChecker: spellChecker) >= 0.8
+    }
+
     /// Developer check: Parakeet's own guess for a recording and the text Klavko would insert.
     func checkParakeet(file: URL) async -> String {
         guard let parakeet else { return "no parakeet" }
@@ -442,7 +452,7 @@ final class VoiceDictation: ObservableObject {
                 let heard = (try? await self?.parakeetText(parakeet, file: file, hint: hint)) ?? ""
                 guard let self, session == current, stage == .listening else { return }
                 if !heard.isEmpty, !LanguageGuess.looksRussian(heard) || allowed.contains("ru") {
-                    text = VoiceVocabulary.apply(heard, rules: vocabulary())
+                    text = finished(heard)
                 }
                 schedulePreview(after: max(0.7, Date().timeIntervalSince(started) * 1.5))
             }
@@ -494,7 +504,7 @@ final class VoiceDictation: ObservableObject {
     /// Voice input with translation: the panel stays while the macOS translator works (on this Mac, a moment);
     /// if it can't, what was said goes in as it was, with the reason on screen, so nothing is lost.
     private func translateAndInsert(_ heard: String, into target: String) {
-        let text = VoiceVocabulary.apply(heard, rules: vocabulary())
+        let text = finished(heard)
         let source = TranslationDirection.language(of: text, among: allowed + [target]) ?? allowed.first ?? "uk"
         guard source != target else {
             insert(text, applyingVocabulary: false)
@@ -533,13 +543,20 @@ final class VoiceDictation: ObservableObject {
 
     private func insert(_ heard: String, applyingVocabulary: Bool = true) {
         insertOnFinish = false
-        let text = applyingVocabulary ? VoiceVocabulary.apply(heard, rules: vocabulary()) : heard
-        // Separate from the word before the caret, if there is one.
+        let text = applyingVocabulary ? finished(heard) : heard
+        // Separate from the word before the caret, if there is one (a mark or a new line goes right after it).
         let before = CaretContext.textBeforeCaret(limit: 1) ?? ""
-        let spaced = (before.last.map { !$0.isWhitespace } ?? false) ? " " + text : text
-        TextInjector.type(spaced)
+        let sticks = text.first.map { $0.isNewline || ".,;:!?…)»”".contains($0) } ?? false
+        let spaced = (before.last.map { !$0.isWhitespace } ?? false) && !sticks ? " " + text : text
+        TextInjector.typeLines(spaced)
         onInserted(text)
         Log.engine.notice("Voice input inserted \(text.count) chars")
+    }
+
+    /// What was heard, the user's way: their spellings, and the voice commands done.
+    private func finished(_ heard: String) -> String {
+        let text = VoiceVocabulary.apply(heard, rules: vocabulary())
+        return commandsOn() ? VoiceCommands.apply(text, languages: allowed) : text
     }
 
     /// Taps the microphone and starts the engine.

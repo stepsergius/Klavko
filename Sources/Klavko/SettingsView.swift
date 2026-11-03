@@ -665,6 +665,15 @@ struct SettingsView: View {
                         }
                     }
                     Section {
+                        Toggle(tr("Голосові команди", "Voice commands"), isOn: $settings.voiceCommands)
+                    } footer: {
+                        Text(tr("Скажіть окремо, і Klavko поставить знак, а не слово: ", "Say one on its own, and Klavko puts in the mark, not the word: ")
+                             + Self.voiceCommandList(settings.voiceLanguages)
+                             + tr(". «Буквально кома» запише саме слово.", ". “Literally comma” writes the word itself."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Section {
                         Picker(tr("Вигляд", "Look"), selection: $settings.voicePanelStyle) {
                             ForEach(VoiceLook.Style.allCases, id: \.self) { Text($0.title).tag($0) }
                         }
@@ -1079,6 +1088,16 @@ struct SettingsView: View {
     }
 
     /// macOS's own "Automatically switch to a document's input source" is on.
+
+    /// The voice commands of the languages spoken, one phrase per mark ("крапка", "кома"…).
+    static func voiceCommandList(_ languages: [String]) -> String {
+        var seen = Set<String>()
+        let codes = languages.contains { !VoiceCommands.commands(for: $0).isEmpty } ? languages : ["en"]
+        return codes.flatMap(VoiceCommands.commands(for:))
+            .filter { seen.insert("\($0.mark)").inserted }
+            .map { "«" + $0.words.joined(separator: " ") + "»" }
+            .joined(separator: ", ")
+    }
     static func macSwitchesPerDocument() -> Bool {
         let properties = CFPreferencesCopyAppValue("AppleGlobalTextInputProperties" as CFString, "com.apple.HIToolbox" as CFString)
         return ((properties as? [String: Any])?["TextInputGlobalPropertyPerContextInputMode"] as? NSNumber)?.boolValue == true

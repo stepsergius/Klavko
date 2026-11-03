@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Between two plausible results, the one in the layout's language.
         dictation.preferredLanguage = { SystemLayouts.currentLanguage() ?? "uk" }
         dictation.vocabulary = { [unowned self] in settings.voiceRules }
+        dictation.commandsOn = { [unowned self] in settings.voiceCommands }
         dictation.look = { [unowned self] in settings.voiceLook }
         dictation.microphone = { [unowned self] in settings.microphoneUID }
         dictation.duckLevel = { [unowned self] in settings.duckSound ? settings.duckLevel : nil }

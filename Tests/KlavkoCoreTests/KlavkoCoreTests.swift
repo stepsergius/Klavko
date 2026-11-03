@@ -673,6 +673,10 @@ final class UtteranceJoinerTests: XCTestCase {
         XCTAssertFalse(UtteranceJoiner.isRestart(previous: "Привіт це", next: "Привіт це перевірка"), "growing")
         XCTAssertFalse(UtteranceJoiner.isRestart(previous: "Привіт це перевірка", next: "Привіт"), "revised, same start")
         XCTAssertEqual(UtteranceJoiner.join("Привіт", "", " світ "), "Привіт світ")
+        XCTAssertTrue(UtteranceJoiner.isRestart(previous: "Я працюю.\n", next: "Я сплю"), "after a line break")
+        XCTAssertTrue(UtteranceJoiner.isRestart(previous: "Я працюю.", next: "Так"), "after a sentence")
+        XCTAssertFalse(UtteranceJoiner.isRestart(previous: "Я працюю", next: "Я сплю"), "same start: a revision")
+        XCTAssertEqual(UtteranceJoiner.join("Я працюю.\n", "Так"), "Я працюю.\nТак")
     }
 }
 
@@ -1542,5 +1546,69 @@ final class AppLayoutsTests: XCTestCase {
         layouts.keepOnly(layouts: [ukrainian])
         XCTAssertEqual(layouts.remembered.map(\.app), ["app5"])
         XCTAssertTrue(layouts.pinned.isEmpty)
+    }
+}
+
+final class VoiceCommandsTests: XCTestCase {
+    private func apply(_ text: String) -> String { VoiceCommands.apply(text, languages: ["uk", "en"]) }
+
+    func testPunctuationSticksToTheWordBefore() {
+        XCTAssertEqual(apply("привіт кома як справи знак питання"), "привіт, як справи?")
+        XCTAssertEqual(apply("до завтра крапка дякую"), "до завтра. Дякую")
+        XCTAssertEqual(apply("увага знак оклику"), "увага!")
+        XCTAssertEqual(apply("список двокрапка хліб кома молоко крапка з комою"), "список: хліб, молоко;")
+        XCTAssertEqual(apply("see you comma Anna period"), "see you, Anna.")
+    }
+
+    func testThePausesTheRecognizerMarkedGo() {
+        XCTAssertEqual(apply("Привіт. Кома. Як справи"), "Привіт, як справи")
+        XCTAssertEqual(apply("Привіт, кома, як справи. Знак питання."), "Привіт, як справи?")
+        XCTAssertEqual(apply("До завтра. Крапка."), "До завтра.")
+    }
+
+    func testLinesAndParagraphs() {
+        XCTAssertEqual(apply("до завтра крапка новий абзац дякую"), "до завтра.\n\nДякую")
+        XCTAssertEqual(apply("перше новий рядок друге"), "перше\nДруге")
+        XCTAssertEqual(apply("Новий абзац. Дякую"), "\n\nДякую")
+        XCTAssertEqual(apply("hello new line world"), "hello\nWorld")
+        XCTAssertEqual(apply("я працюю крапка новий рядок так"), "я працюю.\nТак")
+        XCTAssertEqual(apply("Я працюю. Крапка. Новий рядок. Так"), "Я працюю.\nТак")
+    }
+
+    func testDashesQuotesAndBrackets() {
+        XCTAssertEqual(apply("Київ тире столиця"), "Київ — столиця")
+        XCTAssertEqual(apply("Це мені підходить, даре, і я хочу це зробити крапко."), "Це мені підходить — і я хочу це зробити.")
+        XCTAssertEqual(apply("Це мені підходить тере і я хочу"), "Це мені підходить — і я хочу")
+        XCTAssertEqual(apply("він сказав відкрити лапки так закрити лапки"), "він сказав «так»")
+        XCTAssertEqual(apply("Я перевіряю відкриті лапки, слово закрите лапки."), "Я перевіряю «слово».")
+        XCTAssertEqual(apply("Я перевіряю, відкрила бки слово закрила бки."), "Я перевіряю «слово».")
+        XCTAssertEqual(apply("Він сказав відкрити лапки так закрити лапки. Далі"), "Він сказав «так». Далі")
+        XCTAssertEqual(apply("слово відкрити дужку пояснення закрити дужку далі"), "слово (пояснення) далі")
+        XCTAssertEqual(apply("Зроби так відкрити душку, вибрати закрити душку."), "Зроби так (вибрати).")
+        XCTAssertEqual(apply("he said open quote yes close quote"), "he said “yes”")
+    }
+
+    func testOtherFormsAndNounsStayText() {
+        XCTAssertEqual(apply("поставив крапку в кінці"), "поставив крапку в кінці")
+        XCTAssertEqual(apply("тут потрібна кома"), "тут потрібна кома")
+        XCTAssertEqual(apply("a period of time"), "a period of time")
+        XCTAssertEqual(apply("комар і кома"), "комар і кома")
+        XCTAssertEqual(apply("комарі літають"), "комарі літають")
+    }
+
+    func testLiterallyWritesTheWord() {
+        XCTAssertEqual(apply("слово буквально кома означає знак"), "слово кома означає знак")
+        XCTAssertEqual(apply("буквально новий рядок і далі"), "новий рядок і далі")
+    }
+
+    func testCommandsOnTheirOwnAndInARow() {
+        XCTAssertEqual(apply("Крапка."), ".")
+        XCTAssertEqual(apply("кома"), ",")
+        XCTAssertEqual(apply("Як справи? Знак питання. Новий абзац. Добре"), "Як справи?\n\nДобре")
+    }
+
+    func testOnlyTheChosenLanguages() {
+        XCTAssertEqual(VoiceCommands.apply("hello comma world", languages: ["uk"]), "hello comma world")
+        XCTAssertEqual(VoiceCommands.apply("привіт кома", languages: ["de"]), "привіт кома")
     }
 }
