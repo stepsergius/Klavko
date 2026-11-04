@@ -2,6 +2,8 @@
 
 extension Translations {
     public static let chinese: [String: String] = [
+        "Choose Your Language": "选择语言",
+        "You can change the app language at any time in Settings.": "可随时在设置中更改应用语言。",
         "What’s new": "新功能",
         "All changes on GitHub": "在 GitHub 上查看全部更改",
         "Allow Klavko to record the screen: System Settings → Privacy & Security → Screen & System Audio Recording. Then restart Klavko and try again.": "请允许 Klavko 录制屏幕：系统设置 → 隐私与安全性 → 录屏与系统录音。然后重新启动 Klavko 再试一次。",

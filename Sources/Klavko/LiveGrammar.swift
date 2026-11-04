@@ -335,11 +335,14 @@ final class LiveGrammar {
         Self.select(original, at: issue.offset, in: field) { selected in
             if selected {
                 let selection = SelectionConverter.Selection(text: original, element: field)
-                if selection.replace(with: replacement), Self.value(of: field) == expected { return self.log(issue, "accessibility") }
-                if Self.value(of: field) != fieldText { return self.log(issue, "accessibility, changed differently") }
-                // Nothing changed (Chromium apps ignore it): paste over the selected word (the clipboard is put back).
-                SelectionConverter.paste(replacement)
-                return self.log(issue, "paste")
+                selection.replace(with: replacement) { replaced in
+                    if replaced, Self.value(of: field) == expected { return self.log(issue, "accessibility") }
+                    if Self.value(of: field) != fieldText { return self.log(issue, "accessibility, changed differently") }
+                    // Nothing changed (Chromium apps ignore it): paste over the selected word (the clipboard is put back).
+                    SelectionConverter.paste(replacement)
+                    self.log(issue, "paste")
+                }
+                return
             }
             // Select the word with the arrow keys from the caret, then paste over it.
             let now = Self.selectedRange(of: field)

@@ -2,6 +2,8 @@
 
 extension Translations {
     public static let portuguese: [String: String] = [
+        "Choose Your Language": "Escolha seu idioma",
+        "You can change the app language at any time in Settings.": "Você pode mudar o idioma do app a qualquer momento nos Ajustes.",
         "What’s new": "Novidades",
         "All changes on GitHub": "Todas as mudanças no GitHub",
         "Allow Klavko to record the screen: System Settings → Privacy & Security → Screen & System Audio Recording. Then restart Klavko and try again.": "Permita que o Klavko grave a tela: Ajustes do Sistema → Privacidade e Segurança → Gravação de Tela e Áudio do Sistema. Depois reinicie o Klavko e tente de novo.",

@@ -597,6 +597,11 @@ final class Settings: ObservableObject {
         smartQuotes = defaults.bool(forKey: Key.smartQuotes)
         symbols = defaults.bool(forKey: Key.symbols)
         listContinuation = defaults.bool(forKey: Key.listContinuation)
+        // English on a first install (the welcome window asks for the language first, and it's kept so the next
+        // launch doesn't fall back to the system's); Klavko used before keeps what it had.
+        if !usedBefore && defaults.string(forKey: Key.interfaceLanguage) == nil {
+            defaults.set(AppLanguage.english.rawValue, forKey: Key.interfaceLanguage)
+        }
         let language = defaults.string(forKey: Key.interfaceLanguage).flatMap(AppLanguage.init(rawValue:))
             ?? .systemDefault
         interfaceLanguage = language

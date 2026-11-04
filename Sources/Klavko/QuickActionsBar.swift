@@ -691,8 +691,10 @@ final class QuickActionsBar {
         hideThen { [self] in
             let changed = change(model.text)
             guard changed != model.text else { return }
-            if let selection = model.selection, selection.replace(with: changed) { return }
-            SelectionConverter.paste(changed)
+            guard let selection = model.selection else { return SelectionConverter.paste(changed) }
+            selection.replace(with: changed) { replaced in
+                if !replaced { SelectionConverter.paste(changed) }
+            }
         }
     }
 

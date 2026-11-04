@@ -88,16 +88,26 @@ enum SelectionConverter {
         let text: String
         let element: AXUIElement
 
-        /// Puts `text` in place of the selection; false when the app ignored it (then paste instead).
-        func replace(with text: String) -> Bool {
+        /// Puts `text` in place of the selection; `done(false)` when the app ignored it (then paste instead).
+        func replace(with text: String, done: @escaping (Bool) -> Void) {
             var settable: DarwinBoolean = false
             guard AXUIElementIsAttributeSettable(element, kAXSelectedTextAttribute as CFString, &settable) == .success,
-                  settable.boolValue else { return false }
+                  settable.boolValue else { return done(false) }
             let before = Self.value(of: element)
             guard AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, text as CFString) == .success
-            else { return false }
-            // Some apps report success and change nothing.
-            return before == nil || Self.value(of: element) != before
+            else { return done(false) }
+            guard let before else { return done(true) }
+            Self.waitForChange(of: element, from: before, checks: 10, done: done)
+        }
+
+        /// Some apps report success and change nothing; others (Telegram) change the text a moment later, and
+        /// pasting at once would put it in twice: the field is looked at again for half a second before giving up.
+        private static func waitForChange(of element: AXUIElement, from before: String, checks: Int, done: @escaping (Bool) -> Void) {
+            if value(of: element) != before { return done(true) }
+            guard checks > 0 else { return done(false) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                waitForChange(of: element, from: before, checks: checks - 1, done: done)
+            }
         }
 
         private static func value(of element: AXUIElement) -> String? {

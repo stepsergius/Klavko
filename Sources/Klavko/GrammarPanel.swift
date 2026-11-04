@@ -115,9 +115,12 @@ final class GrammarPanel: ObservableObject {
         close()
         guard fixed != text else { return }
         app?.activate()
-        if let selection, selection.replace(with: fixed) { return }
         // The other app gets its keyboard focus back once the panel is gone.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { SelectionConverter.paste(fixed) }
+        let paste = { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { SelectionConverter.paste(fixed) } }
+        guard let selection else { return paste() }
+        selection.replace(with: fixed) { replaced in
+            if !replaced { paste() }
+        }
     }
 
     func copyResult() {

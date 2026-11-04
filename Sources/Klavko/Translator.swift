@@ -162,9 +162,12 @@ final class Translator: ObservableObject {
         let selection = selection
         close()
         app?.activate()
-        if let selection, selection.replace(with: text) { return }
         // The other app gets its keyboard focus back once the panel is gone.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { SelectionConverter.paste(text) }
+        let paste = { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { SelectionConverter.paste(text) } }
+        guard let selection else { return paste() }
+        selection.replace(with: text) { replaced in
+            if !replaced { paste() }
+        }
     }
 
     /// What the panel shows: the original or the translation (nil while there is nothing to show).

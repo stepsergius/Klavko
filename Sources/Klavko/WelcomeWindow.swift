@@ -4,8 +4,8 @@ import KlavkoCore
 import Speech
 import SwiftUI
 
-/// The first launch: Klavko is running (in the menu bar), what it does, the permissions it needs and where its
-/// settings are, a page at a time.
+/// The first launch: the language first, then Klavko is running (in the menu bar), what it does, the permissions
+/// it needs and where its settings are, a page at a time.
 @MainActor
 final class WelcomeWindow {
     private var window: NSWindow?
@@ -65,23 +65,27 @@ final class WelcomeWindow {
 }
 
 private struct WelcomeView: View {
-    enum Page: Int, CaseIterable { case hello, features, permissions, settings }
+    enum Page: Int, CaseIterable { case language, hello, features, permissions, settings }
 
     let context: WelcomeWindow.Context
     let close: () -> Void
-    @State var page: Page = .hello
+    @State var page: Page = .language
     @State private var forward = true
+    /// Picking a language redraws every page in it.
+    @ObservedObject private var settings: Settings
 
-    init(context: WelcomeWindow.Context, close: @escaping () -> Void, page: Page = .hello) {
+    init(context: WelcomeWindow.Context, close: @escaping () -> Void, page: Page = .language) {
         self.context = context
         self.close = close
         _page = State(initialValue: page)
+        settings = context.settings
     }
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 switch page {
+                case .language: LanguagePage(settings: settings)
                 case .hello: HelloPage(mark: context.menuBarMark)
                 case .features: FeaturesPage(shortcuts: context.shortcuts, layout: context.layout)
                 case .permissions: PermissionsPage(requestAccessibility: context.requestAccessibility)
@@ -89,7 +93,7 @@ private struct WelcomeView: View {
                                               openSettings: { close(); context.openSettings() })
                 }
             }
-            .id(page)
+            .id("\(page)-\(settings.interfaceLanguage.rawValue)")
             .transition(.asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
                                     removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -103,7 +107,7 @@ private struct WelcomeView: View {
     private var footer: some View {
         HStack {
             Group {
-                if page != .hello {
+                if page != .language {
                     Button(tr("Назад", "Back")) { go(to: page.rawValue - 1) }
                         .controlSize(.large)
                 } else {
@@ -193,6 +197,43 @@ private struct PageTitle: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: 480)
+    }
+}
+
+/// The language of Klavko's windows and menus, before anything else is read (English on a first install).
+private struct LanguagePage: View {
+    @ObservedObject var settings: Settings
+
+    var body: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 10)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 88, height: 88)
+            PageTitle(title: tr("Виберіть мову", "Choose Your Language"),
+                      subtitle: tr("Мову програми можна змінити будь-коли в налаштуваннях.",
+                                   "You can change the app language at any time in Settings."))
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(160), spacing: 10), count: 3), spacing: 10) {
+                ForEach(AppLanguage.allCases, id: \.self) { language in
+                    let chosen = language == settings.interfaceLanguage
+                    Button { settings.interfaceLanguage = language } label: {
+                        Text(language.title)
+                            .font(.system(size: 15, weight: chosen ? .semibold : .regular))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(chosen ? Color.accentColor : Color.primary.opacity(0.15), lineWidth: chosen ? 2 : 1))
+                            .contentShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 6)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 20)
     }
 }
 

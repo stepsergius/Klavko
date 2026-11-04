@@ -2,6 +2,8 @@
 
 extension Translations {
     public static let turkish: [String: String] = [
+        "Choose Your Language": "Dilinizi seçin",
+        "You can change the app language at any time in Settings.": "Uygulamanın dilini istediğiniz zaman Ayarlar’dan değiştirebilirsiniz.",
         "What’s new": "Yenilikler",
         "All changes on GitHub": "Tüm değişiklikler GitHub’da",
         "Allow Klavko to record the screen: System Settings → Privacy & Security → Screen & System Audio Recording. Then restart Klavko and try again.": "Klavko’nun ekranı kaydetmesine izin verin: Sistem Ayarları → Gizlilik ve Güvenlik → Ekran ve Sistem Sesi Kaydı. Sonra Klavko’yu yeniden başlatıp tekrar deneyin.",
