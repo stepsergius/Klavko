@@ -2,7 +2,7 @@
 
 [🇺🇦 Українська](README.uk.md) · 🇬🇧 **English**
 
-A free typing assistant for Mac — in Ukrainian, English and 11 more languages.
+A free typing assistant for Mac (and, in beta, Windows) — in Ukrainian, English and 11 more languages.
 
 Klavko switches the keyboard layout by itself when a word was typed in the wrong one (`ghbdsn` → `привіт`), fixes obvious typos and tidies up your text. It also has voice input, translation of selected text, text recognition from the screen and a clipboard history. Everything runs on your Mac: no accounts, keys or online services, and nothing you type is sent anywhere.
 
@@ -17,6 +17,12 @@ brew install --cask stepsergius/klavko/klavko
 **Or by hand:** **[⬇︎ Latest version](../../releases/latest)** — download `Klavko-….zip`, unzip it and follow “How to install Klavko.txt” in the archive (Ukrainian: «Як встановити Klavko.txt»).
 
 Requirements: macOS 14 or later (translation needs macOS 15), at least two keyboard layouts of the supported languages (see “Layout languages”). The app isn’t notarized by Apple, so macOS warns on the first launch — the guide explains how to open it.
+
+### Windows (beta)
+
+**[⬇︎ Klavko for Windows](../../releases?q=windows&expanded=true)** — a beta of the same app for Windows 10 and 11. Download `Klavko-…-windows-x64.exe` (most computers) or `Klavko-…-windows-arm64.exe` (Windows on ARM, e.g. Snapdragon laptops) and run it. The app isn’t signed, so Windows SmartScreen warns on the first launch: click “More info” → “Run anyway”. Klavko then installs itself and updates from here.
+
+It’s a beta: if something doesn’t work or works wrong, please tell us in the Telegram group **[t.me/klavko](https://t.me/klavko)**.
 
 ## Features
 
