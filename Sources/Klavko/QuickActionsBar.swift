@@ -87,7 +87,7 @@ final class QuickActionsBar {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
         default:
             // The emoji list near the caret stays while its name is typed (the typing engine closes it).
-            if event.type == .keyDown, isShowingEmojiList { return }
+            if event.type == .keyDown, isShowingEmojiList || isShowingAnswer { return }
             pending?.cancel()
             holding?.cancel()
             hide()
@@ -117,7 +117,7 @@ final class QuickActionsBar {
     /// ↑ while the bar is up for text selected with the mouse: the keyboard goes to it (← → choose, Return does it,
     /// Esc closes), as when the hotkey brought it up. False when there's no such bar.
     func takeKeyboard() -> Bool {
-        guard let panel, panel.isVisible, !panel.takesKeys, !isShowingEmojiList else { return false }
+        guard let panel, panel.isVisible, !panel.takesKeys, !isShowingEmojiList, !isShowingAnswer else { return false }
         model.keyIndex = model.page == .main ? 0 : 1
         panel.takesKeys = true
         panel.makeKeyAndOrderFront(nil)
@@ -217,7 +217,8 @@ final class QuickActionsBar {
             switch action {
             case .openLink: return false  // placed first below, only for a link
             case .paste, .plainPaste: return hasClipboardText
-            case .sum: return QuickText.sum(text) != nil
+            case .calculate: return Calculation.of(text) != nil
+            case .transliterate: return Transliteration.applies(to: text)
             default: return true
             }
         }
@@ -230,6 +231,7 @@ final class QuickActionsBar {
         guard !actions.isEmpty else { return }
         model.text = text
         model.selection = selection
+        model.editable = editable
         model.range = selection.flatMap { selection in
             var range: CFTypeRef?
             AXUIElementCopyAttributeValue(selection.element, kAXSelectedTextRangeAttribute as CFString, &range)
@@ -379,6 +381,42 @@ final class QuickActionsBar {
             return
         }
         model.keyIndex = min(max(index + step, 0), model.emojis.count - 1)
+    }
+
+    /// The answer after "=" typed after an expression, over the caret; a click puts it in.
+    var isShowingAnswer: Bool {
+        guard panel?.isVisible == true, case .answer = model.page else { return false }
+        return true
+    }
+
+    func showAnswer(_ answer: String, insert: @escaping () -> Void) {
+        model.page = .answer(answer.trimmingCharacters(in: .whitespaces))
+        model.keyIndex = nil
+        model.insertAnswer = { [weak self] in
+            self?.hide()
+            insert()
+        }
+        model.close = { [weak self] in self?.hide() }
+        model.anchorMoved = { [weak self] in self?.keepAnchored() }
+        let mouse = NSEvent.mouseLocation
+        let caret = Self.caretRect().map { NSRect(x: $0.minX, y: $0.minY - 6, width: $0.width, height: $0.height + 6) }
+        present(around: caret ?? Self.rect(from: mouse, to: mouse), position: .above, takesKeys: false)
+    }
+
+    func hideAnswer() {
+        // A click on it ends the typing (as any click does) on its way to the button: it puts the answer in.
+        guard isShowingAnswer, !panel!.frame.insetBy(dx: -2, dy: -2).contains(NSEvent.mouseLocation) else { return }
+        hide()
+    }
+
+    private static let spellChecker = MacSpellChecker()
+
+    /// `text` in Latin letters by the official system of its language (Ukrainian, Russian, Belarusian…).
+    private static func transliterated(_ text: String) -> String {
+        let language = Transliteration.language(of: text) { language in
+            spellChecker.hasDictionary(language) ? LanguageGuess.wordShare(text, language: language, spellChecker: spellChecker) : 0
+        }
+        return Transliteration.latin(text, language: language)
     }
 
     /// Where the caret of the focused text field is, in AppKit coordinates.
@@ -576,14 +614,26 @@ final class QuickActionsBar {
             // A click copies it, as with the sum.
             model.page = .result(line, copy: line)
             return
-        case .sum:
-            guard let sum = QuickText.sum(text) else { return }
+        case .calculate:
+            guard let result = Calculation.of(text) else { return }
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
             formatter.maximumFractionDigits = 10
             formatter.locale = AppLanguage.current.locale
-            let shown = formatter.string(from: sum as NSDecimalNumber) ?? "\(sum)"
-            model.page = .result("Σ " + shown, copy: "\(sum)".replacingOccurrences(of: ".", with: formatter.decimalSeparator))
+            let shown = formatter.string(from: result.value as NSDecimalNumber) ?? "\(result.value)"
+            // The number without groups, as it's pasted into a sum or a table.
+            formatter.usesGroupingSeparator = false
+            let copy = formatter.string(from: result.value as NSDecimalNumber) ?? "\(result.value)"
+            if case .sum = result {
+                model.page = .result("Σ " + shown, copy: copy)
+            } else {
+                model.page = .result("= " + shown, copy: copy)
+            }
+            return
+        case .transliterate where !model.editable:
+            // Where the text can't change (a web page, a PDF): shown, and a click copies it.
+            let latin = Self.transliterated(text)
+            model.page = .result(latin, copy: latin)
             return
         default:
             break
@@ -612,7 +662,8 @@ final class QuickActionsBar {
         case .capitalize: replace { QuickText.capitalized($0, locale: Self.locale(of: $0)) }
         case .sentence: replace { QuickText.sentenceCased($0, locale: Self.locale(of: $0)) }
         case .quotes: replace { QuickText.wrapped($0, open: "«", close: "»") }
-        case .brackets, .stats, .sum, .emoji: break
+        case .transliterate: replace(Self.transliterated)
+        case .brackets, .stats, .calculate, .emoji: break
         }
         }
     }
@@ -800,6 +851,8 @@ final class QuickActionsModel: ObservableObject {
         case main, brackets, ai, emoji
         /// A short answer in the bar itself ("Words: 12…", "Σ 1 234"); `copy`, when set, is copied on a click.
         case result(String, copy: String?)
+        /// The answer after "=" typed after an expression (near the caret, Return puts it in).
+        case answer(String)
     }
 
     @Published var actions: [QuickAction] = []
@@ -808,6 +861,8 @@ final class QuickActionsModel: ObservableObject {
         didSet { if keyIndex != nil { keyIndex = page == .main ? 0 : 1 } }
     }
     @Published var speaking = false
+    /// The selection can be typed over.
+    var editable = true
     /// The button the keyboard is on (the bar brought up by the hotkey); nil when it's used with the mouse.
     @Published var keyIndex: Int?
     @Published var copied = false
@@ -839,6 +894,7 @@ final class QuickActionsModel: ObservableObject {
     /// A new list of emoji: it starts at its beginning, not where the last one was scrolled to.
     @Published var emojiListID = 0
     var insertEmoji: (String) -> Void = { _ in }
+    var insertAnswer: () -> Void = {}
     var run: (QuickAction) -> Void = { _ in }
     var wrap: (String, String) -> Void = { _, _ in }
     var ask: (AIService) -> Void = { _ in }
@@ -882,6 +938,7 @@ final class QuickActionsModel: ObservableObject {
         case .brackets: 1 + QuickText.brackets.count
         case .ai: 1 + aiServices.count
         case .result: 2
+        case .answer: 1
         }
     }
 
@@ -902,6 +959,7 @@ final class QuickActionsModel: ObservableObject {
         case .brackets: let pair = QuickText.brackets[index - 1]; wrap(pair.open, pair.close)
         case .ai: if aiServices.indices.contains(index - 1) { ask(aiServices[index - 1]) }
         case .result(_, let copy): copyResult(copy)
+        case .answer: insertAnswer()
         case .emoji: break
         }
     }
@@ -980,6 +1038,15 @@ private struct QuickActionsView: View {
                         if copy != nil {
                             Image(systemName: model.copied ? "checkmark" : "doc.on.doc").font(.system(size: 11))
                         }
+                    }
+                }
+                .barAnchor(true)
+            case .answer(let answer):
+                BarButton(help: tr("Вставити (Return чи Tab)", "Put in (Return or Tab)"), selected: true,
+                          action: { model.insertAnswer() }) {
+                    HStack(spacing: 6) {
+                        Text("= " + answer).font(.system(size: 13).monospacedDigit())
+                        Image(systemName: "return").font(.system(size: 11))
                     }
                 }
                 .barAnchor(true)

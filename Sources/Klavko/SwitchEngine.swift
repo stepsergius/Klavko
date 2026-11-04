@@ -109,6 +109,17 @@ final class SwitchEngine {
         var end: () -> Void = {}
     }
 
+    /// The answer offered after "=" typed after an expression ("2+3*4=" → 14), as in Apple Notes.
+    var answers = AnswerHooks()
+
+    struct AnswerHooks {
+        /// "=" after an expression offers its answer.
+        var enabled: () -> Bool = { false }
+        /// The answer near the caret; a click on it calls `insert`.
+        var show: (_ answer: String, _ insert: @escaping () -> Void) -> Void = { _, _ in }
+        var hide: () -> Void = {}
+    }
+
     private typealias Layout = (source: TISInputSource, map: LayoutMap)
     private typealias Pair = (current: Layout, alternative: Layout)
 
@@ -195,6 +206,8 @@ final class SwitchEngine {
     private var emojiQuery: String?
     /// ↑ went into the emoji offered after a word: ← → choose, Return or Tab puts one in.
     private var emojiPicking = false
+    /// The answer offered after "=": Return or Tab puts it in, any other key goes on as usual.
+    private var answer: String?
 
     /// A one-letter word at the start of a sentence typed in the other layout ("z" for "я"),
     /// left alone until the next word shows which language the sentence is in.
@@ -276,6 +289,7 @@ final class SwitchEngine {
 
     func reset() {
         endEmoji()
+        endAnswer()
         typedSinceJump = false
         contextLength = 0
         atFieldStart = false
@@ -294,6 +308,9 @@ final class SwitchEngine {
 
         let flags = event.flags
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        if let used = handleAnswerKey(keyCode, flags) {
+            return used
+        }
         // ↑ goes to the Quick Actions bar (not past it to the text) when nothing of Klavko's own is near the caret.
         if keyCode == 126, flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand]).isEmpty,
            emojiQuery == nil, !emojiPicking, !emoji.isShowing(), onBarUp() {
@@ -377,6 +394,17 @@ final class SwitchEngine {
                 emoji.search("", pair.current.map.language)
                 return passed
             }
+        }
+        // "2+3*4=": its answer near the caret.
+        if typedCharacter == "=", !excludedNow, answers.enabled() {
+            if buffer.isEmpty && visible.isEmpty { readContextBeforeCaret() }
+            let line = String(visible.reversed().prefix { $0 != "\n" && $0 != "\r" }.reversed())
+            let passed = handlePunctuation(keystroke, typedCharacter, alternativeCharacter, pair)
+            if passed, let found = Calculation.answer(after: line, language: pair.current.map.language) {
+                answer = found
+                answers.show(found) { TextInjector.type(found) }
+            }
+            return passed
         }
         if typedCharacter == "\"" && formattingAllowed(config.smartQuotes) {
             return handleStraightQuote(pair)
@@ -498,6 +526,35 @@ final class SwitchEngine {
         }
         endEmoji()
         return nil
+    }
+
+    // MARK: - Answer after "="
+
+    /// A key while the answer after "=" is shown: Return or Tab puts it in, Esc closes it (both used here);
+    /// nil for any other key, which closes it and is handled as usual.
+    private func handleAnswerKey(_ keyCode: UInt16, _ flags: CGEventFlags) -> Bool? {
+        guard let answer else { return nil }
+        endAnswer()
+        guard flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand]).isEmpty else { return nil }
+        switch keyCode {
+        case KeyCode.returnKey, KeyCode.keypadEnter, KeyCode.tab:
+            TextInjector.type(answer)
+            endWord()
+            lastWord = []
+            answer.forEach { appendVisible(String($0)) }
+            Log.engine.notice("Answer put after =")
+            return false
+        case KeyCode.escape:
+            return false
+        default:
+            return nil
+        }
+    }
+
+    private func endAnswer() {
+        guard answer != nil else { return }
+        answer = nil
+        answers.hide()
     }
 
     private func endEmoji() {

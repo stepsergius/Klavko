@@ -4,7 +4,9 @@ import Foundation
 /// copy, search, translate, change case, wrap in brackets, read aloud, ask an AI…
 public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case openLink, copy, cut, paste, plainPaste, emoji, search, youtube, music, translate, check, ai, speak,
-         bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, sentence, brackets, quotes, stats, sum
+         bold, italic, underline, strikethrough, uppercase, lowercase, capitalize, sentence, brackets, quotes, transliterate, stats
+    /// Calculating (or adding up) the numbers; kept under the name it had as "Sum of Numbers".
+    case calculate = "sum"
 
     public var id: String { rawValue }
 
@@ -31,10 +33,11 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .lowercase: tr("малі літери", "lowercase")
         case .capitalize: tr("Кожне Слово З Великої", "Capitalize Each Word")
         case .sentence: tr("Перша велика, решта малі", "Sentence case")
-        case .brackets: tr("Дужки", "Brackets")
-        case .quotes: tr("Лапки «»", "Quotes «»")
-        case .stats: tr("Слова й символи", "Words and Characters")
-        case .sum: tr("Сума чисел", "Sum of Numbers")
+        case .brackets: tr("(Дужки)", "(Brackets)")
+        case .quotes: tr("«Лапки»", "«Quotes»")
+        case .stats: tr("Кількість символів", "Character Count")
+        case .transliterate: tr("Транслітерація", "Transliterate")
+        case .calculate: tr("Обчислити", "Calculate")
         }
     }
 
@@ -58,7 +61,8 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .strikethrough: "strikethrough"
         case .uppercase, .lowercase, .capitalize, .sentence, .brackets, .quotes: nil
         case .stats: "textformat.123"
-        case .sum: "sum"
+        case .transliterate: nil
+        case .calculate: "equal.square"
         }
     }
 
@@ -74,6 +78,7 @@ public enum QuickAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .sentence: "S"
         case .brackets: "( )"
         case .quotes: "« »"
+        case .transliterate: "Я→Ya"
         default: title
         }
     }

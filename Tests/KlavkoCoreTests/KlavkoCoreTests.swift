@@ -1142,6 +1142,101 @@ final class QuickTextTests: XCTestCase {
         XCTAssertNil(QuickText.sum("лише 42"))
     }
 
+    func testAnswerAfterEquals() {
+        XCTAssertEqual(Calculation.answer(after: "2+3*4", language: "uk"), "14")
+        XCTAssertEqual(Calculation.answer(after: "Разом: 1 250 * 3 ", language: "uk"), " 3750")
+        XCTAssertEqual(Calculation.answer(after: "10/4", language: "uk"), "2,5")
+        XCTAssertEqual(Calculation.answer(after: "10/4", language: "en"), "2.5")
+        XCTAssertEqual(Calculation.answer(after: "1.5*3", language: "uk"), "4.5")
+        XCTAssertEqual(Calculation.answer(after: "- 2+3", language: "uk"), "5")
+        XCTAssertEqual(Calculation.answer(after: "(2 + 3) * 4 ", language: "uk"), " 20")
+        XCTAssertEqual(Calculation.answer(after: "3-10", language: "uk"), "-7")
+        XCTAssertEqual(Calculation.answer(after: "10/3", language: "en"), "3.3333333333")
+        XCTAssertEqual(Calculation.answer(after: "Ціна 25*4", language: "uk"), "100")
+        XCTAssertEqual(Calculation.answer(after: "Купив 3 кг по 45,5 грн, разом 3 * 45,5 ", language: "uk"), " 136,5")
+        XCTAssertEqual(Calculation.answer(after: "Також 5, 2+3", language: "uk"), "5")
+        XCTAssertEqual(Calculation.answer(after: "Кімната 3 4*5", language: "uk"), "20")
+        XCTAssertEqual(Calculation.answer(after: "тел. 067-123-45-67 2+2", language: "uk"), "4")
+        XCTAssertEqual(Calculation.answer(after: "Відповідь (2 + 3) * 4", language: "uk"), "20")
+        XCTAssertNil(Calculation.answer(after: "дата 2026-11-04", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "x ", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "x2*3", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "-5", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "2026-11-04", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "a ", language: "uk"))
+        XCTAssertNil(Calculation.answer(after: "", language: "uk"))
+    }
+
+    func testCalculation() {
+        XCTAssertEqual(Calculation.evaluate("2 + 3 * 4"), 14)
+        XCTAssertEqual(Calculation.evaluate("(2 + 3) * 4 ="), 20)
+        XCTAssertEqual(Calculation.evaluate("1 250 × 3"), 3750)
+        XCTAssertEqual(Calculation.evaluate("10 / 4"), Decimal(string: "2.5"))
+        XCTAssertEqual(Calculation.evaluate("7,5 ÷ 2,5 − 1"), 2)
+        XCTAssertEqual(Calculation.evaluate("200 + 15%"), 230)
+        XCTAssertEqual(Calculation.evaluate("200 - 10%"), 180)
+        XCTAssertEqual(Calculation.evaluate("200 * 15%"), 30)
+        XCTAssertEqual(Calculation.evaluate("-3 * -2"), 6)
+        XCTAssertNil(Calculation.evaluate("5 / 0"))
+        XCTAssertNil(Calculation.evaluate("2026"))
+        XCTAssertNil(Calculation.evaluate("2026-11-04"))
+        XCTAssertEqual(Calculation.evaluate("2026-11"), 2015)
+        XCTAssertNil(Calculation.evaluate("2 + "))
+        XCTAssertNil(Calculation.evaluate("Хліб 25 + молоко 40"))
+        // Not an expression: the numbers are added up, as before.
+        XCTAssertEqual(Calculation.of("Хліб 25, молоко 40"), .sum(65))
+        XCTAssertEqual(Calculation.of("100\n200\n300"), .sum(600))
+        XCTAssertEqual(Calculation.of("12 * 3"), .expression(36))
+        XCTAssertNil(Calculation.of("лише 42"))
+    }
+
+    func testOfficialTransliteration() {
+        let cases = [
+            "Сергій Шевченко": "Serhii Shevchenko", "Згорани": "Zghorany", "Розгон": "Rozghon", "Юрій": "Yurii",
+            "Їжакевич": "Yizhakevych", "Короп’є": "Koropie", "Знам'янка": "Znamianka", "Яготин": "Yahotyn",
+            "Біла Церква": "Bila Tserkva", "Луцьк": "Lutsk", "Йосипівка": "Yosypivka", "Стрий": "Stryi",
+            "Олексій": "Oleksii", "Україна": "Ukraina", "Щербухи": "Shcherbukhy", "Гадяч": "Hadiach",
+            "Ґорґани": "Gorgany", "Єнакієве": "Yenakiieve", "Хмельницький": "Khmelnytskyi", "ЩУКА": "SHCHUKA",
+            "вул. Січових Стрільців, 5": "vul. Sichovykh Striltsiv, 5",
+        ]
+        for (ukrainian, latin) in cases { XCTAssertEqual(Transliteration.latin(ukrainian, language: "uk"), latin, ukrainian) }
+        XCTAssertTrue(Transliteration.applies(to: "Київ"))
+        XCTAssertTrue(Transliteration.applies(to: "Ђорђе"))
+        XCTAssertFalse(Transliteration.applies(to: "Kyiv 2026"))
+    }
+
+    func testTransliterationOfOtherLanguages() {
+        let cases: [(String, String, String)] = [
+            ("ru", "Юрий Щербаков", "Iurii Shcherbakov"), ("ru", "Пётр Хрущёв", "Petr Khrushchev"),
+            ("ru", "Объём", "Obieem"), ("ru", "Съешь этих", "Sieesh etikh"), ("ru", "Григорий", "Grigorii"),
+            ("be", "Віцебск", "Viciebsk"), ("be", "Магілёў", "Mahilioŭ"), ("be", "Гомель", "Homieĺ"),
+            ("be", "Ляхавічы", "Liachavičy"), ("be", "Ельск", "Jeĺsk"), ("be", "Дзяржынск", "Dziaržynsk"),
+            ("be", "Мсціслаў", "Mscislaŭ"), ("be", "Падʼезд", "Padjezd"), ("be", "Лельчыцы", "Lieĺčycy"),
+            ("bg", "Щастливец", "Shtastlivets"), ("bg", "София", "Sofia"), ("bg", "Юлия Ябълкова", "Yulia Yabalkova"),
+            ("bg", "България", "Bulgaria"), ("bg", "Георги Йорданов", "Georgi Yordanov"), ("bg", "Път", "Pat"),
+            ("sr", "Ђорђе Чворовић", "Đorđe Čvorović"), ("sr", "Љубљана", "Ljubljana"), ("sr", "ЉУБА", "LJUBA"),
+            ("sr", "Џеп", "Džep"),
+            ("mk", "Ѓорѓи", "Gjorgji"), ("mk", "Ќерка", "Kjerka"), ("mk", "Ѕвезда", "Dzvezda"), ("mk", "Џамија", "Djamija"),
+        ]
+        for (language, cyrillic, latin) in cases {
+            XCTAssertEqual(Transliteration.latin(cyrillic, language: language), latin, cyrillic)
+        }
+    }
+
+    func testTransliterationLanguage() {
+        XCTAssertEqual(Transliteration.language(of: "Сергій"), "uk")
+        XCTAssertEqual(Transliteration.language(of: "Магілёў"), "be")
+        XCTAssertEqual(Transliteration.language(of: "Мінск і Брэст"), "be")
+        XCTAssertEqual(Transliteration.language(of: "Съешь ещё"), "ru")
+        XCTAssertEqual(Transliteration.language(of: "Път"), "bg")
+        XCTAssertEqual(Transliteration.language(of: "Ђорђе"), "sr")
+        XCTAssertEqual(Transliteration.language(of: "Ѓорѓи"), "mk")
+        XCTAssertEqual(Transliteration.language(of: "привет как дела") { $0 == "ru" ? 1 : 0 }, "ru")
+        XCTAssertEqual(Transliteration.language(of: "объект") { $0 == "ru" ? 1 : 0 }, "ru")
+        XCTAssertEqual(Transliteration.language(of: "добре") { _ in 0.5 }, "uk")
+        XCTAssertEqual(Transliteration.language(of: "Стрий"), "uk")
+    }
+
     func testWebAddresses() {
         XCTAssertEqual(SearchEngine.google.url(for: " кіт & пес ")?.absoluteString,
                        "https://www.google.com/search?q=%D0%BA%D1%96%D1%82%20%26%20%D0%BF%D0%B5%D1%81")

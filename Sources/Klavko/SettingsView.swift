@@ -192,13 +192,20 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
         } header: {
-            Text(tr("Швидкі дії", "Quick Actions"))
+            blockHeader(tr("Швидкі дії", "Quick Actions"), first: true)
         } footer: {
             Text(tr("Виділіть текст мишкою (або двічі клацніть слово) — над ним з’явиться панелька з діями. Клік деінде чи будь-яка клавіша її ховає. Для тексту, виділеного з клавіатури, задайте гарячу клавішу «Швидкі дії для виділеного» на вкладці «Клавіші».",
                     "Select text with the mouse (or double-click a word) and a bar with actions appears over it. A click elsewhere or any key hides it. For text selected with the keyboard, set the “Quick Actions for the selection” hotkey in the Hotkeys tab.") + " " + tr("Утримайте кнопку миші в полі для тексту — з’явиться «Вставити».",
                        "Hold the mouse button down in a text field and “Paste” appears."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+
+        Section {
+            appList(settings.quickActionsIgnoredApps, remove: { settings.toggleQuickActionsIgnored($0) },
+                    add: { pickApps(adding: settings.quickActionsIgnoredApps) { settings.toggleQuickActionsIgnored($0) } })
+        } header: {
+            Text(tr("Не показувати в програмах", "Don’t show in these apps"))
         }
 
         Section {
@@ -220,10 +227,10 @@ struct SettingsView: View {
                     }
             }
         } header: {
-            Text(tr("Дії на панельці", "Actions on the bar"))
+            blockHeader(tr("Дії на панельці", "Actions on the bar"))
         } footer: {
-            Text(tr("Перетягніть рядок, щоб змінити порядок. «Відкрити посилання» з’являється лише для посилання і завжди першою. Дії, що змінюють текст, видно лише там, де його можна редагувати; «Сума чисел» — коли виділено щонайменше два числа.",
-                    "Drag a row to change the order. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Sum of Numbers” when at least two numbers are selected."))
+            Text(tr("Перетягніть рядок, щоб змінити порядок. «Відкрити посилання» з’являється лише для посилання і завжди першою. Дії, що змінюють текст, видно лише там, де його можна редагувати; «Обчислити» — коли виділено вираз або щонайменше два числа.",
+                    "Drag a row to change the order. “Open Link” appears only for a link, and always first. Actions that change the text show only where it can be edited; “Calculate” when an expression or at least two numbers are selected."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -252,10 +259,23 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
 
-        Section(tr("Не показувати в програмах", "Don’t show in these apps")) {
-            appList(settings.quickActionsIgnoredApps, remove: { settings.toggleQuickActionsIgnored($0) },
-                    add: { pickApps(adding: settings.quickActionsIgnoredApps) { settings.toggleQuickActionsIgnored($0) } })
+    /// The start of a block of related sections: a faint line from the block before, the block's name, then the
+    /// section's own header (if any).
+    private func blockHeader(_ title: String, first: Bool = false, _ header: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !first {
+                Rectangle()
+                    .fill(.primary.opacity(0.12))
+                    .frame(height: 1)
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
+            }
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+            if let header { Text(header) }
         }
     }
 
@@ -430,6 +450,8 @@ struct SettingsView: View {
                         soundRow(tr("Звук під час зміни розкладки", "Sound when the layout is fixed"), isOn: $settings.playSound, sound: $settings.soundName)
                         soundRow(tr("Звук під час виправлення помилок", "Sound when a typo is fixed"), isOn: $settings.playSpellingSound,
                                  sound: $settings.spellingSoundName)
+                    } header: {
+                        blockHeader(tr("Основне", "Basics"), first: true)
                     }
 
                     Section(tr("Не виправляти автоматично в програмах", "Don’t fix automatically in these apps")) {
@@ -443,7 +465,7 @@ struct SettingsView: View {
                             Button(tr("Відновити з файлу…", "Restore from File…"), action: restoreBackup)
                         }
                     } header: {
-                        Text(tr("Перенесення налаштувань", "Moving settings"))
+                        blockHeader(tr("Перенесення налаштувань", "Moving settings"))
                     } footer: {
                         Text(tr("У файлі — усі налаштування Klavko: гарячі клавіші, звуки, голосовий ввід, швидкі дії, буфер, "
                                 + "заміна клавіш, винятки, заміни слів і словник. Зручно для нового Mac або щоб поділитися з колегою. "
@@ -496,39 +518,9 @@ struct SettingsView: View {
                         }
                         Toggle(tr("Backspace одразу після виправлення скасовує його", "Backspace right after a fix undoes it"), isOn: $settings.backspaceUndo)
                     } header: {
-                        Text(tr("Автоматичне перемикання розкладки", "Automatic layout switching"))
+                        blockHeader(tr("Автоматичне перемикання розкладки", "Automatic layout switching"), first: true)
                     } footer: {
                         Text(tr("Гарячі клавіші працюють, навіть коли автоматичні виправлення вимкнені.", "Hotkeys work even when automatic fixes are off."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Section {
-                        Toggle(tr("Своя розкладка в кожній програмі", "A layout of its own in each app"), isOn: $settings.appLayoutsEnabled)
-                        if settings.appLayoutsEnabled {
-                            if Self.macSwitchesPerDocument() {
-                                Text(tr("⚠️ У macOS увімкнено «Автоматично перемикатися на джерело введення документа» (Параметри → Клавіатура → Джерела введення). Вимкніть його або цей перемикач, щоб розкладку не перемикали обидва.",
-                                        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout."))
-                                    .font(.caption)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(tr("Завжди одна розкладка в програмах", "Always one layout in these apps"))
-                                ForEach(settings.appLayouts.pinned.keys.sorted { Self.appName($0).localizedCaseInsensitiveCompare(Self.appName($1)) == .orderedAscending }, id: \.self) { app in
-                                    pinnedLayoutRow(app)
-                                }
-                                Button(tr("Додати програму…", "Add App…")) {
-                                    guard let layout = SystemLayouts.currentLayoutID() else { return }
-                                    pickApps(adding: Array(settings.appLayouts.pinned.keys)) { settings.appLayouts.pinned[$0] = layout }
-                                }
-                                .controlSize(.small)
-                            }
-                        }
-                    } footer: {
-                        Text(tr("Klavko запам’ятовує, якою розкладкою ви писали в кожній програмі, і вмикає її, коли ви туди повертаєтеся: у Telegram — українську, у Терміналі — англійську. "
-                                + "Закріплена розкладка вмикається завжди, що б ви не вибирали там раніше; закріпити розкладку, яка зараз увімкнена, можна й у меню Klavko.",
-                                "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. "
-                                + "A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -562,58 +554,39 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    Section {
+                        Toggle(tr("Своя розкладка в кожній програмі", "A layout of its own in each app"), isOn: $settings.appLayoutsEnabled)
+                        if settings.appLayoutsEnabled {
+                            if Self.macSwitchesPerDocument() {
+                                Text(tr("⚠️ У macOS увімкнено «Автоматично перемикатися на джерело введення документа» (Параметри → Клавіатура → Джерела введення). Вимкніть його або цей перемикач, щоб розкладку не перемикали обидва.",
+                                        "⚠️ “Automatically switch to a document’s input source” is on in macOS (System Settings → Keyboard → Input Sources). Turn it or this switch off, so the two don’t both switch the layout."))
+                                    .font(.caption)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(tr("Завжди одна розкладка в програмах", "Always one layout in these apps"))
+                                ForEach(settings.appLayouts.pinned.keys.sorted { Self.appName($0).localizedCaseInsensitiveCompare(Self.appName($1)) == .orderedAscending }, id: \.self) { app in
+                                    pinnedLayoutRow(app)
+                                }
+                                Button(tr("Додати програму…", "Add App…")) {
+                                    guard let layout = SystemLayouts.currentLayoutID() else { return }
+                                    pickApps(adding: Array(settings.appLayouts.pinned.keys)) { settings.appLayouts.pinned[$0] = layout }
+                                }
+                                .controlSize(.small)
+                            }
+                        }
+                    } header: {
+                        blockHeader(tr("Розкладка в програмах", "Layouts in apps"))
+                    } footer: {
+                        Text(tr("Klavko запам’ятовує, якою розкладкою ви писали в кожній програмі, і вмикає її, коли ви туди повертаєтеся: у Telegram — українську, у Терміналі — англійську. "
+                                + "Закріплена розкладка вмикається завжди, що б ви не вибирали там раніше; закріпити розкладку, яка зараз увімкнена, можна й у меню Klavko.",
+                                "Klavko remembers which layout you typed in each app and turns it on when you come back: Ukrainian in Telegram, English in Terminal. "
+                                + "A pinned layout is always turned on, whatever you chose there before; the layout on now can be pinned from Klavko’s menu too."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                 case .text:
-                    Section {
-                        Picker(tr("Моя мова", "My language"), selection: $settings.translationOwn) {
-                            ForEach(Translator.ordered(TranslationDirection.languages), id: \.self) {
-                                Text(Translator.languageName($0)).tag($0)
-                            }
-                        }
-                        Picker(tr("Перекладати на", "Translate into"), selection: $settings.translationOther) {
-                            ForEach(Translator.ordered(TranslationDirection.languages.filter { $0 != settings.translationOwn }),
-                                    id: \.self) {
-                                Text(Translator.languageName($0)).tag($0)
-                            }
-                        }
-                    } header: {
-                        Text(tr("Переклад", "Translation"))
-                    } footer: {
-                        Text(tr("Текст моєю мовою перекладається на вибрану мову, текст будь-якою іншою мовою — на мою. "
-                                + "Мови можна змінити й прямо у вікні перекладу.",
-                                "Text in my language is translated into the chosen language, text in any other language into mine. "
-                                + "The languages can also be changed right in the translation panel."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    grammarSection
-                    grammarDictionarySection
-
-                    Section {
-                        Toggle(isOn: $settings.emojiByColon) {
-                            Text(tr("Емодзі за назвою після двокрапки", "Emoji by name after a colon"))
-                            Text(tr("Пробіл, двокрапка й назва — «:сміх», «:серце» — показують емодзі біля курсора. ← → — вибрати, Return чи Tab — вставити, Esc — закрити. Назви — мовою розкладки, якою ви друкуєте.",
-                                    "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in."))
-                        }
-                        Toggle(isOn: $settings.emojiSuggestions) {
-                            Text(tr("Підказувати емодзі після слова", "Suggest emoji after a word"))
-                            Text(tr("Після слова, яке називає емодзі («серце», «вогонь»), над ним з’являються ❤️, 🔥. Tab вставляє перше; ↑ — до них, ← → — вибрати, Return чи Tab — вставити.",
-                                    "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in."))
-                        }
-                        Picker(tr("Обране емодзі", "The chosen emoji"), selection: $settings.emojiReplacesWord) {
-                            Text(tr("Ставиться після слова", "Goes after the word")).tag(false)
-                            Text(tr("Замінює слово", "Replaces the word")).tag(true)
-                        }
-                        .disabled(!settings.emojiSuggestions)
-                    } header: {
-                        Text(tr("Емодзі", "Emoji"))
-                    } footer: {
-                        Text(tr("Усі емодзі — дія «Емодзі» на панельці швидких дій: спершу п’ять останніх, далі решта.",
-                                "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
                     Section {
                         Toggle(isOn: $settings.correctSpelling) {
                             Text(tr("Виправляти помилки", "Fix typos"))
@@ -632,8 +605,12 @@ struct SettingsView: View {
                                     + "numbers, addresses, hyphens, brackets and quotes are left alone."))
                         }
                     } header: {
-                        Text(tr("Помилки", "Typos"))
+                        blockHeader(tr("Помилки й правопис", "Typos and spelling"), first: true, tr("Під час набору", "While typing"))
                     }
+
+                    grammarSection
+
+                    grammarDictionarySection
 
                     Section {
                         Toggle(isOn: $settings.autoCapitalize) {
@@ -684,12 +661,70 @@ struct SettingsView: View {
                             }
                         }
                     } header: {
-                        Text(tr("Оформлення тексту", "Text formatting"))
+                        blockHeader(tr("Оформлення тексту", "Text formatting"))
                     } footer: {
                         Text(tr("Власні заміни: слово («сп» → «спасибі») змінюється, коли воно закінчене; "
                                 + "послідовність символів («:)» → «🙂») — щойно набрана.",
                                 "Your replacements: a word (“ty” → “thank you”) is replaced when it’s finished; "
                                 + "a sequence of characters (“:)” → “🙂”) as soon as it’s typed."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Toggle(isOn: $settings.emojiByColon) {
+                            Text(tr("Емодзі за назвою після двокрапки", "Emoji by name after a colon"))
+                            Text(tr("Пробіл, двокрапка й назва — «:сміх», «:серце» — показують емодзі біля курсора. ← → — вибрати, Return чи Tab — вставити, Esc — закрити. Назви — мовою розкладки, якою ви друкуєте.",
+                                    "A space, a colon and a name — “:smile”, “:heart” — show emoji at the caret. ← → choose, Return or Tab puts one in, Esc closes. Names are in the language of the layout you type in."))
+                        }
+                        Toggle(isOn: $settings.emojiSuggestions) {
+                            Text(tr("Підказувати емодзі після слова", "Suggest emoji after a word"))
+                            Text(tr("Після слова, яке називає емодзі («серце», «вогонь»), над ним з’являються ❤️, 🔥. Tab вставляє перше; ↑ — до них, ← → — вибрати, Return чи Tab — вставити.",
+                                    "After a word that names an emoji (“heart”, “fire”), ❤️ and 🔥 appear over it. Tab puts in the first; ↑ goes to them, ← → choose, Return or Tab puts one in."))
+                        }
+                        Picker(tr("Обране емодзі", "The chosen emoji"), selection: $settings.emojiReplacesWord) {
+                            Text(tr("Ставиться після слова", "Goes after the word")).tag(false)
+                            Text(tr("Замінює слово", "Replaces the word")).tag(true)
+                        }
+                        .disabled(!settings.emojiSuggestions)
+                    } header: {
+                        blockHeader(tr("Підказки біля курсора", "Suggestions at the caret"), tr("Емодзі", "Emoji"))
+                    } footer: {
+                        Text(tr("Усі емодзі — дія «Емодзі» на панельці швидких дій: спершу п’ять останніх, далі решта.",
+                                "All the emoji: the Emoji action on the Quick Actions bar, the five used lately first, then the rest."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Toggle(isOn: $settings.answerAfterEquals) {
+                            Text(tr("Результат після «=»", "The answer after “=”"))
+                            Text(tr("Вираз і знак «=» — «2+3*4=», «1 250 * 12 =» — показують біля курсора результат. Return чи Tab вставляє його, будь-яка інша клавіша — ні. Множення — *, ділення — /.",
+                                    "An expression and “=” — “2+3*4=”, “1250 * 12 =” — show the answer at the caret. Return or Tab puts it in, any other key doesn’t. Multiply with *, divide with /."))
+                        }
+                    } header: {
+                        Text(tr("Обчислення", "Calculations"))
+                    }
+
+                    Section {
+                        Picker(tr("Моя мова", "My language"), selection: $settings.translationOwn) {
+                            ForEach(Translator.ordered(TranslationDirection.languages), id: \.self) {
+                                Text(Translator.languageName($0)).tag($0)
+                            }
+                        }
+                        Picker(tr("Перекладати на", "Translate into"), selection: $settings.translationOther) {
+                            ForEach(Translator.ordered(TranslationDirection.languages.filter { $0 != settings.translationOwn }),
+                                    id: \.self) {
+                                Text(Translator.languageName($0)).tag($0)
+                            }
+                        }
+                    } header: {
+                        blockHeader(tr("Переклад", "Translation"))
+                    } footer: {
+                        Text(tr("Текст моєю мовою перекладається на вибрану мову, текст будь-якою іншою мовою — на мою. "
+                                + "Мови можна змінити й прямо у вікні перекладу.",
+                                "Text in my language is translated into the chosen language, text in any other language into mine. "
+                                + "The languages can also be changed right in the translation panel."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -701,37 +736,8 @@ struct SettingsView: View {
                             Text(tr("Вимкнено — гарячі клавіші голосу нічого не роблять, а fn працює як звичайно.",
                                     "Off: the voice hotkeys do nothing, and fn works as usual."))
                         }
-                    }
-                    Section {
-                        Toggle(tr("Голосові команди", "Voice commands"), isOn: $settings.voiceCommands)
-                    } footer: {
-                        Text(tr("Скажіть окремо, і Klavko поставить знак, а не слово: ", "Say one on its own, and Klavko puts in the mark, not the word: ")
-                             + Self.voiceCommandList(settings.voiceLanguages)
-                             + tr(". «Буквально кома» запише саме слово.", ". “Literally comma” writes the word itself."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Section {
-                        Picker(tr("Вигляд", "Look"), selection: $settings.voicePanelStyle) {
-                            ForEach(VoiceLook.Style.allCases, id: \.self) { Text($0.title).tag($0) }
-                        }
-                        Picker(tr("Де показувати", "Where"), selection: $settings.voicePanelPosition) {
-                            ForEach(VoiceLook.Position.allCases, id: \.self) { Text($0.title).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        .disabled(settings.voicePanelStyle == .island || settings.voicePanelStyle == .hidden)
-                        Toggle(isOn: $settings.voiceShowText) {
-                            Text(tr("Показувати текст під час диктування", "Show the text while dictating"))
-                            Text(tr("Вимкнено — лише хвиля, без тексту.", "Off: only the wave, without the text."))
-                        }
-                        .disabled(settings.voicePanelStyle == .hidden)
                     } header: {
-                        Text(tr("Вигляд під час диктування", "Look while dictating"))
-                    } footer: {
-                        Text(tr("Dynamic Island — чорна панелька під вирізом камери вгорі екрана (на Mac без вирізу — вгорі по центру).",
-                                "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one)."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        blockHeader(tr("Голосовий ввід", "Voice input"), first: true)
                     }
 
                     Section {
@@ -763,7 +769,7 @@ struct SettingsView: View {
                             }
                         }
                     } header: {
-                        Text(tr("Голосовий ввід", "Voice input"))
+                        Text(tr("Розпізнавання", "Recognition"))
                     } footer: {
                         Text(tr("Натисніть гарячу клавішу «Голосовий ввід» (за замовчуванням fn), говоріть, натисніть її ще раз — "
                                 + "текст з’явиться в місці курсора. Esc скасовує. Розпізнає модель NVIDIA Parakeet Ultra на цьому Mac, "
@@ -822,6 +828,21 @@ struct SettingsView: View {
                     }
 
                     Section {
+                        Picker(tr("Перекладати на", "Translate into"), selection: $settings.voiceTranslationTarget) {
+                            ForEach(Translator.ordered(TranslationDirection.languages), id: \.self) {
+                                Text(Translator.languageName($0)).tag($0)
+                            }
+                        }
+                    } header: {
+                        Text(tr("Голосовий ввід із перекладом", "Voice input with translation"))
+                    } footer: {
+                        Text(tr("Гаряча клавіша «Голосовий ввід із перекладом» (за замовчуванням Fn+⌃) вмикає той самий голосовий ввід, але вставляє сказане вибраною мовою. Перекладає перекладач macOS на цьому Mac, без інтернету.",
+                                "The “Voice input with translation” hotkey (Fn+⌃ by default) starts the same voice input but inserts what you said in the chosen language. The macOS translator does it on this Mac, without the internet."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         Toggle(isOn: $settings.offerVoiceCorrections) {
                             Text(tr("Пропонувати запам’ятати виправлення", "Offer to remember corrections"))
                             Text(tr("Коли ви вручну виправите одне надиктоване слово, Klavko на 5 секунд запропонує "
@@ -853,12 +874,45 @@ struct SettingsView: View {
                             }
                         }
                     } header: {
-                        Text(tr("Словник голосового вводу", "Voice input vocabulary") + " (\(settings.voiceVocabulary.count))")
+                        blockHeader(tr("Слова й команди", "Words and commands"), tr("Словник голосового вводу", "Voice input vocabulary") + " (\(settings.voiceVocabulary.count))")
                     } footer: {
                         Text(tr("Як писати слова, які розпізнавання чує інакше. Власні заміни з вкладки "
                                 + "«Текст» («зсу» → «ЗСУ») теж діють для голосового вводу.",
                                 "How to write words that recognition hears differently. Your replacements from the "
                                 + "“Text” tab (“zsu” → “ZSU”) apply to voice input too."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Toggle(tr("Голосові команди", "Voice commands"), isOn: $settings.voiceCommands)
+                    } footer: {
+                        Text(tr("Скажіть окремо, і Klavko поставить знак, а не слово: ", "Say one on its own, and Klavko puts in the mark, not the word: ")
+                             + Self.voiceCommandList(settings.voiceLanguages)
+                             + tr(". «Буквально кома» запише саме слово.", ". “Literally comma” writes the word itself."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Picker(tr("Вигляд", "Look"), selection: $settings.voicePanelStyle) {
+                            ForEach(VoiceLook.Style.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
+                        Picker(tr("Де показувати", "Where"), selection: $settings.voicePanelPosition) {
+                            ForEach(VoiceLook.Position.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .disabled(settings.voicePanelStyle == .island || settings.voicePanelStyle == .hidden)
+                        Toggle(isOn: $settings.voiceShowText) {
+                            Text(tr("Показувати текст під час диктування", "Show the text while dictating"))
+                            Text(tr("Вимкнено — лише хвиля, без тексту.", "Off: only the wave, without the text."))
+                        }
+                        .disabled(settings.voicePanelStyle == .hidden)
+                    } header: {
+                        blockHeader(tr("Вигляд і звук", "Look and sound"), tr("Вигляд під час диктування", "Look while dictating"))
+                    } footer: {
+                        Text(tr("Dynamic Island — чорна панелька під вирізом камери вгорі екрана (на Mac без вирізу — вгорі по центру).",
+                                "Dynamic Island: a black pill under the camera notch at the top of the screen (at the top centre on a Mac without one)."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -899,25 +953,10 @@ struct SettingsView: View {
                             Button(tr("Подивитися історію", "View History"), action: showVoiceHistory)
                         }
                     } header: {
-                        Text(tr("Історія голосового вводу", "Voice input history"))
+                        blockHeader(tr("Історія й статистика", "History and statistics"), tr("Історія голосового вводу", "Voice input history"))
                     } footer: {
                         Text(tr("Надиктований текст із датою й часом. Зберігається лише на цьому Mac.",
                                 "Dictated text with its date and time. Kept on this Mac only."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Section {
-                        Picker(tr("Перекладати на", "Translate into"), selection: $settings.voiceTranslationTarget) {
-                            ForEach(Translator.ordered(TranslationDirection.languages), id: \.self) {
-                                Text(Translator.languageName($0)).tag($0)
-                            }
-                        }
-                    } header: {
-                        Text(tr("Голосовий ввід із перекладом", "Voice input with translation"))
-                    } footer: {
-                        Text(tr("Гаряча клавіша «Голосовий ввід із перекладом» (за замовчуванням Fn+⌃) вмикає той самий голосовий ввід, але вставляє сказане вибраною мовою. Перекладає перекладач macOS на цьому Mac, без інтернету.",
-                                "The “Voice input with translation” hotkey (Fn+⌃ by default) starts the same voice input but inserts what you said in the chosen language. The macOS translator does it on this Mac, without the internet."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -992,7 +1031,7 @@ struct SettingsView: View {
                                      + "Shortcuts already set stay as they are until recorded again."))
                         Button(tr("Відновити стандартні", "Restore Defaults")) { settings.resetShortcuts() }
                     } header: {
-                        Text(tr("Гарячі клавіші", "Hotkeys"))
+                        blockHeader(tr("Гарячі клавіші", "Hotkeys"), first: true)
                     } footer: {
                         Text(tr("Клацніть на комбінацію і натисніть нову: клавішу з ⌃ ⌥ ⇧ ⌘, лише модифікатори разом "
                                 + "(наприклад ⌥⌘) або двічі швидко ті самі модифікатори. Esc — скасувати. "
@@ -1003,6 +1042,7 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
                     Section {
                         ForEach(SystemLayouts.allLayouts(), id: \.id) { layout in
                             layoutShortcutRow(id: layout.id, name: layout.name)
@@ -1019,6 +1059,7 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
                     Section {
                         Toggle(tr("Замінювати клавіші", "Remap keys"), isOn: $settings.keyRemapsEnabled)
                         ForEach(settings.keyRemaps) { rule in
@@ -1026,7 +1067,7 @@ struct SettingsView: View {
                         }
                         remapAdder
                     } header: {
-                        Text(tr("Заміна клавіш", "Key remapping"))
+                        blockHeader(tr("Заміна клавіш", "Key remapping"))
                     } footer: {
                         Text(tr("Клавіша чи комбінація зліва діє як та, що справа, у всіх програмах і розкладках. "
                                 + "Клацніть «Клавіша…» й натисніть клавішу (можна з ⌃ ⌥ ⇧ ⌘), потім «Чим стане…» й натисніть ту, що має бути замість неї, і «Додати». "

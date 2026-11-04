@@ -21,6 +21,11 @@ public final class MacSpellChecker: SpellChecking {
         return found
     }
 
+    /// macOS has a dictionary for `language`.
+    public func hasDictionary(_ language: String) -> Bool {
+        checker.availableLanguages.contains { $0 == language || $0.hasPrefix(language + "_") || $0.hasPrefix(language + "-") }
+    }
+
     /// Languages whose macOS spell check passes any string ("λνπφη" is "correct" Greek), while their
     /// completions are real: a word counts as known there when its own completions include it.
     public static let knownByCompletions: Set<String> = ["el", "he", "ar"]

@@ -160,6 +160,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quickActions.emoji = emojiInput
         engine.emoji = emojiInput.hooks()
         engine.onBarUp = { [unowned self] in quickActions.takeKeyboard() }
+        engine.answers.enabled = { [weak self] in self?.settings.answerAfterEquals ?? false }
+        engine.answers.show = { [weak self] answer, insert in self?.quickActions.showAnswer(answer, insert: insert) }
+        engine.answers.hide = { [weak self] in self?.quickActions.hideAnswer() }
         quickActions.start()
         engine.onQuickActions = { [unowned self] in
             MainActor.assumeIsolated { quickActions.showForSelection() }
