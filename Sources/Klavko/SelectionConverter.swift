@@ -14,6 +14,8 @@ enum SelectionConverter {
     nonisolated(unsafe) static var borrowedUntil = Date.distantPast
     /// The clipboard's change count when Klavko last put the user's content back: not a copy either.
     nonisolated(unsafe) static var restoredChangeCount = -1
+    /// When the user last pressed a key with ⌘ (set by the keyboard monitor; Klavko's own keys don't count).
+    nonisolated(unsafe) static var userCommandKeyAt = Date.distantPast
 
     private static func borrow() {
         borrowedUntil = Date().addingTimeInterval(1.5)
@@ -125,9 +127,17 @@ enum SelectionConverter {
         let pasteboard = NSPasteboard.general
         let saved = snapshot(pasteboard)
         let countBeforeCopy = pasteboard.changeCount
+        let copied = Date()
         TextInjector.pressKey(keyC, flags: .maskCommand)
         // Apps answer ⌘C at different speeds: wait for the copy (up to half a second), not a fixed delay.
         func check(_ attempt: Int) {
+            // The user pressed ⌘C (⌘X…) of their own meanwhile: Electron apps (Slack, VS Code) answer ours slowly,
+            // and the clipboard is now the user's copy; putting the old content back would undo it.
+            if userCommandKeyAt > copied {
+                borrowedUntil = .distantPast
+                completion(nil)
+                return
+            }
             guard pasteboard.changeCount != countBeforeCopy else {
                 if attempt < 25 {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { check(attempt + 1) }
@@ -142,12 +152,11 @@ enum SelectionConverter {
             // The clipboard is the user's again: a ⌘C of theirs right after (the bar shows on selecting) is a copy.
             borrowedUntil = .distantPast
             let restored = Date()
-            // Some apps write the clipboard twice; put the user's content back again if that happens. Not when a
-            // key was pressed since: that copy is the user's own ⌘C of the same selection (Telegram).
+            // Some apps write the clipboard twice; put the user's content back again if that happens. Not when ⌘
+            // was pressed since: that copy is the user's own ⌘C of the same selection (Telegram).
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                let keySinceRestore = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
-                    < Date().timeIntervalSince(restored)
-                if !keySinceRestore, pasteboard.changeCount != countAfterRestore, pasteboard.string(forType: .string) == text {
+                if userCommandKeyAt < restored, pasteboard.changeCount != countAfterRestore,
+                   pasteboard.string(forType: .string) == text {
                     restore(saved, to: pasteboard)
                 }
             }

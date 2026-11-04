@@ -100,6 +100,7 @@ final class KeyboardMonitor {
         if marker == TextInjector.marker {
             return Unmanaged.passUnretained(event)
         }
+        if type == .keyDown, event.flags.contains(.maskCommand) { SelectionConverter.userCommandKeyAt = Date() }
         // A key typed while our text is still on its way: hold it, so it lands after our text.
         if type == .keyDown && TextInjector.isInjecting, let copy = event.copy() {
             hold(copy)
