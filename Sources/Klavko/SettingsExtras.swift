@@ -56,6 +56,33 @@ struct WhatsNewSection: View {
     }
 
     private static let versions: [Version] = [
+        Version(number: "1.1.0", uk: [
+            "**Своя розкладка в кожній програмі:** Klavko вмикає ту, якою ви там писали; розкладку можна закріпити за програмою в «Налаштування → Розкладка» або з меню.",
+            "**Окрема гаряча клавіша для кожної розкладки** — навіть сам модифікатор зі стороною: лівий ⌘ для української, правий ⌘ для англійської.",
+            "**Голосові команди:** «кома», «крапка», «знак питання», «новий рядок», «новий абзац» та інші ставлять знак, а «буквально кома» — саме слово.",
+            "**Мій словник:** «Додати до словника» біля підкресленого слова — і воно більше не вважається помилкою.",
+            "**Статистика голосового вводу по датах:** дні періоду, попередні місяці й роки, графіки за місяцями й роками.",
+            "**Перенесення налаштувань:** «Налаштування → Загальні → Зберегти у файл… / Відновити з файлу…».",
+            "**«Обчислити»** у швидких діях замість «Суми чисел»: `1 250 * 3 + 15%`; текст із числами, як і раніше, додається.",
+            "**Результат після «=»:** наберіть `2+3*4=` чи `Ціна 25*4=` — результат з’явиться біля курсора, Return або Tab вставляє його.",
+            "**Транслітерація** у швидких діях за офіційною системою мови: українська, білоруська, болгарська, сербська, македонська.",
+            "⌘C у Slack і VS Code знову завжди копіює, коли працює Klavko.",
+            "Голосовий ввід: короткі українські фрази більше не сприймаються як російські, фраза після нового рядка не замінює попередню, а новий рядок у вебредакторах не губить текст.",
+            "Підкреслення помилок в Outlook стоять під своїми словами й не виходять за межі листа.",
+        ], en: [
+            "**A layout for each app:** Klavko switches to the one you typed there; pin a layout to an app in Settings → Layout or from the menu.",
+            "**A hotkey for each layout** — even a lone modifier by its side: left ⌘ for Ukrainian, right ⌘ for English.",
+            "**Voice commands:** “comma”, “period”, “question mark”, “new line”, “new paragraph” and more put the mark, and “literally comma” the word itself.",
+            "**My Dictionary:** Add to Dictionary next to an underlined word, and it’s no longer taken for a mistake.",
+            "**Voice statistics by date:** the days of each period, earlier months and years, charts by month and by year.",
+            "**Move your settings:** Settings → General → Save to File… / Restore from File…",
+            "**Calculate** in Quick Actions instead of Sum of Numbers: `1,250 * 3 + 15%`; text with numbers is still added up.",
+            "**The answer after “=”:** type `2+3*4=` or `Price 25*4=` and the answer appears by the caret; Return or Tab inserts it.",
+            "**Transliterate** in Quick Actions, by each language’s official system: Ukrainian, Belarusian, Bulgarian, Serbian, Macedonian.",
+            "⌘C in Slack and VS Code always copies again while Klavko runs.",
+            "Voice input: short Ukrainian phrases are no longer taken for Russian, a phrase after a new line no longer replaces the one before, and a new line in web editors no longer loses text.",
+            "Mistake underlines in Outlook sit under their words and stay inside the letter.",
+        ]),
         Version(number: "1.0.1", uk: [
             "**Вимикач голосового вводу** в «Налаштування → Голос»: коли вимкнено, гарячі клавіші голосу нічого не роблять, а fn працює як звичайно.",
             "Історія буфера обміну, історія й статистика голосового вводу більше не зникають після перезавантаження Mac.",
