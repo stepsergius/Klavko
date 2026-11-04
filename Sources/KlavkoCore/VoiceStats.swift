@@ -112,6 +112,14 @@ public struct VoiceStats: Codable, Equatable, Sendable {
         return days.filter { $0.key.hasPrefix(prefix) }.values.reduce(Counts(), +)
     }
 
+    /// The first day anything was counted (noon of it), nil before then: how far back the statistics go.
+    public func firstDay(calendar: Calendar = .current) -> Date? {
+        guard let key = days.keys.min() else { return nil }
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+    }
+
     /// The most frequent words of 3 letters and more, most frequent first (ties alphabetically).
     public func topWords(_ period: Period, limit: Int = 10, now: Date = Date(),
                          calendar: Calendar = .current) -> [(word: String, count: Int)] {
@@ -170,7 +178,8 @@ public struct VoiceStats: Codable, Equatable, Sendable {
         current = ""
     }
 
-    static func dayKey(_ date: Date, _ calendar: Calendar) -> String {
+    /// "2026-10-26".
+    public static func dayKey(_ date: Date, _ calendar: Calendar) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }

@@ -1053,6 +1053,19 @@ final class VoiceStatsTests: XCTestCase {
         calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
     }
 
+    func testTheFirstDayAndAPastMonth() {
+        var stats = VoiceStats()
+        XCTAssertNil(stats.firstDay(calendar: calendar))
+        stats.addInserted("один два три", at: date(2026, 10, 1), calendar: calendar)
+        stats.addInserted("чотири", at: date(2026, 10, 31), calendar: calendar)
+        stats.addInserted("п’ять шість", at: date(2026, 1, 15), calendar: calendar)
+        stats.addInserted("торішнє", at: date(2025, 12, 31), calendar: calendar)
+        XCTAssertEqual(stats.firstDay(calendar: calendar), date(2025, 12, 31))
+        // A past month or year reads as a whole, through any day in it.
+        XCTAssertEqual(stats.counts(.month, now: date(2026, 10, 15), calendar: calendar).words, 4)
+        XCTAssertEqual(stats.counts(.year, now: date(2025, 6, 1), calendar: calendar).words, 1)
+    }
+
     func testWordsKeepApostrophesAndHyphens() {
         XCTAssertEqual(VoiceStats.words(in: "П’ять яблук — будь-який, 2026 рік!"), ["П’ять", "яблук", "будь-який", "2026", "рік"])
         XCTAssertEqual(VoiceStats.words(in: "Числа: 120, 35,5 і 44."), ["Числа", "120", "35,5", "і", "44"])

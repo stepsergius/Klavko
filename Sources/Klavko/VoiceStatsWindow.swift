@@ -2,7 +2,9 @@ import AppKit
 import KlavkoCore
 import SwiftUI
 
-/// Voice input statistics in a window of their own (from the menu): today, this month, this year or all time.
+/// Voice input statistics in a window of their own (from the menu): today, a calendar month, a calendar year or all
+/// time, with the dates they cover; earlier months and years are a click back, and a chart shows every month (or year)
+/// since the first one dictated.
 @MainActor
 final class VoiceStatsWindow {
     private var window: NSWindow?
@@ -46,16 +48,22 @@ final class MilestoneWindow {
 private struct VoiceStatsView: View {
     @ObservedObject var store: VoiceStatsStore
     @State private var period: VoiceStats.Period = .day
+    /// A day in the month or year shown: today, or one in an earlier month or year.
+    @State private var date = Date()
     @State private var confirmingReset = false
 
     var body: some View {
         VStack(spacing: 14) {
-            Picker("", selection: $period) {
+            Picker("", selection: Binding(get: { period }, set: { period = $0; date = Date() })) {
                 ForEach(VoiceStats.Period.allCases, id: \.self) { Text(Self.title($0)).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            StatsSummary(stats: store.stats, period: period)
+            PeriodHeader(stats: store.stats, period: period, date: $date)
+            StatsSummary(stats: store.stats, period: period, date: date)
+            if period == .month || period == .year {
+                PeriodChart(stats: store.stats, unit: period == .month ? .month : .year, date: date) { date = $0 }
+            }
             Divider()
             HStack(alignment: .top) {
                 Text(StatsFormat.speedNote(store.stats))
@@ -80,8 +88,8 @@ private struct VoiceStatsView: View {
     private static func title(_ period: VoiceStats.Period) -> String {
         switch period {
         case .day: tr("Сьогодні", "Today")
-        case .month: tr("Цей місяць", "This Month")
-        case .year: tr("Цей рік", "This Year")
+        case .month: tr("Місяць", "Month")
+        case .year: tr("Рік", "Year")
         case .all: tr("Увесь час", "All Time")
         }
     }
@@ -120,14 +128,149 @@ private struct MilestoneView: View {
     }
 }
 
-/// The four numbers and the top 10 words for one period.
+/// What a period covers, in dates ("1–4 листопада"), and for a month or a year the arrows to earlier ones and back.
+private struct PeriodHeader: View {
+    let stats: VoiceStats
+    let period: VoiceStats.Period
+    @Binding var date: Date
+
+    var body: some View {
+        let calendar = Calendar.current
+        let now = Date()
+        switch period {
+        case .day:
+            caption(StatsFormat.day(now))
+        case .all:
+            caption(stats.firstDay().map { trFormat("Від %@ до сьогодні", "From %@ to today", StatsFormat.fullDate($0)) }
+                    ?? tr("Ще нічого не надиктовано.", "Nothing dictated yet."))
+        case .month, .year:
+            let unit: Calendar.Component = period == .month ? .month : .year
+            let interval = calendar.dateInterval(of: unit, for: date)!
+            let current = interval.contains(now)
+            let canGoBack = stats.firstDay().map { $0 < interval.start } ?? false
+            HStack {
+                arrow("chevron.left", tr("Раніше", "Earlier"), enabled: canGoBack) { date = calendar.date(byAdding: unit, value: -1, to: date)! }
+                Spacer()
+                VStack(spacing: 2) {
+                    Text(period == .month ? StatsFormat.month(date) : StatsFormat.year(date))
+                        .font(.headline)
+                    Text(StatsFormat.range(interval.start, current ? now : interval.end.addingTimeInterval(-1)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                arrow("chevron.right", tr("Пізніше", "Later"), enabled: !current) { date = calendar.date(byAdding: unit, value: 1, to: date)! }
+            }
+        }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text).font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+    }
+
+    private func arrow(_ symbol: String, _ help: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol).frame(width: 22, height: 18) }
+            .disabled(!enabled)
+            .help(help)
+    }
+}
+
+/// The words dictated in every month of the years since the first one dictated (all 12 of each), or in every such
+/// year, as bars, the one shown highlighted; a click shows another. More than a year of months scrolls sideways.
+private struct PeriodChart: View {
+    let stats: VoiceStats
+    let unit: Calendar.Component
+    let date: Date
+    let pick: (Date) -> Void
+
+    private struct Bar: Identifiable {
+        let id: String
+        let date: Date
+        let words: Int
+        let label: String
+        /// Under each January.
+        let year: String?
+        /// A month still to come: an empty bar, not clickable.
+        let future: Bool
+    }
+
+    private var bars: [Bar] {
+        let calendar = Calendar.current
+        let now = Date()
+        var start = calendar.dateInterval(of: .year, for: stats.firstDay() ?? now)!.start
+        let end = unit == .month ? calendar.dateInterval(of: .year, for: now)!.end : now
+        var bars: [Bar] = []
+        while start < end {
+            let middle = calendar.date(byAdding: .day, value: 14, to: start)!
+            let month = calendar.component(.month, from: start)
+            bars.append(Bar(id: VoiceStats.dayKey(start, calendar), date: middle,
+                            words: stats.counts(unit == .month ? .month : .year, now: middle).words,
+                            label: unit == .month ? StatsFormat.shortMonth(start) : StatsFormat.year(start),
+                            year: unit == .month && month == 1 ? StatsFormat.year(start) : nil, future: start > now))
+            start = calendar.date(byAdding: unit, value: 1, to: start)!
+        }
+        return bars
+    }
+
+    var body: some View {
+        let calendar = Calendar.current
+        let bars = bars
+        let most = max(bars.map(\.words).max() ?? 0, 1)
+        let shown = bars.first { calendar.isDate($0.date, equalTo: date, toGranularity: unit) }?.id
+        VStack(alignment: .leading, spacing: 6) {
+            Text(unit == .month ? tr("Слова за місяцями", "Words by month") : tr("Слова за роками", "Words by year"))
+                .font(.headline)
+            ScrollViewReader { scroller in
+                ScrollView(.horizontal, showsIndicators: bars.count > 12) {
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach(bars) { bar in
+                            let highlighted = bar.id == shown
+                            Button { pick(bar.date) } label: {
+                                VStack(spacing: 3) {
+                                    Spacer(minLength: 0)
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(Color.accentColor.opacity(highlighted ? 1 : 0.45))
+                                        .frame(height: bar.words == 0 ? 2 : max(CGFloat(bar.words) / CGFloat(most) * 64, 4))
+                                    Text(bar.label)
+                                        .font(.caption2)
+                                        .foregroundStyle(highlighted ? .primary : .secondary)
+                                        .lineLimit(1)
+                                    Text(bar.year ?? " ")
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(1)
+                                }
+                                .frame(width: 32)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(bar.future)
+                            .help(trFormat("%@: %@ слів", "%@: %@ words",
+                                           unit == .month ? StatsFormat.month(bar.date) : StatsFormat.year(bar.date),
+                                           StatsFormat.number(bar.words)))
+                            .id(bar.id)
+                        }
+                    }
+                    .frame(height: 104)
+                    .padding(.bottom, bars.count > 12 ? 8 : 0)
+                }
+                .onAppear { if let shown { scroller.scrollTo(shown, anchor: .center) } }
+                .onChange(of: shown) { if let shown { withAnimation { scroller.scrollTo(shown, anchor: .center) } } }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The four numbers and the top 10 words for one period: the one with `date` in it.
 private struct StatsSummary: View {
     let stats: VoiceStats
     let period: VoiceStats.Period
+    var date = Date()
 
     var body: some View {
-        let counts = stats.counts(period)
-        let top = stats.topWords(period)
+        let counts = stats.counts(period, now: date)
+        let top = stats.topWords(period, now: date)
         VStack(spacing: 14) {
             Grid(horizontalSpacing: 10, verticalSpacing: 10) {
                 GridRow {
@@ -225,6 +368,38 @@ enum StatsFormat {
         formatter.allowedUnits = seconds < 60 ? [.second] : [.hour, .minute]
         formatter.maximumUnitCount = 2
         return formatter.string(from: seconds.rounded()) ?? "0"
+    }
+
+    // Dates in the language of Klavko's interface.
+
+    private static func formatter(_ template: String) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = AppLanguage.current.locale
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter
+    }
+
+    private static func capitalized(_ text: String) -> String {
+        text.prefix(1).uppercased(with: AppLanguage.current.locale) + text.dropFirst()
+    }
+
+    /// "Листопад 2026".
+    static func month(_ date: Date) -> String { capitalized(formatter("LLLLy").string(from: date)) }
+    /// "2026".
+    static func year(_ date: Date) -> String { String(Calendar.current.component(.year, from: date)) }
+    /// "лист." under a bar.
+    static func shortMonth(_ date: Date) -> String { formatter("LLL").string(from: date) }
+    /// "Середа, 4 листопада 2026".
+    static func day(_ date: Date) -> String { capitalized(formatter("EEEEdMMMMy").string(from: date)) }
+    /// "12 жовтня 2026".
+    static func fullDate(_ date: Date) -> String { formatter("dMMMMy").string(from: date) }
+
+    /// "1–4 листопада", "1 січня – 4 листопада".
+    static func range(_ start: Date, _ end: Date) -> String {
+        let formatter = DateIntervalFormatter()
+        formatter.locale = AppLanguage.current.locale
+        formatter.dateTemplate = "dMMMM"
+        return formatter.string(from: start, to: end)
     }
 
     static func speedNote(_ stats: VoiceStats) -> String {
