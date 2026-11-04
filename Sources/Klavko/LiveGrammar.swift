@@ -461,6 +461,8 @@ private struct FieldState {
     /// Where the text can be seen (the scroll view around it), in AppKit coordinates.
     let visibleFrame: NSRect
     let signature: String
+    /// The field is web content (Outlook, Mail): its lines of text know where their words are better than it does.
+    let isWeb: Bool
     /// Filled the first time an underline needs it.
     private let runCache = RunCache()
 
@@ -500,13 +502,22 @@ private struct FieldState {
             var range = CFRange()
             if AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) { caret = range.location + range.length }
         }
-        // A text view scrolls inside its scroll area: only that part is on screen.
+        // A text view scrolls inside its scroll areas and its window: only that part is on screen (Outlook's
+        // field is as tall as the whole letter, its scroll area a few levels up).
         var visible = ownFrame
-        var parent: CFTypeRef?
-        if AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &parent) == .success, let parent,
-           CFGetTypeID(parent) == AXUIElementGetTypeID(), string(parent as! AXUIElement, kAXRoleAttribute) == kAXScrollAreaRole,
-           let scrollFrame = frame(of: parent as! AXUIElement) {
-            visible = ownFrame.intersection(scrollFrame)
+        var isWeb = false
+        var ancestor = element
+        for _ in 0..<12 {
+            var parent: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(ancestor, kAXParentAttribute as CFString, &parent) == .success, let parent,
+                  CFGetTypeID(parent) == AXUIElementGetTypeID() else { break }
+            ancestor = parent as! AXUIElement
+            let role = string(ancestor, kAXRoleAttribute)
+            if role == "AXWebArea" { isWeb = true }
+            if role == kAXScrollAreaRole || role == kAXWindowRole, let ancestorFrame = frame(of: ancestor) {
+                visible = visible.intersection(ancestorFrame)
+            }
+            if role == kAXWindowRole || role == kAXApplicationRole { break }
         }
         // Google Docs keeps its text for screen readers in a field one point high.
         var window: CFTypeRef?
@@ -520,47 +531,70 @@ private struct FieldState {
         let shown = elsewhere ? visible : ownFrame
         let signature = "\(text.hashValue)|\(caret ?? -1)|\(Int(shown.minX)),\(Int(shown.minY)),\(Int(shown.width)),\(Int(shown.height))"
         return FieldState(element: element, pid: app.processIdentifier, text: text, caret: caret, textIsElsewhere: elsewhere,
-                          visibleFrame: visible, signature: signature)
+                          visibleFrame: visible, signature: signature, isWeb: isWeb)
     }
 
     /// Where an issue's text is on screen: one rectangle a line (an issue split by a line wrap gets two).
     func rects(for issue: GrammarIssue) -> [NSRect] {
-        guard let whole = bounds(issue.offset, issue.length) else { return [] }
-        guard let first = bounds(issue.offset, 1), whole.height > first.height * 1.5,
-              let last = bounds(issue.offset + issue.length - 1, 1) else { return [whole] }
+        let offset = issue.offset
+        guard let whole = bounds(offset, issue.length) else { return [] }
+        guard let first = bounds(offset, 1), whole.height > first.height * 1.5,
+              let last = bounds(offset + issue.length - 1, 1) else { return [whole] }
         return [NSRect(x: first.minX, y: first.minY, width: max(whole.maxX - first.minX, first.width), height: first.height),
                 NSRect(x: whole.minX, y: last.minY, width: last.maxX - whole.minX, height: last.height)]
     }
 
     /// The field's own answer; in Chromium and Electron apps (Obsidian, Slack…), which answer with an empty
-    /// rectangle, the line of text inside it that holds the range.
+    /// rectangle, and in web content, the line of text inside it that holds the range (Outlook's field puts its
+    /// words as if the letter had no line breaks: under the wrong words, a line up).
     private func bounds(_ location: Int, _ length: Int) -> NSRect? {
-        if let rect = Self.bounds(of: element, location, length) { return rect }
-        guard let run = runs.last(where: { $0.offset <= location }),
-              location + length <= run.offset + run.length else { return nil }
-        return Self.bounds(of: run.element, location - run.offset, length)
+        if !isWeb, let rect = Self.bounds(of: element, location, length) { return rect }
+        if let run = runs.first(where: { $0.offset <= location && location + length <= $0.offset + $0.length }),
+           let rect = Self.bounds(of: run.element, location - run.offset, length) {
+            return rect
+        }
+        return isWeb ? Self.bounds(of: element, location, length) : nil
     }
 
-    /// The lines of text inside the field and where each starts in its value (UTF-16 units).
+    /// The lines of text inside the field and where each is in its value (UTF-16 units), longest first.
+    /// Lines with the same text go to its places in the value in turn; the rest are found each on its own, as
+    /// some lines are out of order or not in the value at all (Outlook keeps hidden copies of a signature's
+    /// lines, which would otherwise carry the search past the letter).
     private var runs: [(element: AXUIElement, offset: Int, length: Int)] {
         if let cached = runCache.value { return cached }
-        var result: [(element: AXUIElement, offset: Int, length: Int)] = []
-        var searchFrom = text.startIndex
+        var lines: [(element: AXUIElement, value: String)] = []
         var visited = 0
         func walk(_ element: AXUIElement, depth: Int) {
-            guard depth < 8, visited < 3000 else { return }
+            guard depth < 20, visited < 5000 else { return }
             for child in Self.children(of: element) {
                 visited += 1
-                if Self.string(child, kAXRoleAttribute) == kAXStaticTextRole, let value = Self.string(child, kAXValueAttribute),
-                   !value.isEmpty, let found = text.range(of: value, range: searchFrom..<text.endIndex) {
-                    result.append((child, text.utf16.distance(from: text.startIndex, to: found.lowerBound), value.utf16.count))
-                    searchFrom = found.upperBound
+                if Self.string(child, kAXRoleAttribute) == kAXStaticTextRole, let value = Self.string(child, kAXValueAttribute) {
+                    if value.contains(where: { $0.isLetter || $0.isNumber }) { lines.append((child, value)) }
                 } else {
                     walk(child, depth: depth + 1)
                 }
             }
         }
         walk(element, depth: 0)
+        var places: [String: [Int]] = [:]
+        var used: [String: Int] = [:]
+        var result: [(element: AXUIElement, offset: Int, length: Int)] = []
+        for line in lines {
+            if places[line.value] == nil {
+                var found: [Int] = []
+                var searchFrom = text.startIndex
+                while found.count < 50, let range = text.range(of: line.value, range: searchFrom..<text.endIndex) {
+                    found.append(text.utf16.distance(from: text.startIndex, to: range.lowerBound))
+                    searchFrom = range.upperBound
+                }
+                places[line.value] = found
+            }
+            let index = used[line.value, default: 0]
+            guard let found = places[line.value], index < found.count else { continue }
+            used[line.value] = index + 1
+            result.append((line.element, found[index], line.value.utf16.count))
+        }
+        result.sort { $0.length > $1.length }
         runCache.value = result
         return result
     }
