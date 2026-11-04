@@ -22,6 +22,8 @@ final class GrammarPanel: ObservableObject {
     @Published private(set) var choices: [String: String] = [:]
 
     var checker: GrammarChecker?
+    /// Adds a word to the user's dictionary.
+    var addWord: (String) -> Void = { _ in }
     /// The languages the user writes in (the enabled layouts), to tell which one the text is in.
     var languages: () -> [String] = { ["uk", "en"] }
     var openSettings: () -> Void = {}
@@ -89,6 +91,16 @@ final class GrammarPanel: ObservableObject {
     /// Picked in the panel: put `replacement` there, or (nil) leave the place as written.
     func choose(_ replacement: String?, for issue: GrammarIssue) {
         choices[issue.id] = replacement
+    }
+
+    /// The word of a spelling mistake goes into the dictionary: it and the same word elsewhere stay as written.
+    func addToDictionary(_ issue: GrammarIssue) {
+        guard let range = issue.range(in: text) else { return }
+        let word = String(text[range])
+        addWord(word)
+        let same = Set(issues.filter { GrammarCheck.withoutKnownWords([$0], in: text, words: [TextRules.coreWord(word).lowercased()]).isEmpty }.map(\.id))
+        issues.removeAll { same.contains($0.id) }
+        for id in same { choices[id] = nil }
     }
 
     var fixedText: String { GrammarCheck.apply(choices, of: issues, to: text) }
@@ -365,6 +377,13 @@ private struct IssueRow: View {
                     }
                     if !issue.replacements.isEmpty {
                         choice(tr("Не змінювати", "Keep"), nil)
+                    }
+                    if issue.kind == .spelling {
+                        Button(tr("Додати до словника", "Add to Dictionary")) { panel.addToDictionary(issue) }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 3)
                     }
                 }
             }

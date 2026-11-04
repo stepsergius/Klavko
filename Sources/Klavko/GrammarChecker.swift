@@ -45,6 +45,9 @@ final class GrammarChecker: ObservableObject {
         Self.stopLeftoverServer()
     }
 
+    /// The user's dictionary: words never taken for spelling mistakes (lowercased).
+    var knownWords: () -> Set<String> = { [] }
+
     var isDownloaded: Bool { state == .ready }
 
     /// The issues LanguageTool finds in `text`. `language` is a Klavko language code ("uk", "en"), nil to let it guess.
@@ -59,7 +62,8 @@ final class GrammarChecker: ObservableObject {
         if fields["language"] == "auto" { fields["preferredVariants"] = "en-US,de-DE,pt-PT" }
         request.httpBody = Self.formEncoded(fields).data(using: .utf8)
         let (data, _) = try await URLSession.shared.data(for: request)
-        let issues = try GrammarCheck.issues(fromResponse: data, text: text)
+        let issues = GrammarCheck.withoutKnownWords(try GrammarCheck.issues(fromResponse: data, text: text),
+                                                    in: text, words: knownWords())
         // LanguageTool knows few Ukrainian comma rules: Klavko's own fill in.
         guard language == "uk" else { return issues }
         return UkrainianCommas.merged(issues, with: UkrainianCommas.issues(in: text))

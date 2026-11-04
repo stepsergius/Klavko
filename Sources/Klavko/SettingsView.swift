@@ -21,6 +21,7 @@ struct SettingsView: View {
     var height: CGFloat = 620
 
     @State private var newException = ""
+    @State private var newGrammarWord = ""
     /// The first key of a remapping rule being added, once recorded.
     @State private var newRemapFrom: KeyCombo?
     @State private var newRemapTo: KeyCombo?
@@ -106,8 +107,8 @@ struct SettingsView: View {
         confirm.informativeText = restored.isFromThisSystem
             ? tr("Усі налаштування стануть такими, як у файлі; правила з файлу додадуться до ваших. Klavko перезапуститься.",
                  "All settings become as in the file; the file’s rules are added to yours. Klavko will restart.")
-            : tr("Це файл Klavko для Windows: з нього додадуться винятки, заміни слів і словник голосового вводу. Klavko перезапуститься.",
-                 "This is a Klavko for Windows file: its exceptions, word replacements and voice input vocabulary will be added. Klavko will restart.")
+            : tr("Це файл Klavko для Windows: з нього додадуться винятки, заміни слів, словник голосового вводу й словник перевірки правопису. Klavko перезапуститься.",
+                 "This is a Klavko for Windows file: its exceptions, word replacements, voice input vocabulary and spelling dictionary will be added. Klavko will restart.")
         confirm.addButton(withTitle: tr("Відновити", "Restore"))
         confirm.addButton(withTitle: tr("Скасувати", "Cancel"))
         guard confirm.runModal() == .alertFirstButtonReturn else { return }
@@ -130,6 +131,12 @@ struct SettingsView: View {
         alert.messageText = message
         alert.informativeText = details
         alert.runModal()
+    }
+
+    private func addGrammarWords() {
+        let words = newGrammarWord.split(whereSeparator: { $0 == " " || $0 == "," || $0 == ";" })
+        for word in words { settings.addGrammarWord(String(word)) }
+        newGrammarWord = ""
     }
 
     private func addException() {
@@ -302,6 +309,36 @@ struct SettingsView: View {
         } footer: {
             Text(tr("LanguageTool перевіряє правопис, граматику й пунктуацію українською, англійською та ще понад 20 мовами — на цьому Mac, текст нікуди не надсилається. Виділіть текст і натисніть гарячу клавішу або «Перевірити правопис» на панельці швидких дій.",
                     "LanguageTool checks spelling, grammar and punctuation in Ukrainian, English and over 20 more languages — on this Mac; the text goes nowhere. Select text and press the hotkey, or “Check Spelling” on the Quick Actions bar."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Words the spelling check takes as right.
+    private var grammarDictionarySection: some View {
+        Section {
+            HStack {
+                TextField("", text: $newGrammarWord, prompt: Text(tr("Нові слова через пробіл або кому", "New words, separated by spaces or commas")))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(addGrammarWords)
+                Button(tr("Додати", "Add"), action: addGrammarWords)
+                    .disabled(newGrammarWord.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            if settings.grammarWords.isEmpty {
+                Text(tr("Поки порожньо", "Empty so far")).foregroundStyle(.secondary)
+            } else {
+                FlowLayout(spacing: 6) {
+                    ForEach(settings.grammarWords, id: \.self) { word in
+                        RemovableChip(title: word) { settings.removeGrammarWord(word) }
+                    }
+                }
+            }
+        } header: {
+            Text(tr("Мій словник", "My Dictionary") + " (\(settings.grammarWords.count))")
+        } footer: {
+            Text(tr("Слова, які перевірка правопису не вважає помилками: імена, назви, терміни. Додати слово можна й кнопкою «Додати до словника» біля підкресленого слова.",
+                    "Words the spelling check doesn’t take for mistakes: names, brands, terms. A word can also be added with “Add to Dictionary” next to an underlined word."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -550,6 +587,7 @@ struct SettingsView: View {
                     }
 
                     grammarSection
+                    grammarDictionarySection
 
                     Section {
                         Toggle(isOn: $settings.emojiByColon) {

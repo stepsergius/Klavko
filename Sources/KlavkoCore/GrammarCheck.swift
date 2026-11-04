@@ -46,6 +46,15 @@ public struct GrammarIssue: Equatable, Sendable, Identifiable {
 
 /// LanguageTool's answers and fixing text with them.
 public enum GrammarCheck {
+    /// The issues without the spelling mistakes that are words of the user's dictionary (`words`, lowercased).
+    public static func withoutKnownWords(_ issues: [GrammarIssue], in text: String, words: Set<String>) -> [GrammarIssue] {
+        guard !words.isEmpty else { return issues }
+        return issues.filter { issue in
+            guard issue.kind == .spelling, let range = issue.range(in: text) else { return true }
+            return !words.contains(TextRules.coreWord(String(text[range])).lowercased())
+        }
+    }
+
     /// The language to ask LanguageTool to check in: "uk-UA", "en-US"…; "auto" lets it guess.
     public static func languageCode(for language: String?) -> String {
         switch language {

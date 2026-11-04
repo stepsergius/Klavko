@@ -10,6 +10,9 @@ import SwiftUI
 @MainActor
 final class LiveGrammar {
     var checker: GrammarChecker?
+    /// The user's dictionary (lowercased), and adding a word to it.
+    var knownWords: () -> Set<String> = { [] }
+    var addWord: (String) -> Void = { _ in }
     var isOn: () -> Bool = { false }
     /// Apps where Klavko doesn't fix anything: no underlines there either.
     var isExcluded: (String) -> Bool = { _ in false }
@@ -257,7 +260,9 @@ final class LiveGrammar {
     }
 
     private func isIgnored(_ issue: GrammarIssue, in text: String) -> Bool {
+        // Results checked before a word went into the dictionary are cached.
         ignored.contains(Self.ignoreKey(issue, in: text))
+            || GrammarCheck.withoutKnownWords([issue], in: text, words: knownWords()).isEmpty
     }
 
     private static func ignoreKey(_ issue: GrammarIssue, in text: String) -> String {
@@ -299,7 +304,8 @@ final class LiveGrammar {
         let word = issue.range(in: fieldText).map { String(fieldText[$0]) } ?? ""
         popup.show(issue: issue, word: word, near: rects.first ?? .zero,
                    onFix: { [weak self] replacement in self?.fix(issue, with: replacement) },
-                   onIgnore: { [weak self] in self?.ignore(issue) })
+                   onIgnore: { [weak self] in self?.ignore(issue) },
+                   onAddWord: issue.kind == .spelling && !word.isEmpty ? { [weak self] in self?.addToDictionary(issue, word: word) } : nil)
     }
 
     private func fix(_ issue: GrammarIssue, with replacement: String) {
@@ -420,6 +426,15 @@ final class LiveGrammar {
         let utf16 = text.utf16
         guard offset >= 0, offset <= utf16.count else { return nil }
         return utf16.index(utf16.startIndex, offsetBy: offset).samePosition(in: text)
+    }
+
+    /// The word goes into the dictionary: not underlined here or anywhere again.
+    private func addToDictionary(_ issue: GrammarIssue, word: String) {
+        popup.close()
+        addWord(word)
+        let words = knownWords()
+        marks.removeAll { GrammarCheck.withoutKnownWords([$0.issue], in: fieldText, words: words).isEmpty }
+        overlay.show(marks.flatMap { mark in mark.rects.map { ($0, mark.issue.kind.nsColor) } }, clip: overlay.clip)
     }
 
     private func ignore(_ issue: GrammarIssue) {
@@ -670,9 +685,10 @@ private final class GrammarPopup {
     }
 
     func show(issue: GrammarIssue, word: String, near rect: NSRect,
-              onFix: @escaping (String) -> Void, onIgnore: @escaping () -> Void) {
+              onFix: @escaping (String) -> Void, onIgnore: @escaping () -> Void, onAddWord: (() -> Void)? = nil) {
         close()
-        let view = FirstClickHostingView(rootView: GrammarPopupView(issue: issue, word: word, onFix: onFix, onIgnore: onIgnore))
+        let view = FirstClickHostingView(rootView: GrammarPopupView(issue: issue, word: word, onFix: onFix, onIgnore: onIgnore,
+                                                                    onAddWord: onAddWord))
         let panel = NSPanel(contentRect: .zero, styleMask: [.nonactivatingPanel, .borderless], backing: .buffered, defer: true)
         panel.contentView = view
         panel.backgroundColor = .clear
@@ -710,6 +726,8 @@ private struct GrammarPopupView: View {
     let word: String
     let onFix: (String) -> Void
     let onIgnore: () -> Void
+    /// Only for a spelling mistake.
+    let onAddWord: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -742,6 +760,15 @@ private struct GrammarPopupView: View {
                     .fixedSize()
                     .padding(.vertical, 4)
                     .padding(.leading, 4)
+                if let onAddWord {
+                    Button(tr("Додати до словника", "Add to Dictionary"), action: onAddWord)
+                        .buttonStyle(.plain)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .fixedSize()
+                        .padding(.vertical, 4)
+                        .padding(.leading, 4)
+                }
             }
         }
         .padding(12)

@@ -1168,6 +1168,21 @@ final class GrammarCheckTests: XCTestCase {
         XCTAssertEqual(issues[1].kind, .punctuation)
     }
 
+    func testDictionaryWordsAreNotSpellingMistakes() {
+        let text = "Klavko пам’ятає Klavka, але кома тут"
+        let issues = [
+            GrammarIssue(offset: 0, length: 6, message: "", replacements: [], kind: .spelling, ruleID: "A"),
+            GrammarIssue(offset: 7, length: 8, message: "", replacements: [], kind: .spelling, ruleID: "A"),
+            GrammarIssue(offset: 16, length: 6, message: "", replacements: [], kind: .spelling, ruleID: "A"),
+            GrammarIssue(offset: 0, length: 6, message: "", replacements: [], kind: .grammar, ruleID: "B"),
+        ]
+        let left = GrammarCheck.withoutKnownWords(issues, in: text, words: ["klavko", "пам'ятає"])
+        // Any case, any apostrophe; another form of the word and other kinds of mistake stay.
+        XCTAssertEqual(left.map(\.offset), [16, 0])
+        XCTAssertEqual(left.map(\.kind), [.spelling, .grammar])
+        XCTAssertEqual(GrammarCheck.withoutKnownWords(issues, in: text, words: []), issues)
+    }
+
     func testAppliesChosenFixesFromTheEnd() {
         let text = "Првіт, я знаю що ти тут"
         let issues = [
@@ -1457,6 +1472,18 @@ final class SettingsBackupTests: XCTestCase {
                                     replacements: [Replacement(from: "зсу", to: "ЗСУ")],
                                     voiceVocabulary: [Replacement(from: "клавко", to: "Klavko")])
         XCTAssertEqual(try SettingsBackup.read(backup.data()), backup)
+    }
+
+    func testAddsTheSpellingDictionaryFromAFile() throws {
+        var restored = SettingsBackup()
+        restored.grammarWords = ["Klavko", "npm", " "]
+        var mine = SettingsBackup()
+        mine.grammarWords = ["npm"]
+        let read = try SettingsBackup.read(restored.data())
+        XCTAssertEqual(read.grammarWords, ["Klavko", "npm", " "])
+        let (merged, changes) = mine.merged(with: read)
+        XCTAssertEqual(merged.grammarWords, ["klavko", "npm"])
+        XCTAssertEqual(changes, 1)
     }
 
     func testKeepsEveryKindOfSettingThroughAFile() throws {

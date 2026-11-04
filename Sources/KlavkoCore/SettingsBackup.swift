@@ -2,7 +2,7 @@ import Foundation
 
 /// All of Klavko's settings in one file, to take to a new Mac or give to a colleague. Plain JSON, readable by eye.
 /// The user's rules (key remapping, words and apps Klavko leaves alone, word replacements, the voice input
-/// vocabulary) are added to what is there, a rule for the same key or word taken from the file; every other
+/// vocabulary, the spelling check's dictionary) are added to what is there, a rule for the same key or word taken from the file; every other
 /// setting is taken from the file as it is.
 public struct SettingsBackup: Codable, Equatable, Sendable {
     public static let format = 1
@@ -12,13 +12,15 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
     public var excludedApps: [String]
     public var replacements: [Replacement]
     public var voiceVocabulary: [Replacement]
+    /// The spelling check's dictionary: words it takes as right.
+    public var grammarWords: [String] = []
     /// The other settings, by their UserDefaults key.
     public var preferences: [String: JSONValue] = [:]
     public var launchAtLogin: Bool?
     /// Only when the user chose to put it in: it is a secret.
     public var googleKey: String?
     /// "mac", or "windows" for a file of Klavko for Windows: only its words (exceptions, word replacements,
-    /// the voice vocabulary) mean the same here, so only they are read.
+    /// the voice vocabulary, the spelling check's dictionary) mean the same here, so only they are read.
     public private(set) var system = "mac"
     public var isFromThisSystem: Bool { system == "mac" }
 
@@ -33,10 +35,11 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
 
     public var isEmpty: Bool {
         keyRemaps.isEmpty && exceptions.isEmpty && excludedApps.isEmpty && replacements.isEmpty && voiceVocabulary.isEmpty
+            && grammarWords.isEmpty
     }
 
     private enum CodingKeys: String, CodingKey {
-        case app, format, system, keyRemaps, exceptions, excludedApps, replacements, voiceVocabulary, preferences, launchAtLogin, googleKey
+        case app, format, system, keyRemaps, exceptions, excludedApps, replacements, voiceVocabulary, grammarWords, preferences, launchAtLogin, googleKey
     }
 
     public enum Failure: Error { case notKlavko, newerFormat }
@@ -50,6 +53,7 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
         exceptions = (try? c.decodeIfPresent([String].self, forKey: .exceptions)) ?? []
         replacements = (try? c.decodeIfPresent([Replacement].self, forKey: .replacements)) ?? []
         voiceVocabulary = (try? c.decodeIfPresent([Replacement].self, forKey: .voiceVocabulary)) ?? []
+        grammarWords = (try? c.decodeIfPresent([String].self, forKey: .grammarWords)) ?? []
         guard system == "mac" else {
             keyRemaps = []
             excludedApps = []
@@ -72,6 +76,7 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
         try c.encode(excludedApps, forKey: .excludedApps)
         try c.encode(replacements, forKey: .replacements)
         try c.encode(voiceVocabulary, forKey: .voiceVocabulary)
+        try c.encode(grammarWords, forKey: .grammarWords)
         try c.encode(preferences, forKey: .preferences)
         try c.encodeIfPresent(launchAtLogin, forKey: .launchAtLogin)
         try c.encodeIfPresent(googleKey, forKey: .googleKey)
@@ -103,6 +108,13 @@ public struct SettingsBackup: Codable, Equatable, Sendable {
             changes += 1
         }
         result.exceptions.sort()
+        for input in restored.grammarWords {
+            let word = TextRules.coreWord(input.trimmingCharacters(in: .whitespacesAndNewlines)).lowercased()
+            guard !word.isEmpty, !result.grammarWords.contains(word) else { continue }
+            result.grammarWords.append(word)
+            changes += 1
+        }
+        result.grammarWords.sort()
         for app in restored.excludedApps where !app.isEmpty && !result.excludedApps.contains(app) {
             result.excludedApps.append(app)
             changes += 1

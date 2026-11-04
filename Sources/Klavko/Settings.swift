@@ -30,6 +30,7 @@ final class Settings: ObservableObject {
         static let convertAbbreviations = "convertAbbreviations"
         static let manualLanguages = "manualLanguages"
         static let exceptions = "exceptions"
+        static let grammarWords = "grammarWords"
         static let correctSpelling = "correctTypos"
         static let spaceAfterPunctuation = "spaceAfterPunctuation"
         static let autoCapitalize = "autoCapitalize"
@@ -407,6 +408,11 @@ final class Settings: ObservableObject {
         }
     }
 
+    /// Words the spelling check takes as right (the user's dictionary), lowercased, sorted.
+    @Published private(set) var grammarWords: [String] {
+        didSet { defaults.set(grammarWords, forKey: Key.grammarWords); onChange?() }
+    }
+
     /// Words Klavko never converts, lowercased, sorted.
     @Published private(set) var exceptions: [String] {
         didSet { defaults.set(exceptions, forKey: Key.exceptions); onChange?() }
@@ -578,6 +584,7 @@ final class Settings: ObservableObject {
         convertAbbreviations = defaults.bool(forKey: Key.convertAbbreviations)
         manualLanguages = defaults.stringArray(forKey: Key.manualLanguages) ?? []
         exceptions = defaults.stringArray(forKey: Key.exceptions) ?? []
+        grammarWords = defaults.stringArray(forKey: Key.grammarWords) ?? []
         correctSpelling = defaults.bool(forKey: Key.correctSpelling)
         spaceAfterPunctuation = defaults.bool(forKey: Key.spaceAfterPunctuation)
         autoCapitalize = defaults.bool(forKey: Key.autoCapitalize)
@@ -773,6 +780,21 @@ final class Settings: ObservableObject {
         exceptions.removeAll { $0 == word }
     }
 
+    // MARK: - The spelling check's dictionary
+
+    /// Adds a word the spelling check takes for a mistake ("Klavko"); false for empty input or a duplicate.
+    @discardableResult
+    func addGrammarWord(_ input: String) -> Bool {
+        let word = TextRules.coreWord(input.trimmingCharacters(in: .whitespacesAndNewlines)).lowercased()
+        guard !word.isEmpty, !grammarWords.contains(word) else { return false }
+        grammarWords = (grammarWords + [word]).sorted()
+        return true
+    }
+
+    func removeGrammarWord(_ word: String) {
+        grammarWords.removeAll { $0 == word }
+    }
+
     /// Counts reverts of Klavko's fixes per word, across restarts.
     /// Returns true on the second revert of a word the user hasn't already declined to add.
     func recordRevert(of word: String) -> Bool {
@@ -836,7 +858,7 @@ final class Settings: ObservableObject {
     // MARK: - Moving settings
 
     /// Kept in the file's own lists, merged rather than replaced.
-    private static let ruleKeys: Set = [Key.keyRemaps, Key.exceptions, Key.excludedApps, Key.replacements, Key.voiceVocabulary]
+    private static let ruleKeys: Set = [Key.keyRemaps, Key.exceptions, Key.grammarWords, Key.excludedApps, Key.replacements, Key.voiceVocabulary]
     /// What belongs to this Mac or to this copy of Klavko, not to the user's choices; also keys only read once
     /// to carry an old value over.
     private static let localKeys: Set = [Key.lastRunVersion, Key.loginItemConfigured, Key.loginItemPath,
@@ -849,6 +871,7 @@ final class Settings: ObservableObject {
     func backup(withGoogleKey: Bool = false) -> SettingsBackup {
         var backup = SettingsBackup(keyRemaps: keyRemaps, exceptions: exceptions, excludedApps: excludedApps,
                                     replacements: replacements, voiceVocabulary: voiceVocabulary)
+        backup.grammarWords = grammarWords
         let domain = defaults.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "app.klavko.Klavko") ?? [:]
         for (key, value) in domain where !Self.ruleKeys.contains(key) && !Self.localKeys.contains(key)
             && !key.hasPrefix("NS") && !key.hasPrefix("Apple") {
@@ -866,6 +889,7 @@ final class Settings: ObservableObject {
         let (merged, _) = backup().merged(with: restored)
         if merged.keyRemaps != keyRemaps { keyRemaps = merged.keyRemaps }
         if merged.exceptions != exceptions { exceptions = merged.exceptions }
+        if merged.grammarWords != grammarWords { grammarWords = merged.grammarWords }
         if merged.excludedApps != excludedApps { excludedApps = merged.excludedApps }
         if merged.replacements != replacements { replacements = merged.replacements }
         if merged.voiceVocabulary != voiceVocabulary { voiceVocabulary = merged.voiceVocabulary }

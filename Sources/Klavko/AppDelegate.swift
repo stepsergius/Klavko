@@ -136,6 +136,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             MainActor.assumeIsolated { translator.start() }
         }
         grammarPanel.checker = grammar
+        grammar.knownWords = { [unowned self] in Set(settings.grammarWords) }
+        grammarPanel.addWord = { [unowned self] in settings.addGrammarWord($0) }
+        liveGrammar.knownWords = { [unowned self] in Set(settings.grammarWords) }
+        liveGrammar.addWord = { [unowned self] in settings.addGrammarWord($0) }
         grammarPanel.languages = { SystemLayouts.enabledLayouts().map(\.map.language) }
         grammarPanel.openSettings = { [unowned self] in showSettings() }
         liveGrammar.checker = grammar
