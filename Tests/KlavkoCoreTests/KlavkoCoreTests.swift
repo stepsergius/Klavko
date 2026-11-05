@@ -1747,3 +1747,38 @@ final class VoiceCommandsTests: XCTestCase {
         XCTAssertEqual(VoiceCommands.apply("привіт кома", languages: ["de"]), "привіт кома")
     }
 }
+
+final class LayoutLanguageTests: XCTestCase {
+    private let supported = SystemLayouts.supportedLanguages
+    private let ukrainian = "йцукенгшщзхїфівапролджєячсмитьбю".map(String.init)
+    private let russian = "йцукенгшщзхъфывапролджэячсмитьбю".map(String.init)
+    private let english = "qwertyuiopasdfghjklzxcvbnm".map(String.init)
+
+    func testKeepsTheLanguageMacOSGivesWhenItMatchesTheLetters() {
+        XCTAssertEqual(LayoutLanguage.resolve(reported: "uk", names: ["com.apple.keylayout.Ukrainian-PC"],
+                                              letters: ukrainian, supported: supported), "uk")
+    }
+
+    func testAHandInstalledLayoutWithoutALanguageGetsOneFromItsName() {
+        XCTAssertEqual(LayoutLanguage.resolve(reported: nil, names: ["org.unknown.keylayout.Українська-PC", "Українська-PC"],
+                                              letters: ukrainian, supported: supported), "uk")
+    }
+
+    func testFromTheLettersWhenTheNameTellsNothing() {
+        XCTAssertEqual(LayoutLanguage.resolve(reported: nil, names: ["org.unknown.keylayout.MyLayout"],
+                                              letters: ukrainian, supported: supported), "uk")
+        XCTAssertEqual(LayoutLanguage.resolve(reported: nil, names: ["My"], letters: russian, supported: supported), "ru")
+        XCTAssertEqual(LayoutLanguage.resolve(reported: nil, names: ["My"], letters: english, supported: supported), "en")
+    }
+
+    func testALanguageThatDoesNotMatchTheLettersIsReplaced() {
+        // A Cyrillic layout made in Ukelele from an English one keeps "en".
+        XCTAssertEqual(LayoutLanguage.resolve(reported: "en", names: ["Ukrainian Mac"], letters: ukrainian,
+                                              supported: supported), "uk")
+    }
+
+    func testRussianInTheNameIsNotTakenForEnglish() {
+        XCTAssertEqual(LayoutLanguage.resolve(reported: nil, names: ["Russian - PC"], letters: russian,
+                                              supported: supported), "ru")
+    }
+}

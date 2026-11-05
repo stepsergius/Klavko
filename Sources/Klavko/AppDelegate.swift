@@ -220,6 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settings.onChange = { [unowned self] in applySettings() }
         applySettings()
         engine.reloadLayouts()
+        updateIcon()
         // Load the dictionaries and sounds now, not on the first word typed.
         DispatchQueue.main.async { [weak self, engine] in
             engine.warmUp()
@@ -235,6 +236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 MainActor.assumeIsolated {
                     self?.engine.reloadLayouts()
                     self?.forgetRemovedLayouts()
+                    self?.updateIcon()
                 }
             }
         // Flag in the menu bar follows the active layout.
@@ -537,6 +539,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSWorkspace.shared.open(url)
     }
 
+    @objc private func openInputSources() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension")!)
+    }
+
     // MARK: - Menu
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -562,6 +568,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let owner = Self.secureInputOwner().map { "«\($0)»" } ?? tr("іншій програмі", "another app")
             menu.addItem(disabledItem(trFormat("⚠️ Захищене введення в %@", "⚠️ Secure input in %@", owner)))
             menu.addItem(disabledItem(tr("     Klavko зараз не бачить клавіатуру", "     Klavko can’t see the keyboard now")))
+        } else if settings.isEnabled, let problem = engine.layoutProblem() {
+            menu.addItem(.separator())
+            switch problem {
+            case .unknownLanguage(let name):
+                menu.addItem(disabledItem(trFormat("⚠️ Klavko не знає мови розкладки «%@»", "⚠️ Klavko doesn’t know the language of “%@”", name)))
+            case .noSecondLayout(let name):
+                menu.addItem(disabledItem(trFormat("⚠️ Немає розкладки іншої мови до «%@»", "⚠️ No layout of another language to pair with “%@”", name)))
+            }
+            menu.addItem(item(tr("     Додати стандартну розкладку macOS…", "     Add a standard macOS layout…"), #selector(openInputSources)))
         }
 
         menu.addItem(.separator())
@@ -932,7 +947,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Problems take priority over the flag.
         let warning: String? = monitor?.isRunning != true ? "keyboard.badge.exclamationmark"
-            : secureInputActive ? "lock.circle" : nil
+            : secureInputActive ? "lock.circle"
+            : settings.isEnabled && engine.layoutProblem() != nil ? "exclamationmark.triangle" : nil
         if warning == nil, settings.showFlag, let language = SystemLayouts.currentLanguage() {
             let flag = Self.flag(language: language, layoutID: shownLayoutID)
             item.length = NSStatusItem.variableLength

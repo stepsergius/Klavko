@@ -15,9 +15,9 @@ public enum SystemLayouts {
         }
         return list.compactMap { source in
             guard let id = stringProperty(source, kTISPropertyInputSourceID),
-                  let language = primaryLanguage(source),
-                  supportedLanguages.contains(language),
-                  let table = characterTable(source) else { return nil }
+                  let table = characterTable(source),
+                  let language = language(source, id: id, table: table),
+                  supportedLanguages.contains(language) else { return nil }
             return (source, LayoutMap(id: id, language: language, table: table))
         }
     }
@@ -32,7 +32,7 @@ public enum SystemLayouts {
         return list.compactMap { source in
             guard let id = stringProperty(source, kTISPropertyInputSourceID) else { return nil }
             let name = stringProperty(source, kTISPropertyLocalizedName) ?? id
-            return (source, id, name, primaryLanguage(source))
+            return (source, id, name, language(source, id: id))
         }
     }
 
@@ -43,8 +43,9 @@ public enum SystemLayouts {
 
     /// Two-letter language of the active layout, e.g. "uk".
     public static func currentLanguage() -> String? {
-        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
-        return primaryLanguage(source)
+        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+              let id = stringProperty(source, kTISPropertyInputSourceID) else { return nil }
+        return language(source, id: id)
     }
 
     @discardableResult
@@ -57,6 +58,26 @@ public enum SystemLayouts {
     private static func stringProperty(_ source: TISInputSource, _ key: CFString) -> String? {
         guard let pointer = TISGetInputSourceProperty(source, key) else { return nil }
         return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
+    }
+
+    /// Languages worked out so far, by layout ID (reading every key of a layout takes a moment).
+    nonisolated(unsafe) private static var languages: [String: String?] = [:]
+    private static let languagesLock = NSLock()
+
+    /// The layout's language: the one macOS gives when it matches the letters, otherwise guessed (a layout
+    /// installed by hand often has none). A language Klavko doesn't know stays as macOS gives it, for the flag.
+    private static func language(_ source: TISInputSource, id: String, table: [Keystroke: String]? = nil) -> String? {
+        if let known = languagesLock.withLock({ languages[id] }) { return known }
+        let reported = primaryLanguage(source)
+        var resolved = reported
+        if reported == nil || supportedLanguages.contains(reported!), let table = table ?? characterTable(source) {
+            let letters = table.filter { !$0.key.shift && !$0.key.capsLock }.map(\.value)
+            let names = [id, stringProperty(source, kTISPropertyLocalizedName) ?? ""]
+            resolved = LayoutLanguage.resolve(reported: reported, names: names, letters: letters,
+                                              supported: supportedLanguages) ?? reported
+        }
+        languagesLock.withLock { languages[id] = resolved }
+        return resolved
     }
 
     private static func primaryLanguage(_ source: TISInputSource) -> String? {

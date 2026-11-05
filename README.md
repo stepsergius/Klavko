@@ -43,6 +43,7 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - **Only by hand:** with three or more layouts, mark a language you rarely write in (for example Ukrainian next to Russian, where many words are the same). Klavko then never switches into it by itself; the hotkey still does.
 - The text before the word helps decide: a typo at the start of a word doesn’t switch the layout in the middle of a sentence in the same language.
 - Chinese, Japanese and Korean are typed with input methods rather than layouts, so they aren’t supported.
+- **If the layout doesn’t switch:** check for a non-standard layout (installed separately, for example “Ukrainian — PC” from a .keylayout file). Klavko tries to work out its language itself and shows ⚠️ in its menu when it can’t. Standard macOS layouts work best: System Settings → Keyboard → Input Sources.
 
 ### Typos and formatting
 - Obvious typos are fixed after the word: `teh` → `the`, `pertty` → `pretty`, `HEllo` → `Hello` (stuck Shift). Doubtful words, names mid-sentence and words with digits stay as they are.

@@ -263,6 +263,20 @@ final class SwitchEngine {
         Log.engine.notice("Layouts: \(self.layouts.map(\.map.id).joined(separator: ", "), privacy: .public)")
     }
 
+    /// What keeps the active layout from being fixed: Klavko doesn't know its language, or no layout of another
+    /// language is enabled. nil when it has a pair (or there's no layout at all).
+    func layoutProblem() -> LayoutProblem? {
+        guard let currentID = SystemLayouts.currentLayoutID() else { return nil }
+        let name = SystemLayouts.allLayouts().first { $0.id == currentID }?.name ?? currentID
+        guard let current = layouts.first(where: { $0.map.id == currentID }) else { return .unknownLanguage(name) }
+        let others = LayoutChoice.alternatives(to: current.map, among: layouts.map(\.map))
+        return others.isEmpty ? .noSecondLayout(name) : nil
+    }
+
+    enum LayoutProblem: Equatable {
+        case unknownLanguage(String), noSecondLayout(String)
+    }
+
     /// Returns false to swallow the event.
     func handle(_ type: CGEventType, _ event: CGEvent) -> Bool {
         guard !isPaused() else {
