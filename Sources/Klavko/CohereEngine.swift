@@ -1,12 +1,11 @@
-import CoreML
 import Foundation
 import FluidAudio
 import KlavkoCore
 
-/// Cohere Transcribe speech recognition on this Mac (Core ML), via FluidAudio. Better than Parakeet at English
-/// spoken with an accent, but it knows only 14 languages (no Ukrainian or Russian) and must be told the language,
-/// so Klavko uses it only for voice input in one language, by that language's own hotkey.
-/// The model (~2.2 GB) is downloaded once from Hugging Face; after that everything runs offline.
+/// Cohere Transcribe speech recognition on this Mac, through sherpa-onnx (`SherpaOnnx`), as in Klavko for Windows.
+/// Better than Parakeet at English spoken with an accent, but it knows only 14 languages (no Ukrainian or Russian)
+/// and must be told the language, so Klavko uses it only for voice input in one language, by that language's own
+/// hotkey. The int8 model (~2.9 GB) is downloaded once from Hugging Face; after that everything runs offline.
 @MainActor
 final class CohereEngine: ObservableObject {
     enum State: Equatable {
@@ -18,72 +17,79 @@ final class CohereEngine: ObservableObject {
 
     @Published private(set) var state: State
 
-    private var models: CoherePipeline.LoadedModels?
-    private var loading: Task<CoherePipeline.LoadedModels, Error>?
-    private let pipeline = CoherePipeline()
+    private var recognizer: SherpaOnnx.CohereRecognizer?
+    private var loading: Task<SherpaOnnx.CohereRecognizer, Error>?
     /// Frees the memory after a while without dictation.
     private var unloadTimer: Timer?
 
+    /// The export of sherpa-onnx's author, at a fixed revision.
+    private static let source = URL(string: "https://huggingface.co/csukuangfj2/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01/resolve/156a470cf08eefe706a0004f3c52d9ee567ca7a0/")!
+    private static let files: [ModelDownload.File] = [
+        .init(name: "tokens.txt", size: 207_437), .init(name: "encoder.int8.onnx", size: 3_090_822),
+        .init(name: "decoder.int8.onnx", size: 153_250_705), .init(name: "encoder.int8.onnx.data", size: 2_731_503_072),
+    ]
+
     /// The languages it recognizes ("en", "de", "fr"…).
-    static let languages = Set(CohereAsrConfig.Language.allCases.map(\.rawValue))
+    static let languages: Set<String> = ["en", "fr", "de", "es", "it", "pt", "nl", "pl", "el", "ar", "ja", "zh", "vi", "ko"]
 
-    private static var modelsRoot: URL {
+    static var directory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("FluidAudio/Models", isDirectory: true)
+            .appendingPathComponent("Klavko/Models/cohere-transcribe-int8", isDirectory: true)
     }
 
-    private static var directory: URL {
-        modelsRoot.appendingPathComponent(Repo.cohereTranscribeCoreml.folderName, isDirectory: true)
+    /// The Core ML model of Klavko 1.2.0–1.2.1 (~2.2 GB), no longer used: deleted once the new one is in place.
+    private static var oldCoreMLDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("FluidAudio/Models/cohere-transcribe", isDirectory: true)
     }
 
-    private static var modelsExist: Bool {
-        ModelNames.CohereTranscribe.requiredModels.allSatisfy {
-            FileManager.default.fileExists(atPath: directory.appendingPathComponent($0).path)
-        }
-    }
+    private static var modelsExist: Bool { ModelDownload.isComplete(directory, files) }
 
     init() {
         state = Self.modelsExist ? .ready : .notDownloaded
+        if Self.modelsExist { Self.removeOldModel() }
     }
 
     var isDownloaded: Bool { state == .ready }
 
+    private static func removeOldModel() {
+        let old = oldCoreMLDirectory
+        guard FileManager.default.fileExists(atPath: old.path) else { return }
+        Task.detached(priority: .background) { try? FileManager.default.removeItem(at: old) }
+    }
+
     /// Downloads (if needed) and loads the model; cheap if it's already loaded.
     @discardableResult
-    func prepare() -> Task<CoherePipeline.LoadedModels, Error> {
+    func prepare() -> Task<SherpaOnnx.CohereRecognizer, Error> {
         unloadTimer?.invalidate()
-        if let models { return Task { models } }
+        if let recognizer { return Task { recognizer } }
         if let loading { return loading }
-        let task = Task { [weak self] () throws -> CoherePipeline.LoadedModels in
-            let downloading = !Self.modelsExist
-            if downloading {
-                try await ModelHub.download(.cohereTranscribeCoreml, to: Self.modelsRoot) { progress in
-                    // A download alone reports up to half: the other half is for compiling, done elsewhere.
-                    let fraction = min(1, progress.fractionCompleted * 2)
+        let task = Task { [weak self] () throws -> SherpaOnnx.CohereRecognizer in
+            let directory = Self.directory
+            if !Self.modelsExist {
+                await MainActor.run { self?.state = .downloading(0) }
+                try await ModelDownload.run(from: Self.source, to: directory, files: Self.files) { fraction in
                     Task { @MainActor in
                         if self?.state != .ready { self?.state = .downloading(fraction) }
                     }
                 }
+                Self.removeOldModel()
             }
-            if downloading { await MainActor.run { self?.state = .downloading(1) } }
-            let directory = Self.directory
-            // The Neural Engine alone: macOS prepares the model for it once (about a minute) and keeps that, so later
-            // launches load it in a moment. With the GPU too, every launch spent two minutes on the first recording.
-            let models = try await CoherePipeline.loadModels(encoderDir: directory, decoderDir: directory, vocabDir: directory,
-                                                             computeUnits: .cpuAndNeuralEngine)
-            // The first recognition after loading is slow (a minute right after the download, some seconds later):
-            // it is done now, on a second of silence, while the user is still speaking.
-            if let pipeline = self?.pipeline {
-                _ = try? await pipeline.transcribe(audio: [Float](repeating: 0, count: CohereAsrConfig.sampleRate),
-                                                   models: models)
-            }
-            return models
+            // A few seconds on the processor, away from the main thread. The first recognition after loading is
+            // slower: it is done now, on two seconds of quiet noise (silence alone doesn't warm it up), while the user is
+            // still speaking.
+            return try await Task.detached(priority: .userInitiated) {
+                let recognizer = try SherpaOnnx.CohereRecognizer(folder: directory)
+                let rate = SherpaOnnx.CohereRecognizer.sampleRate
+                _ = recognizer.recognize((0..<rate * 2).map { _ in Float.random(in: -0.05...0.05) }[...], language: "en")
+                return recognizer
+            }.value
         }
         loading = task
         Task { [weak self] in
             do {
-                let models = try await task.value
-                self?.models = models
+                let recognizer = try await task.value
+                self?.recognizer = recognizer
                 self?.state = .ready
                 Log.engine.notice("Cohere model ready")
             } catch {
@@ -96,27 +102,36 @@ final class CohereEngine: ObservableObject {
     }
 
     /// Text of a recording in `language` (one of `languages`). Long recordings go in pieces of up to 20 s,
-    /// cut in pauses: the model takes 35 s at most and stops after about a hundred tokens.
+    /// cut in pauses: the model hears about half a minute at most.
     func transcribe(file: URL, language code: String) async throws -> String {
-        guard let language = CohereAsrConfig.Language(rawValue: code) else { return "" }
-        let models = try await prepare().value
+        guard Self.languages.contains(code) else { return "" }
+        let recognizer = try await prepare().value
         let samples = try AudioConverter().resampleAudioFile(file)
-        var pieces: [String] = []
-        for range in AudioChunks.split(samples, sampleRate: CohereAsrConfig.sampleRate) {
-            let result = try await pipeline.transcribe(audio: Array(samples[range]), models: models, language: language)
-            let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !text.isEmpty { pieces.append(text) }
+        let rate = SherpaOnnx.CohereRecognizer.sampleRate
+        // Silence or room noise only (the hotkey pressed by mistake, a muted microphone): Cohere would make up
+        // a sentence, so nothing is recognized.
+        let loudness = AudioChunks.loudest(samples, sampleRate: rate)
+        guard loudness >= AudioChunks.speechLevel else {
+            Log.engine.notice("Cohere: only silence was recorded (\(loudness, format: .fixed(precision: 4)))")
+            return ""
         }
+        let text = await Task.detached(priority: .userInitiated) {
+            AudioChunks.split(samples, sampleRate: rate)
+                .map { recognizer.recognize(samples[$0], language: code).trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        }.value
         scheduleUnload()
-        return TranscriptCleanup.clean(pieces.joined(separator: " "))
+        return TranscriptCleanup.clean(text)
     }
 
     /// Deletes the downloaded model.
     func remove() {
         guard loading == nil else { return }
         unloadTimer?.invalidate()
-        models = nil
+        recognizer = nil
         try? FileManager.default.removeItem(at: Self.directory)
+        Self.removeOldModel()
         state = .notDownloaded
     }
 
@@ -124,8 +139,8 @@ final class CohereEngine: ObservableObject {
         unloadTimer?.invalidate()
         unloadTimer = Timer.scheduledTimer(withTimeInterval: 10 * 60, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, self.loading == nil, self.models != nil else { return }
-                self.models = nil
+                guard let self, self.loading == nil, self.recognizer != nil else { return }
+                self.recognizer = nil
                 Log.engine.notice("Cohere model unloaded after 10 min idle")
             }
         }

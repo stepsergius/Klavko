@@ -14,6 +14,7 @@ else
     echo "No Xcode: building for $(uname -m) only"
 fi
 
+scripts/fetch-sherpa-onnx.sh
 swift build -c "$CONFIG" "${ARCHS[@]}"
 BIN_DIR="$(swift build -c "$CONFIG" "${ARCHS[@]}" --show-bin-path)"
 
@@ -30,6 +31,10 @@ for bundle in "$BIN_DIR"/*.bundle; do
     [ -e "$bundle" ] && cp -R "$bundle" "$APP/Contents/Resources/"
 done
 
+# sherpa-onnx and ONNX Runtime, for Cohere Transcribe (loaded at run time by SherpaOnnx.swift).
+mkdir -p "$APP/Contents/Frameworks"
+cp Vendor/sherpa-onnx/*.dylib "$APP/Contents/Frameworks/"
+
 IDENTITY="${KLAVKO_SIGN_IDENTITY:-$(security find-identity -v -p codesigning \
     | awk -F'"' '/Developer ID Application|Apple Development/ { print $2; exit }')}"
 IDENTITY="${IDENTITY:--}"
@@ -39,12 +44,18 @@ if [ "$IDENTITY" = "-" ]; then
     # signature's requirement: name the app by its identifier, so an update keeps the permission.
     REQUIREMENTS=(--requirements '=designated => identifier "app.klavko.Klavko"')
 fi
-if ! codesign --force --options runtime --entitlements Resources/Klavko.entitlements ${REQUIREMENTS[@]+"${REQUIREMENTS[@]}"} \
+sign_libraries() {
+    for LIB in "$APP"/Contents/Frameworks/*.dylib; do
+        codesign --force --options runtime --sign "$1" "$LIB" || return 1
+    done
+}
+if ! sign_libraries "$IDENTITY" || ! codesign --force --options runtime --entitlements Resources/Klavko.entitlements ${REQUIREMENTS[@]+"${REQUIREMENTS[@]}"} \
     --sign "$IDENTITY" "$APP"; then
     [ "$IDENTITY" = "-" ] && exit 1
     # The certificate's key is out of reach (a locked keychain over SSH): sign ad hoc instead.
     echo "Signing with $IDENTITY failed; signing ad hoc"
     IDENTITY="-"
+    sign_libraries -
     codesign --force --options runtime --entitlements Resources/Klavko.entitlements \
         --requirements '=designated => identifier "app.klavko.Klavko"' --sign - "$APP"
 fi

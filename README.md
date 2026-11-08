@@ -133,7 +133,7 @@ Log (without the typed text):
 ## Credits
 
 - Voice input: the [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) model (CC-BY-4.0), Parakeet Ultra version, in Core ML format via [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
-- Voice input in one language (optional): the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (Apache-2.0) in Core ML format via FluidAudio.
+- Voice input in one language (optional): the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (Apache-2.0) (int8 ONNX export by k2-fsa), run by [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (Apache-2.0) with [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT).
 - Translation, spell checking and fallback speech recognition — built-in macOS features.
 - Some of the sounds (Bubble Pop, Click, Pen Click and others): [Pixabay](https://pixabay.com/sound-effects/), under the [Pixabay Content License](https://pixabay.com/service/license-summary/).
 

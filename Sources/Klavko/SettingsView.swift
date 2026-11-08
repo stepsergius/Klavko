@@ -809,7 +809,7 @@ struct SettingsView: View {
                                     ProgressView(value: fraction).frame(width: 120)
                                     Text("\(Int(fraction * 100)) %").monospacedDigit().foregroundStyle(.secondary)
                                 case .notDownloaded:
-                                    Button(tr("Завантажити (~2,2 ГБ)", "Download (~2.2 GB)")) { cohere.prepare() }
+                                    Button(tr("Завантажити (~2,9 ГБ)", "Download (~2.9 GB)")) { cohere.prepare() }
                                 case .failed(let message):
                                     Text(message).foregroundStyle(.red).lineLimit(2)
                                     Button(tr("Ще раз", "Try again")) { cohere.prepare() }

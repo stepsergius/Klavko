@@ -133,7 +133,7 @@ scripts/check-translations.py  # чи всі тексти інтерфейсу �
 ## Подяки
 
 - Голосовий ввід: модель [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) (CC-BY-4.0), версія Parakeet Ultra, у форматі Core ML через [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
-- Голосовий ввід однією мовою (за бажанням): модель [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) (Apache-2.0) у форматі Core ML через FluidAudio.
+- Голосовий ввід однією мовою (за бажанням): модель [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) (Apache-2.0) (int8-експорт ONNX від k2-fsa), працює через [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (Apache-2.0) з [ONNX Runtime](https://github.com/microsoft/onnxruntime) (MIT).
 - Переклад, перевірка орфографії й запасне розпізнавання мовлення — вбудовані можливості macOS.
 - Частина звуків (Bubble Pop, Click, Pen Click та інші): [Pixabay](https://pixabay.com/sound-effects/), за [ліцензією Pixabay](https://pixabay.com/service/license-summary/).
 

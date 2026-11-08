@@ -5,3 +5,9 @@ Sources/Klavko/GeminiTranscriber.swift is based on code from Jot
 licensed under the Apache License, Version 2.0:
 https://www.apache.org/licenses/LICENSE-2.0
 It was modified for Klavko.
+
+Sources/CSherpaOnnx/include/sherpa-onnx-c-api.h is the C API header of sherpa-onnx 1.13.8
+(https://github.com/k2-fsa/sherpa-onnx), Copyright Xiaomi Corporation and the sherpa-onnx authors,
+licensed under the Apache License, Version 2.0. Klavko.app ships the sherpa-onnx library
+(Apache License 2.0) and ONNX Runtime (https://github.com/microsoft/onnxruntime, Copyright Microsoft
+Corporation, MIT License), fetched from the official NuGet packages by scripts/fetch-sherpa-onnx.sh.

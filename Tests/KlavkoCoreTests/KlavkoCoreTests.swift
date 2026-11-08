@@ -1801,6 +1801,14 @@ final class AudioChunksTests: XCTestCase {
         XCTAssertEqual(pieces[1].upperBound, samples.count)
     }
 
+    func testSilenceIsQuieterThanSpeech() {
+        let noise = (0..<(rate * 5)).map { 0.002 * Float(sin(Double($0) * 1.3)) }
+        XCTAssertLessThan(AudioChunks.loudest(noise, sampleRate: rate), AudioChunks.speechLevel)
+        var speech = noise
+        for index in (rate * 2)..<(rate * 3) { speech[index] = 0.2 * Float(sin(Double(index) * 0.9)) }
+        XCTAssertGreaterThan(AudioChunks.loudest(speech, sampleRate: rate), AudioChunks.speechLevel)
+    }
+
     func testPiecesCoverEverythingAndStayShortEnough() {
         let samples = (0..<(rate * 95)).map { Float(sin(Double($0) * 0.37)) }
         let pieces = AudioChunks.split(samples, sampleRate: rate)

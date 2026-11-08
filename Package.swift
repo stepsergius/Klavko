@@ -15,9 +15,12 @@ let package = Package(
         // Pure logic + keyboard layout maps. Testable without permissions.
         // Emoji/: emoji names in each language (scripts/make-emoji-data.py).
         .target(name: "KlavkoCore", resources: [.copy("Emoji")]),
+        // The C API of sherpa-onnx (types only; the library is loaded at run time), for Cohere Transcribe.
+        .target(name: "CSherpaOnnx"),
         // Menu bar app: event tap, text injection, UI.
         .executableTarget(name: "Klavko", dependencies: [
             "KlavkoCore",
+            "CSherpaOnnx",
             .product(name: "FluidAudio", package: "FluidAudio"),
         ]),
         // Test helper: presses physical keys like a person typing in a given layout.

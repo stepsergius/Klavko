@@ -138,7 +138,7 @@ extension Translations {
         "Download (~600 MB)": "내려받기(~600 MB)",
         "Model for one language": "단일 언어용 모델",
         "Ready": "준비됨",
-        "Download (~2.2 GB)": "내려받기(~2.2 GB)",
+        "Download (~2.9 GB)": "내려받기(~2.9 GB)",
         "Preparing the model (~1 min)…": "모델 준비 중(~1분)…",
         "Voice input in one language": "한 언어로 음성 입력",
         "A key of its own for each language: for example, right ⌘ for Ukrainian, right ⌥ for English. Klavko then listens for that language only, so English spoken with an accent isn’t written in Cyrillic. Cohere Transcribe recognizes English better but knows only 14 languages, without Ukrainian or Russian: Parakeet stays for those. Both models run on this Mac.": "언어마다 전용 키를 지정할 수 있습니다. 예: 오른쪽 ⌘는 우크라이나어, 오른쪽 ⌥는 영어. 그러면 Klavko가 그 언어만 듣기 때문에 억양이 있는 영어가 키릴 문자로 적히지 않습니다. Cohere Transcribe는 영어를 더 잘 인식하지만 14개 언어만 지원하며 우크라이나어와 러시아어는 없습니다. 이 언어들에는 Parakeet가 쓰입니다. 두 모델 모두 이 Mac에서 실행됩니다.",

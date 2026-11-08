@@ -35,4 +35,23 @@ public enum AudioChunks {
         ranges.append(start..<samples.count)
         return ranges
     }
+
+    /// Speech is well above this loudness (RMS); a recording that never reaches it is silence or room noise.
+    public static let speechLevel: Float = 0.01
+
+    /// The loudness (RMS) of the loudest 100 ms of a recording. A model like Cohere "hears" made-up words in
+    /// silence, so a recording below `speechLevel` isn't given to it.
+    public static func loudest(_ samples: [Float], sampleRate: Int) -> Float {
+        let window = max(1, sampleRate / 10)
+        var loudest: Float = 0
+        var start = 0
+        while start < samples.count {
+            let end = min(samples.count, start + window)
+            var sum: Float = 0
+            for index in start..<end { sum += samples[index] * samples[index] }
+            loudest = max(loudest, (sum / Float(end - start)).squareRoot())
+            start += window
+        }
+        return loudest
+    }
 }

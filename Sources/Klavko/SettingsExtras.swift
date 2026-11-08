@@ -56,6 +56,13 @@ struct WhatsNewSection: View {
     }
 
     private static let versions: [Version] = [
+        Version(number: "1.2.2", uk: [
+            "**Cohere Transcribe у 20 разів швидший:** фраза розпізнається приблизно за секунду (було понад 20 с). Модель тепер та сама, що й у Klavko для Windows: її треба один раз завантажити заново (~2,9 ГБ), стара видаляється сама.",
+            "Якщо записалася лише тиша (клавішу натиснуто випадково, вимкнено мікрофон), Cohere більше не вигадує речення.",
+        ], en: [
+            "**Cohere Transcribe is 20 times faster:** a sentence is recognized in about a second (it took over 20 s). The model is now the same as in Klavko for Windows: download it once more (~2.9 GB); the old one is deleted by itself.",
+            "When only silence was recorded (the hotkey pressed by mistake, a muted microphone), Cohere no longer makes up a sentence.",
+        ]),
         Version(number: "1.2.0", uk: [
             "**Голосовий ввід однією мовою:** окрема гаряча клавіша для кожної мови (правий ⌘ для української, правий ⌥ для англійської) — Klavko слухає саме цю мову, а не вгадує; «Налаштування → Голос».",
             "**Модель Cohere Transcribe** для голосового вводу однією мовою, поряд із Parakeet Ultra: дуже точна для англійської й ще 13 мов; завантажується в «Налаштування → Голос» (~2,2 ГБ) і працює повністю на Mac.",
