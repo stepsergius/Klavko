@@ -56,6 +56,25 @@ struct WhatsNewSection: View {
     }
 
     private static let versions: [Version] = [
+        Version(number: "1.2.0", uk: [
+            "**Голосовий ввід однією мовою:** окрема гаряча клавіша для кожної мови (правий ⌘ для української, правий ⌥ для англійської) — Klavko слухає саме цю мову, а не вгадує; «Налаштування → Голос».",
+            "**Модель Cohere Transcribe** для голосового вводу однією мовою, поряд із Parakeet Ultra: дуже точна для англійської й ще 13 мов; завантажується в «Налаштування → Голос» (~2,2 ГБ) і працює повністю на Mac.",
+            "**Підказки на панелі швидких дій:** наведіть мишку на значок — за мить з’явиться його назва.",
+            "**Власні розкладки:** Klavko працює й з розкладками, встановленими вручну («Українська — PC»); якщо в розкладки немає пари, меню й значок показують ⚠️ з посиланням на «Джерела вводу».",
+            "**Вибір мови при першому запуску:** нове встановлення починається з вибору мови інтерфейсу; оновлення зберігає вибрану раніше.",
+            "**Довгі списки в налаштуваннях прокручуються:** словник голосового вводу, заміни й винятки займають до п’яти рядків.",
+            "Голосовий ввід працює, навіть поки macOS не завантажила свою модель розпізнавання: голос розпізнає Parakeet, Cohere або Google AI.",
+            "Транслітерація, переклад і виправлення виділеного тексту більше не вставляють результат у Telegram двічі.",
+        ], en: [
+            "**Voice input in one language:** a hotkey for each language (right ⌘ for Ukrainian, right ⌥ for English) — Klavko listens for that language instead of guessing; Settings → Voice.",
+            "**Cohere Transcribe** as the model for voice input in one language, besides Parakeet Ultra: very accurate in English and 13 more languages; download it in Settings → Voice (~2.2 GB), it runs entirely on your Mac.",
+            "**Hints on the Quick Actions bar:** point at an icon, and its name appears a moment later.",
+            "**Custom layouts:** Klavko works with layouts installed by hand (“Ukrainian — PC”); when a layout has no pair, the menu and the icon show ⚠️ with a link to Input Sources.",
+            "**Choose the language on first launch:** a new install starts by asking for the interface language; updates keep the one chosen before.",
+            "**Long lists in Settings scroll:** the voice vocabulary, replacements and exceptions take up to five rows.",
+            "Voice input works even before macOS downloads its speech recognition model: Parakeet, Cohere or Google AI recognizes the voice.",
+            "Transliteration, translation and fixes of selected text no longer paste the result into Telegram twice.",
+        ]),
         Version(number: "1.1.0", uk: [
             "**Своя розкладка в кожній програмі:** Klavko вмикає ту, якою ви там писали; розкладку можна закріпити за програмою в «Налаштування → Розкладка» або з меню.",
             "**Окрема гаряча клавіша для кожної розкладки** — навіть сам модифікатор зі стороною: лівий ⌘ для української, правий ⌘ для англійської.",
