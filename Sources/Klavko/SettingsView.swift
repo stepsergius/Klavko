@@ -349,11 +349,11 @@ struct SettingsView: View {
             if settings.grammarWords.isEmpty {
                 Text(tr("Поки порожньо", "Empty so far")).foregroundStyle(.secondary)
             } else {
-                FlowLayout(spacing: 6) {
+                ChipList { FlowLayout(spacing: 6) {
                     ForEach(settings.grammarWords, id: \.self) { word in
                         RemovableChip(title: word) { settings.removeGrammarWord(word) }
                     }
-                }
+                } }
             }
         } header: {
             Text(tr("Мій словник", "My Dictionary") + " (\(settings.grammarWords.count))")
@@ -538,11 +538,11 @@ struct SettingsView: View {
                         if settings.exceptions.isEmpty {
                             Text(tr("Поки порожньо", "Empty so far")).foregroundStyle(.secondary)
                         } else {
-                            FlowLayout(spacing: 6) {
+                            ChipList { FlowLayout(spacing: 6) {
                                 ForEach(settings.exceptions, id: \.self) { word in
                                     RemovableChip(title: word) { settings.removeException(word) }
                                 }
-                            }
+                            } }
                         }
                     } header: {
                         Text(tr("Винятки", "Exceptions") + " (\(settings.exceptions.count))")
@@ -655,11 +655,11 @@ struct SettingsView: View {
                                 .disabled(newReplacementFrom.trimmingCharacters(in: .whitespaces).isEmpty || newReplacementTo.isEmpty)
                         }
                         if !settings.replacements.isEmpty {
-                            FlowLayout(spacing: 6) {
+                            ChipList { FlowLayout(spacing: 6) {
                                 ForEach(settings.replacements, id: \.self) { rule in
                                     RemovableChip(title: "\(rule.from) → \(rule.to)") { settings.removeReplacement(rule) }
                                 }
-                            }
+                            } }
                         }
                     } header: {
                         blockHeader(tr("Оформлення тексту", "Text formatting"))
@@ -913,11 +913,11 @@ struct SettingsView: View {
                         if settings.voiceVocabulary.isEmpty {
                             Text(tr("Поки порожньо", "Empty so far")).foregroundStyle(.secondary)
                         } else {
-                            FlowLayout(spacing: 6) {
+                            ChipList { FlowLayout(spacing: 6) {
                                 ForEach(settings.voiceVocabulary, id: \.self) { rule in
                                     RemovableChip(title: "\(rule.from) → \(rule.to)") { settings.removeVoiceSpelling(rule) }
                                 }
-                            }
+                            } }
                         }
                     } header: {
                         blockHeader(tr("Слова й команди", "Words and commands"), tr("Словник голосового вводу", "Voice input vocabulary") + " (\(settings.voiceVocabulary.count))")
@@ -1551,6 +1551,28 @@ private struct RemovableChip: View {
 }
 
 /// Lays children out left to right, wrapping onto new lines.
+/// A list of chips that can grow without end (vocabulary, replacements, exceptions): as tall as it is up to
+/// about five rows, then it scrolls, so the rest of the page stays in reach.
+private struct ChipList<Content: View>: View {
+    var maxHeight: CGFloat = 176
+    @ViewBuilder let content: () -> Content
+    @State private var height: CGFloat = 0
+
+    var body: some View {
+        ScrollView(.vertical) {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(GeometryReader { geometry in
+                    Color.clear
+                        .onAppear { height = geometry.size.height }
+                        .onChange(of: geometry.size.height) { height = geometry.size.height }
+                })
+        }
+        .frame(height: min(max(height, 1), maxHeight))
+        .scrollIndicators(height > maxHeight ? .automatic : .never)
+    }
+}
+
 private struct FlowLayout: Layout {
     var spacing: CGFloat = 6
 
