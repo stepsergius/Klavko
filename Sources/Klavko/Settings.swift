@@ -18,6 +18,8 @@ final class Settings: ObservableObject {
         static let excludedApps = "excludedApps"
         static let shortcuts = "shortcuts.v2"
         static let layoutShortcuts = "layoutShortcuts"
+        static let voiceLanguageShortcuts = "voiceLanguageShortcuts"
+        static let singleLanguageModel = "singleLanguageModel"
         static let appLayoutsEnabled = "appLayoutsEnabled"
         static let pinnedAppLayouts = "pinnedAppLayouts"
         static let rememberedAppLayouts = "rememberedAppLayouts"
@@ -222,6 +224,12 @@ final class Settings: ObservableObject {
     /// Who recognizes speech: "local" (on this Mac) or "google" (Google AI, with the user's key).
     @Published var voiceEngine: String {
         didSet { defaults.set(voiceEngine, forKey: Key.voiceEngine) }
+    }
+
+    /// The model for dictating in one language by its own hotkey: "parakeet", or "cohere" (Cohere Transcribe,
+    /// for English and the other languages it knows) once downloaded.
+    @Published var singleLanguageModel: String {
+        didSet { defaults.set(singleLanguageModel, forKey: Key.singleLanguageModel) }
     }
 
     /// Google AI drops fillers and self-corrections instead of writing word for word.
@@ -493,6 +501,14 @@ final class Settings: ObservableObject {
         }
     }
 
+    /// Voice input in one language only, by its own hotkey ("right ⌘" → Ukrainian, "right ⌥" → English).
+    @Published private(set) var voiceLanguageShortcuts: [String: Shortcut] {
+        didSet {
+            defaults.set(try? JSONEncoder().encode(voiceLanguageShortcuts), forKey: Key.voiceLanguageShortcuts)
+            onChange?()
+        }
+    }
+
     /// Keys and combinations made to act as others, everywhere.
     @Published private(set) var keyRemaps: [KeyRemap] {
         didSet {
@@ -619,6 +635,7 @@ final class Settings: ObservableObject {
             : oldVoice == "uk" || oldVoice == "en" ? [oldVoice!] : ["uk", "en"]
         voiceEngine = defaults.string(forKey: Key.voiceEngine) == "google" ? "google" : "local"
         googleSmart = defaults.bool(forKey: Key.googleSmart)
+        singleLanguageModel = defaults.string(forKey: Key.singleLanguageModel) == "cohere" ? "cohere" : "parakeet"
         googleModel = defaults.string(forKey: Key.googleModel)
         // Left over from the AI actions (removed in 0.10).
         defaults.removeObject(forKey: "aiModel")
@@ -680,6 +697,8 @@ final class Settings: ObservableObject {
                 .flatMap { try? JSONDecoder().decode([AppLayouts.Remembered].self, from: $0) } ?? [])
         layoutShortcuts = defaults.data(forKey: Key.layoutShortcuts)
             .flatMap { try? JSONDecoder().decode([String: Shortcut].self, from: $0) } ?? [:]
+        voiceLanguageShortcuts = defaults.data(forKey: Key.voiceLanguageShortcuts)
+            .flatMap { try? JSONDecoder().decode([String: Shortcut].self, from: $0) } ?? [:]
         modifierSides = defaults.bool(forKey: Key.modifierSides)
         keyRemaps = defaults.data(forKey: Key.keyRemaps).flatMap { try? JSONDecoder().decode([KeyRemap].self, from: $0) } ?? []
         keyRemapsEnabled = defaults.object(forKey: Key.keyRemapsEnabled) as? Bool ?? true
@@ -727,8 +746,11 @@ final class Settings: ObservableObject {
         updated[action] = shortcut
         shortcuts = updated
         // One hotkey does one thing.
-        if let shortcut, layoutShortcuts.values.contains(shortcut) {
-            layoutShortcuts = layoutShortcuts.filter { $0.value != shortcut }
+        if let shortcut {
+            if layoutShortcuts.values.contains(shortcut) { layoutShortcuts = layoutShortcuts.filter { $0.value != shortcut } }
+            if voiceLanguageShortcuts.values.contains(shortcut) {
+                voiceLanguageShortcuts = voiceLanguageShortcuts.filter { $0.value != shortcut }
+            }
         }
     }
 
@@ -736,8 +758,21 @@ final class Settings: ObservableObject {
         var updated = layoutShortcuts.filter { shortcut == nil || $0.value != shortcut }
         updated[layoutID] = shortcut
         layoutShortcuts = updated
-        if let shortcut, shortcuts.values.contains(shortcut) {
-            shortcuts = shortcuts.filter { $0.value != shortcut }
+        if let shortcut {
+            if shortcuts.values.contains(shortcut) { shortcuts = shortcuts.filter { $0.value != shortcut } }
+            if voiceLanguageShortcuts.values.contains(shortcut) {
+                voiceLanguageShortcuts = voiceLanguageShortcuts.filter { $0.value != shortcut }
+            }
+        }
+    }
+
+    func setVoiceLanguageShortcut(_ shortcut: Shortcut?, for language: String) {
+        var updated = voiceLanguageShortcuts.filter { shortcut == nil || $0.value != shortcut }
+        updated[language] = shortcut
+        voiceLanguageShortcuts = updated
+        if let shortcut {
+            if shortcuts.values.contains(shortcut) { shortcuts = shortcuts.filter { $0.value != shortcut } }
+            if layoutShortcuts.values.contains(shortcut) { layoutShortcuts = layoutShortcuts.filter { $0.value != shortcut } }
         }
     }
 
@@ -756,6 +791,9 @@ final class Settings: ObservableObject {
         shortcuts = Self.loadShortcuts(nil)
         let taken = Set(shortcuts.values)
         if layoutShortcuts.values.contains(where: taken.contains) { layoutShortcuts = layoutShortcuts.filter { !taken.contains($0.value) } }
+        if voiceLanguageShortcuts.values.contains(where: taken.contains) {
+            voiceLanguageShortcuts = voiceLanguageShortcuts.filter { !taken.contains($0.value) }
+        }
     }
 
     /// Stored as {action: shortcut or null}; an action missing from storage gets its default.

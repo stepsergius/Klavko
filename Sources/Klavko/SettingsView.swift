@@ -7,6 +7,7 @@ struct SettingsView: View {
     @ObservedObject var settings: Settings
     @ObservedObject var recorder: ShortcutRecorder
     @ObservedObject var parakeet: ParakeetEngine
+    @ObservedObject var cohere: CohereEngine
     @ObservedObject var grammar: GrammarChecker
     @ObservedObject var clipboard: ClipboardManager
     @ObservedObject var updater: Updater
@@ -786,6 +787,51 @@ struct SettingsView: View {
                     }
 
                     Section {
+                        ForEach(Translator.ordered(settings.voiceLanguages), id: \.self) { code in
+                            voiceLanguageShortcutRow(code)
+                        }
+                        Picker(tr("Модель для однієї мови", "Model for one language"), selection: $settings.singleLanguageModel) {
+                            Text("Parakeet Ultra").tag("parakeet")
+                            Text("Cohere Transcribe").tag("cohere")
+                        }
+                        if settings.singleLanguageModel == "cohere" {
+                            HStack {
+                                Text("Cohere Transcribe")
+                                Spacer()
+                                switch cohere.state {
+                                case .ready:
+                                    Label(tr("Готова", "Ready"), systemImage: "checkmark.seal.fill").foregroundStyle(.green)
+                                    Button(tr("Видалити", "Delete")) { cohere.remove() }
+                                case .downloading(let fraction) where fraction >= 1:
+                                    ProgressView().controlSize(.small)
+                                    Text(tr("Готую модель (~1 хв)…", "Preparing the model (~1 min)…")).foregroundStyle(.secondary)
+                                case .downloading(let fraction):
+                                    ProgressView(value: fraction).frame(width: 120)
+                                    Text("\(Int(fraction * 100)) %").monospacedDigit().foregroundStyle(.secondary)
+                                case .notDownloaded:
+                                    Button(tr("Завантажити (~2,2 ГБ)", "Download (~2.2 GB)")) { cohere.prepare() }
+                                case .failed(let message):
+                                    Text(message).foregroundStyle(.red).lineLimit(2)
+                                    Button(tr("Ще раз", "Try again")) { cohere.prepare() }
+                                }
+                            }
+                        }
+                    } header: {
+                        Text(tr("Голосовий ввід однією мовою", "Voice input in one language"))
+                    } footer: {
+                        Text(tr("Своя клавіша для кожної мови: наприклад, правий ⌘ — українська, правий ⌥ — англійська. "
+                                + "Так Klavko слухає лише цю мову й не запише англійську, сказану з акцентом, українськими літерами. "
+                                + "Cohere Transcribe краще розпізнає англійську, але знає лише 14 мов, без української й російської: "
+                                + "для них лишається Parakeet. Обидві моделі працюють на цьому Mac.",
+                                "A key of its own for each language: for example, right ⌘ for Ukrainian, right ⌥ for English. "
+                                + "Klavko then listens for that language only, so English spoken with an accent isn’t written in Cyrillic. "
+                                + "Cohere Transcribe recognizes English better but knows only 14 languages, without Ukrainian or Russian: "
+                                + "Parakeet stays for those. Both models run on this Mac."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
                         Picker(tr("Розпізнає", "Recognized by"), selection: $settings.voiceEngine) {
                             Text(tr("Цей Mac", "This Mac")).tag("local")
                             Text("Google AI").tag("google")
@@ -1180,6 +1226,14 @@ struct SettingsView: View {
     static func macSwitchesPerDocument() -> Bool {
         let properties = CFPreferencesCopyAppValue("AppleGlobalTextInputProperties" as CFString, "com.apple.HIToolbox" as CFString)
         return ((properties as? [String: Any])?["TextInputGlobalPropertyPerContextInputMode"] as? NSNumber)?.boolValue == true
+    }
+
+    private func voiceLanguageShortcutRow(_ code: String) -> some View {
+        let id = "voice:" + code
+        return shortcutPicker(Translator.plainName(code), shortcut: settings.voiceLanguageShortcuts[code],
+                              isRecording: recorder.recordingLayout == id,
+                              record: { recorder.startLayout(id, recordsSides: settings.modifierSides) { settings.setVoiceLanguageShortcut($0, for: code) } },
+                              clear: { settings.setVoiceLanguageShortcut(nil, for: code) })
     }
 
     private func layoutShortcutRow(id: String, name: String) -> some View {

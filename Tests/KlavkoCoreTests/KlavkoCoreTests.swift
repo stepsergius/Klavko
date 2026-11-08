@@ -1782,3 +1782,31 @@ final class LayoutLanguageTests: XCTestCase {
                                               supported: supported), "ru")
     }
 }
+
+final class AudioChunksTests: XCTestCase {
+    private let rate = 100   // samples per second: small numbers, same logic
+
+    func testShortRecordingIsOnePiece() {
+        let samples = [Float](repeating: 0.5, count: rate * 15)
+        XCTAssertEqual(AudioChunks.split(samples, sampleRate: rate), [0..<samples.count])
+    }
+
+    func testLongRecordingIsCutInThePause() {
+        // Speech everywhere except a pause from 15 s to 15.5 s.
+        var samples = [Float](repeating: 0.5, count: rate * 30)
+        for index in (rate * 15)..<(rate * 15 + rate / 2) { samples[index] = 0 }
+        let pieces = AudioChunks.split(samples, sampleRate: rate)
+        XCTAssertEqual(pieces.count, 2)
+        XCTAssertTrue((rate * 15)...(rate * 15 + rate / 2) ~= pieces[0].upperBound)
+        XCTAssertEqual(pieces[1].upperBound, samples.count)
+    }
+
+    func testPiecesCoverEverythingAndStayShortEnough() {
+        let samples = (0..<(rate * 95)).map { Float(sin(Double($0) * 0.37)) }
+        let pieces = AudioChunks.split(samples, sampleRate: rate)
+        XCTAssertEqual(pieces.first?.lowerBound, 0)
+        XCTAssertEqual(pieces.last?.upperBound, samples.count)
+        for (a, b) in zip(pieces, pieces.dropFirst()) { XCTAssertEqual(a.upperBound, b.lowerBound) }
+        XCTAssertTrue(pieces.allSatisfy { $0.count <= rate * 20 && !$0.isEmpty })
+    }
+}

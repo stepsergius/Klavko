@@ -253,6 +253,11 @@ final class QuickActionsBar {
         present(around: rect, position: settings.quickActionsPosition, takesKeys: byKeyboard)
     }
 
+    /// Developer check of the hints: the bar over a made-up selection, with no text field behind it.
+    func showForCheck(around rect: NSRect, settings: Settings) {
+        show(text: "Klavko", selection: nil, editable: false, around: rect, settings: settings)
+    }
+
     // MARK: Emoji
 
     /// The bar's Emoji action: all the emoji, the five used lately first; ← → choose, Return puts it in.
@@ -526,6 +531,7 @@ final class QuickActionsBar {
         panel.setFrameOrigin(origin)
         let above = origin.y >= rect.midY
         textEdge = (above ? origin.y : origin.y + size.height, above)
+        BarTooltip.shared.barAbove = above
         panel.takesKeys = takesKeys
         if takesKeys {
             // Key without bringing Klavko forward (the panel doesn't activate): the app with the selection stays
@@ -534,6 +540,7 @@ final class QuickActionsBar {
         } else {
             panel.orderFrontRegardless()
         }
+        BarTooltip.shared.watch(panel)
     }
 
     /// The keyboard while the bar has it: true when the key was used.
@@ -571,6 +578,7 @@ final class QuickActionsBar {
     }
 
     func hide() {
+        BarTooltip.shared.hide()
         guard let panel, panel.isVisible else { return }
         panel.orderOut(nil)
         panel.takesKeys = false
@@ -1229,9 +1237,14 @@ private struct BarButton<Label: View>: View {
     let action: () -> Void
     @ViewBuilder let label: () -> Label
     @State private var hovering = false
+    /// Its place among the hints: where it is in the bar and what it does.
+    @State private var spot = UUID()
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            BarTooltip.shared.clicked()
+            action()
+        }) {
             label()
                 .foregroundStyle(hovering || selected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.9)))
                 .padding(.horizontal, padding)
@@ -1241,6 +1254,129 @@ private struct BarButton<Label: View>: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help(help)
+        .background(GeometryReader { geometry in
+            let frame = geometry.frame(in: .named("bar"))
+            Color.clear
+                .onAppear { BarTooltip.shared.place(spot, frame: frame, help: help) }
+                .onChange(of: frame) { BarTooltip.shared.place(spot, frame: frame, help: help) }
+                .onChange(of: help) { BarTooltip.shared.place(spot, frame: frame, help: help) }
+        })
+        .onDisappear { BarTooltip.shared.remove(spot) }
+    }
+}
+
+/// The name of a button of the bar, a moment after the mouse comes to it. The system's hints (`.help`) and
+/// even SwiftUI's hover only work in the app in front, and the bar never takes it, so while the bar is up the
+/// mouse is looked at a dozen times a second. The hint is a small window that takes neither the mouse nor the
+/// focus, on the side of the bar away from the text so the text stays in sight.
+@MainActor
+final class BarTooltip {
+    static let shared = BarTooltip()
+    /// The bar is over the selected text: the hint goes over the bar; under it otherwise.
+    var barAbove = true
+    private var panel: NSPanel?
+    private let host = NSHostingView(rootView: TooltipText(text: ""))
+    /// The buttons: where each is in the bar (top-left origin) and its name.
+    private var spots: [UUID: (frame: CGRect, help: String)] = [:]
+    private weak var bar: NSWindow?
+    private var timer: Timer?
+    /// The button under the mouse, and since when.
+    private var current: UUID?
+    private var since = Date()
+    /// Clicked: no hint on it until the mouse leaves it.
+    private var quiet: UUID?
+
+    func place(_ id: UUID, frame: CGRect, help: String) { spots[id] = (frame, help) }
+    func remove(_ id: UUID) { spots[id] = nil }
+
+    func watch(_ bar: NSWindow) {
+        self.bar = bar
+        guard timer == nil else { return }
+        let timer = Timer(timeInterval: 0.08, repeats: true) { _ in
+            MainActor.assumeIsolated { BarTooltip.shared.tick() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    func clicked() {
+        quiet = current
+        panel?.orderOut(nil)
+    }
+
+    func hide() {
+        timer?.invalidate()
+        timer = nil
+        current = nil
+        quiet = nil
+        panel?.orderOut(nil)
+    }
+
+    private func tick() {
+        guard let bar, bar.isVisible else { return hide() }
+        let mouse = NSEvent.mouseLocation
+        let point = CGPoint(x: mouse.x - bar.frame.minX, y: bar.frame.maxY - mouse.y)
+        let under = bar.frame.contains(mouse)
+            ? spots.first { !$0.value.help.isEmpty && $0.value.frame.contains(point) }?.key : nil
+        let shown = panel?.isVisible == true
+        if under != current {
+            current = under
+            since = Date()
+            if quiet != under { quiet = nil }
+            guard let under, quiet == nil else { panel?.orderOut(nil); return }
+            // From one button to the next while a hint is up: no wait, as with the system's hints.
+            if shown { present(under, in: bar) }
+            return
+        }
+        if let under, !shown, quiet == nil, Date().timeIntervalSince(since) >= 0.5 { present(under, in: bar) }
+    }
+
+    private func present(_ id: UUID, in bar: NSWindow) {
+        guard let spot = spots[id] else { return }
+        if panel == nil {
+            let panel = NSPanel(contentRect: .zero, styleMask: [.nonactivatingPanel, .borderless],
+                                backing: .buffered, defer: true)
+            panel.contentView = host
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = true
+            panel.ignoresMouseEvents = true
+            panel.level = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 1)
+            panel.hidesOnDeactivate = false
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+            panel.animationBehavior = .none
+            self.panel = panel
+        }
+        guard let panel else { return }
+        host.rootView = TooltipText(text: spot.help)
+        host.layoutSubtreeIfNeeded()
+        let size = host.fittingSize
+        panel.setContentSize(size)
+        let midX = bar.frame.minX + spot.frame.midX
+        let visible = bar.screen?.visibleFrame ?? bar.frame
+        var origin = NSPoint(x: midX - size.width / 2,
+                             y: barAbove ? bar.frame.maxY + 4 : bar.frame.minY - 4 - size.height)
+        if origin.y + size.height > visible.maxY { origin.y = bar.frame.minY - 4 - size.height }
+        if origin.y < visible.minY { origin.y = bar.frame.maxY + 4 }
+        origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
+        panel.setFrameOrigin(origin)
+        panel.orderFrontRegardless()
+    }
+}
+
+/// The hint itself: small text on a light (or dark) rounded box, like the system's.
+private struct TooltipText: View {
+    let text: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(RoundedRectangle(cornerRadius: 5).fill(Color(white: colorScheme == .dark ? 0.2 : 0.99)))
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.primary.opacity(0.15), lineWidth: 0.5))
+            .fixedSize()
     }
 }

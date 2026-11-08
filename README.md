@@ -55,6 +55,7 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - Press **fn (🌐)**, speak in the languages chosen in Settings (“I speak”: Ukrainian, English, German and more), press it again or Return — the text appears at the cursor. Esc cancels.
 - A panel with a live wave shows what you say while you speak.
 - Speech is recognized by the NVIDIA Parakeet Ultra model right on your Mac — with punctuation and automatic language detection. The model (~600 MB) is downloaded once; until then the built-in macOS recognition is used. Languages not chosen in “I speak” are never inserted. Turkish, Hebrew and Arabic are recognized by macOS.
+- **One language:** each language can get a key of its own (for example, right ⌘ for Ukrainian, right ⌥ for English). Klavko then listens for that language only, so English spoken with an accent isn’t written in Cyrillic. For this input you can choose the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (~2.2 GB): it recognizes English better but knows only 14 languages, without Ukrainian or Russian.
 - **Google AI (optional):** in the voice settings you can choose “Google AI” and paste your own key from [aistudio.google.com](https://aistudio.google.com/apikey). The recording is then sent to Google when you finish and any language is recognized; the “smart” mode removes fillers and self-corrections. The key is kept in the Keychain. If Google can’t be reached, your Mac recognizes the text.
 - **Vocabulary:** fix a dictated word by hand and Klavko offers to remember how you write it. Your replacements apply to voice input too.
 - **History:** what you dictate is kept with its date and time (on your Mac only, can be turned off) — search it, copy or delete each entry.
@@ -132,6 +133,7 @@ Log (without the typed text):
 ## Credits
 
 - Voice input: the [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) model (CC-BY-4.0), Parakeet Ultra version, in Core ML format via [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
+- Voice input in one language (optional): the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (Apache-2.0) in Core ML format via FluidAudio.
 - Translation, spell checking and fallback speech recognition — built-in macOS features.
 - Some of the sounds (Bubble Pop, Click, Pen Click and others): [Pixabay](https://pixabay.com/sound-effects/), under the [Pixabay Content License](https://pixabay.com/service/license-summary/).
 

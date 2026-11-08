@@ -23,6 +23,8 @@ final class SwitchEngine {
         var shortcuts: [HotkeyAction: Shortcut] = [:]
         /// Hotkeys that switch into one keyboard layout, by its input source ID.
         var layoutShortcuts: [String: Shortcut] = [:]
+        /// Hotkeys of voice input in one language, by its code ("uk", "en").
+        var voiceLanguageShortcuts: [String: Shortcut] = [:]
         var autoSwitch = true
         var triggers: Set<SwitchTrigger> = Set(SwitchTrigger.allCases)
         var switchWhileTyping = true
@@ -68,6 +70,8 @@ final class SwitchEngine {
     var onQuickActions: () -> Void = {}
     var onVoice: () -> Void = {}
     var onVoiceTranslate: () -> Void = {}
+    /// Voice input in one language (its code).
+    var onVoiceIn: (String) -> Void = { _ in }
     /// Esc was pressed: true if something (voice input) used it, so it isn't passed on.
     var onEscape: () -> Bool = { false }
     /// Return / Enter was pressed: true if something (voice input) used it, so it isn't passed on.
@@ -928,10 +932,11 @@ final class SwitchEngine {
         return true
     }
 
-    /// What a hotkey does: one of Klavko's actions, or switching into a layout.
+    /// What a hotkey does: one of Klavko's actions, switching into a layout, or voice input in one language.
     private enum Hotkey {
         case action(HotkeyAction)
         case layout(String)
+        case voice(String)
     }
 
     private func comboHotkey(keyCode: UInt16, flags: CGEventFlags) -> Hotkey? {
@@ -943,7 +948,8 @@ final class SwitchEngine {
 
     /// Shortcuts that name a side first: "right ⌘" wins over a plain "⌘" pressed with the right key.
     private var shortcutsBySide: [(hotkey: Hotkey, shortcut: Shortcut)] {
-        (config.shortcuts.map { (Hotkey.action($0.key), $0.value) } + config.layoutShortcuts.map { (Hotkey.layout($0.key), $0.value) })
+        (config.shortcuts.map { (Hotkey.action($0.key), $0.value) } + config.layoutShortcuts.map { (Hotkey.layout($0.key), $0.value) }
+            + config.voiceLanguageShortcuts.map { (Hotkey.voice($0.key), $0.value) })
             .sorted { $0.shortcut.sides.count > $1.shortcut.sides.count }
     }
 
@@ -1128,6 +1134,10 @@ final class SwitchEngine {
             guard let layout = SystemLayouts.allLayouts().first(where: { $0.id == id }) else { return }
             Log.engine.notice("Hotkey: layout \(id, privacy: .public)")
             SystemLayouts.select(layout.source)
+        case .voice(let language):
+            Log.engine.notice("Hotkey: voice in \(language, privacy: .public)")
+            reset()
+            onVoiceIn(language)
         }
     }
 

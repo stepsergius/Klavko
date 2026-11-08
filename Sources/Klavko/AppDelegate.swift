@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let qrPanel = QRCodePanel()
     private let dictation = VoiceDictation()
     private let parakeet = ParakeetEngine()
+    private let cohere = CohereEngine()
     private let grammar = GrammarChecker()
     private let grammarPanel = GrammarPanel()
     private let liveGrammar = LiveGrammar()
@@ -101,6 +102,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         // Used once its model is downloaded (opt-in, from Settings → Voice input); macOS recognition until then.
         dictation.parakeet = parakeet
+        dictation.cohere = cohere
+        dictation.singleLanguageModel = { [unowned self] in settings.singleLanguageModel }
         dictation.google = { [unowned self] in
             guard settings.voiceEngine == "google", let key = GeminiKey.load() else { return nil }
             return (google, key, settings.googleModel ?? GeminiTranscriber.fallbackModel, settings.googleSmart)
@@ -172,6 +175,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         engine.onVoiceTranslate = { [unowned self] in
             MainActor.assumeIsolated { dictation.toggle(translatingInto: settings.voiceTranslationTarget) }
+        }
+        engine.onVoiceIn = { [unowned self] language in
+            MainActor.assumeIsolated { dictation.toggle(onlyIn: language) }
         }
         engine.onReturn = { [unowned self] in
             MainActor.assumeIsolated {
@@ -461,6 +467,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : settings.shortcuts.filter { $0.key != .voice && $0.key != .voiceTranslate }
         engine.config = SwitchEngine.Config(shortcuts: shortcuts,
                                             layoutShortcuts: settings.layoutShortcuts,
+                                            voiceLanguageShortcuts: settings.voiceEnabled ? settings.voiceLanguageShortcuts : [:],
                                             autoSwitch: settings.isEnabled,
                                             triggers: settings.triggers,
                                             switchWhileTyping: settings.switchWhileTyping,
@@ -787,7 +794,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func showSettings() {
         if settingsWindow == nil {
-            let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, grammar: grammar,
+            let view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, cohere: cohere, grammar: grammar,
                                     clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },
@@ -807,7 +814,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Renders every tab into `<name>-<tab>.png` next to `url`, then quits.
     private func snapshotSettings(to url: URL, tabs: [SettingsTab] = SettingsTab.allCases) {
         guard let tab = tabs.first else { return NSApp.terminate(nil) }
-        var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, grammar: grammar,
+        var view = SettingsView(settings: settings, recorder: recorder, parakeet: parakeet, cohere: cohere, grammar: grammar,
                                 clipboard: clipboard, updater: updater,
                                     voiceHistory: voiceHistory, showVoiceHistory: { [weak self] in self?.showVoiceHistory() },
                                     voiceStats: voiceStats, showVoiceStats: { [weak self] in self?.showVoiceStats() },

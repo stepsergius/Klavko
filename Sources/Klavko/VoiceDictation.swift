@@ -41,6 +41,10 @@ final class VoiceDictation: ObservableObject {
     var languages: () -> [String] = { ["uk", "en"] }
     /// The better recognizer, once its model is downloaded; macOS speech recognition otherwise.
     var parakeet: ParakeetEngine?
+    /// Cohere Transcribe, for voice input in one language when chosen in Settings and downloaded.
+    var cohere: CohereEngine?
+    /// The model for voice input in one language (from settings): "parakeet" or "cohere".
+    var singleLanguageModel: () -> String = { "parakeet" }
     /// Google AI, when the user chose it and saved a key: it then recognizes the finished recording
     /// (any language); the recognizers on this Mac stay the fallback.
     var google: () -> (transcriber: GeminiTranscriber, key: String, model: String, smart: Bool)? = { nil }
@@ -88,10 +92,13 @@ final class VoiceDictation: ObservableObject {
     private var finishingSince: Date?
     /// Voice input with translation: what was said is inserted in this language.
     private var translationTarget: String?
+    /// Voice input in this one language, by its own hotkey.
+    private var onlyLanguage: String?
 
     /// The hotkey: starts listening, or finishes and inserts what was heard. `translatingInto`: the hotkey of
     /// voice input with translation (it inserts the translation; while listening, either hotkey finishes).
-    func toggle(translatingInto target: String? = nil) {
+    /// `onlyIn`: the hotkey of voice input in one language, which is all that is listened for.
+    func toggle(translatingInto target: String? = nil, onlyIn language: String? = nil) {
         switch stage {
         case .listening:
             finish()
@@ -99,10 +106,10 @@ final class VoiceDictation: ObservableObject {
             // Recognition should take well under a second; if it's stuck, let the key start afresh.
             if let since = finishingSince, Date().timeIntervalSince(since) > 5 {
                 Log.engine.notice("Voice input was stuck finishing; starting over")
-                start(translatingInto: target)
+                start(translatingInto: target, onlyIn: language)
             }
         case .idle, .failed:
-            start(translatingInto: target)
+            start(translatingInto: target, onlyIn: language)
         }
     }
 
@@ -130,17 +137,19 @@ final class VoiceDictation: ObservableObject {
 
     // MARK: - Recording
 
-    private func start(translatingInto target: String? = nil) {
+    private func start(translatingInto target: String? = nil, onlyIn language: String? = nil) {
         cancel()
         translationTarget = target
+        onlyLanguage = language
         text = ""
         completed = false
-        let codes = languages()
+        let codes = language.map { [$0] } ?? languages()
         let first = codes.contains(preferredLanguage()) ? preferredLanguage() : (codes.first ?? "uk")
         others = codes.filter { $0 != first }
         allowed = codes
         // Load Parakeet while the user speaks.
         if let parakeet, parakeet.isDownloaded { parakeet.prepare() }
+        if let cohere = cohereForRecording { cohere.prepare() }
         languageTitle = listeningTitle(first)
         shownLook = look()
         showPanel()
@@ -179,16 +188,21 @@ final class VoiceDictation: ObservableObject {
         if Self.recognizer(code) == nil, google() != nil, let any = ["en", "uk"].first(where: { Self.recognizer($0) != nil }) {
             code = any
         }
-        guard let recognizer = Self.recognizer(code) else {
-            stage = .failed(tr("Розпізнавання мовлення на пристрої недоступне. Увімкніть Диктування в System Settings → Keyboard, щоб macOS завантажила мовні моделі.",
-                           "On-device speech recognition isn’t available. Turn on Dictation in System Settings → Keyboard so macOS downloads the language models."))
+        // Parakeet, Cohere or Google AI recognize the recording themselves: without macOS's model (Dictation
+        // turned on, its model not downloaded yet) the voice is still recorded, only with no macOS live text.
+        let recognizer = Self.recognizer(code)
+        let ownModel = (parakeet?.isDownloaded == true && parakeetUsable) || cohereForRecording != nil || google() != nil
+        guard recognizer != nil || ownModel else {
+            stage = .failed(tr("macOS ще не завантажила модель розпізнавання мовлення. Завантажте модель Parakeet у налаштуваннях Klavko → Голос або зачекайте, поки macOS її докачає (System Settings → Keyboard → Диктування).",
+                           "macOS hasn’t downloaded its speech recognition model yet. Download the Parakeet model in Klavko Settings → Voice, or wait until macOS finishes downloading it (System Settings → Keyboard → Dictation)."))
             return
         }
+        if recognizer == nil { Log.engine.notice("No macOS recognizer for \(code, privacy: .public); recording for the app's own model") }
         let recognition = Recognition(language: code, recognizer: recognizer, fanout: fanout,
                                       isListening: { [weak self] in self?.stage == .listening },
                                       changed: { [weak self] in self?.update() })
         live = recognition
-        fanout.startRecording(keep: !others.isEmpty || parakeet?.isDownloaded == true || google() != nil)
+        fanout.startRecording(keep: !others.isEmpty || ownModel || parakeet?.isDownloaded == true)
         let meter = meter
         fanout.onLevel = { level in
             DispatchQueue.main.async { MainActor.assumeIsolated { meter.push(level) } }
@@ -275,6 +289,10 @@ final class VoiceDictation: ObservableObject {
             finishWithGoogle(google, liveResult: (language: live.language, text: heard))
             return
         }
+        if let cohere = cohereForRecording, let language = onlyLanguage, fanout.hasRecording {
+            finishWithCohere(cohere, language: language, liveResult: (language: live.language, text: heard))
+            return
+        }
         if let parakeet, parakeet.isDownloaded, parakeetUsable, fanout.hasRecording {
             finishWithParakeet(parakeet, liveResult: (language: live.language, text: heard))
             return
@@ -314,6 +332,42 @@ final class VoiceDictation: ObservableObject {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 90) { [weak self] in
+            guard let self, session == current else { return }
+            complete(with: liveResult.text, language: liveResult.language)
+        }
+    }
+
+    /// Cohere Transcribe, when this recording is in one language it knows and it is chosen and downloaded.
+    private var cohereForRecording: CohereEngine? {
+        guard let cohere, cohere.isDownloaded, singleLanguageModel() == "cohere",
+              let language = onlyLanguage, CohereEngine.languages.contains(language) else { return nil }
+        return cohere
+    }
+
+    /// Recognizes the whole recording with Cohere Transcribe in the one language of the hotkey. If it fails or
+    /// hears nothing, Parakeet or the live macOS result is used.
+    private func finishWithCohere(_ cohere: CohereEngine, language: String, liveResult: (language: String, text: String)) {
+        guard let file = fanout.writeRecording() else {
+            complete(with: liveResult.text, language: liveResult.language)
+            return
+        }
+        secondPassRunning = true
+        let current = session
+        Task { [weak self] in
+            defer { try? FileManager.default.removeItem(at: file) }
+            do {
+                let text = try await cohere.transcribe(file: file, language: language)
+                guard let self, session == current else { return }
+                guard text.isEmpty else { return complete(with: text, language: "cohere \(language)") }
+                Log.engine.notice("Cohere heard nothing; falling back")
+                fallBack(from: liveResult)
+            } catch {
+                Log.engine.error("Cohere failed: \(error.localizedDescription, privacy: .public)")
+                guard let self, session == current else { return }
+                fallBack(from: liveResult)
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
             guard let self, session == current else { return }
             complete(with: liveResult.text, language: liveResult.language)
         }
@@ -1423,7 +1477,8 @@ private final class AudioFanout: @unchecked Sendable {
 @MainActor
 private final class Recognition {
     let language: String
-    private let recognizer: SFSpeechRecognizer
+    /// nil: macOS has no model for the language; the audio is only recorded, for Parakeet, Cohere or Google.
+    private let recognizer: SFSpeechRecognizer?
     private let fanout: AudioFanout
     private let isListening: () -> Bool
     private let changed: () -> Void
@@ -1442,7 +1497,7 @@ private final class Recognition {
     var text: String { UtteranceJoiner.join(committed, segment) }
     var failedForGood: Bool { emptyFailures > 3 }
 
-    init(language: String, recognizer: SFSpeechRecognizer, fanout: AudioFanout,
+    init(language: String, recognizer: SFSpeechRecognizer?, fanout: AudioFanout,
          isListening: @escaping () -> Bool, changed: @escaping () -> Void) {
         self.language = language
         self.recognizer = recognizer
@@ -1452,6 +1507,7 @@ private final class Recognition {
     }
 
     func startSegment() {
+        guard let recognizer else { return }
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.requiresOnDeviceRecognition = true  // never send audio to a server
         request.shouldReportPartialResults = true
@@ -1470,6 +1526,16 @@ private final class Recognition {
 
     func endAudio() {
         request?.endAudio()
+        // Nothing is being recognized: done as soon as the audio stops.
+        if recognizer == nil {
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self, !self.isDone else { return }
+                    self.isDone = true
+                    self.changed()
+                }
+            }
+        }
     }
 
     func cancel() {
