@@ -38,7 +38,7 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - **The Caps Lock light can show the language** (optional): lit for the language you choose, off for the others.
 
 ### Layout languages
-- Switching works between any enabled macOS layouts of 13 languages, including Ukrainian, English, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Greek, Hebrew and Arabic.
+- Switching works between any enabled macOS layouts of 13 languages, including Ukrainian, English, Russian, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Greek, Hebrew and Arabic.
 - With more than two layouts, Klavko checks the word against each language’s dictionary and picks the one where it is a real word. On a tie, a layout with a different alphabet comes first (Latin ↔ Cyrillic), then the one you used last.
 - **Only by hand:** with three or more layouts, mark a language you rarely write in (for example Ukrainian next to Russian, where many words are the same). Klavko then never switches into it by itself; the hotkey still does.
 - The text before the word helps decide: a typo at the start of a word doesn’t switch the layout in the middle of a sentence in the same language.
@@ -64,7 +64,7 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 ### Translation
 - Select text anywhere and press **⌘** twice — the translation appears in a panel: Return replaces the selection, ⌘C copies.
 - Text in your language goes into the chosen one, text in any other language into yours. The default pair (Ukrainian ↔ English at first) is set in Settings, and the languages can be changed right in the panel — the text is translated again at once.
-- Translation languages: Ukrainian, English, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Hebrew, Arabic and more.
+- Translation languages: Ukrainian, English, Russian, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Hebrew, Arabic and more.
 - The macOS translator does the work on your Mac; the languages are downloaded once.
 
 ### Text from the screen
@@ -82,7 +82,7 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - Settings with a sidebar: General, Layout, Text, Voice, Clipboard, Hotkeys, About — and Say Thanks and What’s New at the bottom.
 - The menu: the layouts with their flags, the main switches, Check for Updates, Settings.
 - Klavko tells you about a new version and updates with one “Update” button — nothing to download or install by hand.
-- Interface languages: Українська, English, español, français, Deutsch, italiano, português, polski, Türkçe, 简体中文, 日本語 and 한국어.
+- Interface languages: Українська, English, русский, español, français, Deutsch, italiano, português, polski, Türkçe, 简体中文, 日本語 and 한국어.
 
 ## Hotkeys
 
