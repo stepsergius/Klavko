@@ -109,27 +109,6 @@ Klavko runs entirely on your Mac. What you type and dictate, translations and th
 
 Klavko is free. If it helps you, you can [thank the author](https://send.monobank.ua/jar/2CKJVz8jam) ❤️
 
-## For developers
-
-```bash
-swift test               # logic tests
-scripts/install.sh       # build, install to /Applications and launch
-scripts/share.sh         # archive to share (dist/Klavko-<version>.zip)
-scripts/update-tap.sh    # after a release: point the Homebrew cask at it
-scripts/check-translations.py  # are all interface texts translated in Sources/KlavkoCore/Translations
-```
-
-On the first launch, allow access in **System Settings → Privacy & Security → Accessibility**.
-
-- `Sources/KlavkoCore` — layouts, language detection, spell checking, clipboard history (no permissions needed, covered by tests).
-- `Sources/Klavko` — the menu bar app: key capture, text replacement, voice input, translation, windows.
-
-Log (without the typed text):
-
-```bash
-/usr/bin/log show --last 1h --predicate 'subsystem == "app.klavko.Klavko"'
-```
-
 ## Credits
 
 - Voice input: the [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) model (CC-BY-4.0), Parakeet Ultra version, in Core ML format via [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).

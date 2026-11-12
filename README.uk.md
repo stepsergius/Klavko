@@ -109,27 +109,6 @@ Klavko працює повністю на вашому Mac. Набраний і 
 
 Klavko безкоштовний. Якщо він вам допомагає, можна [подякувати автору](https://send.monobank.ua/jar/2CKJVz8jam) ❤️
 
-## Для розробників
-
-```bash
-swift test               # тести логіки
-scripts/install.sh       # зібрати, встановити в /Applications і запустити
-scripts/share.sh         # архів для поширення (dist/Klavko-<версія>.zip)
-scripts/update-tap.sh    # після релізу: оновити рецепт Homebrew
-scripts/check-translations.py  # чи всі тексти інтерфейсу перекладені в Sources/KlavkoCore/Translations
-```
-
-Під час першого запуску дозвольте доступ у **System Settings → Privacy & Security → Accessibility**.
-
-- `Sources/KlavkoCore` — розкладки, визначення мови, перевірка орфографії, історія буфера (без дозволів, покрито тестами).
-- `Sources/Klavko` — програма в рядку меню: перехоплення клавіш, заміна тексту, голосовий ввід, переклад, вікна.
-
-Журнал (без вмісту набраного тексту):
-
-```bash
-/usr/bin/log show --last 1h --predicate 'subsystem == "app.klavko.Klavko"'
-```
-
 ## Подяки
 
 - Голосовий ввід: модель [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) (CC-BY-4.0), версія Parakeet Ultra, у форматі Core ML через [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache-2.0).
