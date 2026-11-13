@@ -188,6 +188,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
 .doc ol { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 6px; }
 .doc strong { color: var(--fg); font-weight: 600; }
 .doc a { color: var(--accent); }
+.note { text-align: center; color: var(--muted); font-size: 15px; max-width: 60ch; margin: 22px auto 0; }
 </style>
 <script>
 /* Remembers the chosen language and opens that version on later visits. English is the default. */
@@ -211,6 +212,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     <nav aria-label="Розділи">
       <a href="#features">Можливості</a>
       <a href="#download">Завантажити</a>
+      <a href="#pricing">Ціни</a>
       <a href="#faq">Питання</a>
     </nav>
     <div class="lang" role="group" aria-label="Мова">
@@ -325,17 +327,56 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     </div>
   </section>
 
-  <section id="privacy">
+  <section id="pricing">
+    <div class="wrap">
+      <div class="center">
+        <h2>Безкоштовно. <em class="hl">А з Pro — більше.</em></h2>
+        <p>Кожне нове встановлення отримує всі функції Pro на 14 днів, без ключа й картки. Потім заплатіть один раз або користуйтеся безкоштовною версією.</p>
+      </div>
+      <div class="plans">
+        <div class="plan">
+          <h3>Безкоштовно</h3>
+          <div class="price">$0</div>
+          <ul>
+            <li>Перемикання розкладки 13 мов</li>
+            <li>Виправлення помилок і охайний текст</li>
+            <li>Голосовий ввід</li>
+            <li>Переклад і текст з екрана</li>
+            <li>Історія буфера за 7 днів</li>
+            <li>14 днів Pro в подарунок</li>
+          </ul>
+          <a class="btn" href="#download">Завантажити безкоштовно</a>
+        </div>
+        <div class="plan pro">
+          <h3>Pro</h3>
+          <div class="price">$9.99<small>один раз</small></div>
+          <ul>
+            <li>Перевірка правопису й граматики</li>
+            <li>Голосовий ввід однією мовою та з перекладом</li>
+            <li>Емодзі й обчислення біля курсора</li>
+            <li>Своя розкладка в кожній програмі, клавіші розкладок і заміна клавіш</li>
+            <li>Історія буфера довше за 7 днів</li>
+            <li>Більше швидких дій: ШІ, YouTube, читання вголос…</li>
+            <li>До 2 Mac, безкоштовні оновлення</li>
+          </ul>
+          <a class="btn primary" href="https://www.creem.io/product/prod_1bPuvj0cdggWYXUZ277SP9">Купити Pro</a>
+        </div>
+      </div>
+      <p class="note">Встановили Klavko до 1 січня 2027 року? Pro для вас безкоштовний назавжди, ключ не потрібен. Pro — для Mac; Klavko для Windows лишається безкоштовним.</p>
+    </div>
+  </section>
+
+  <section class="soft" id="privacy">
     <div class="wrap">
       <div class="center">
         <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
         <h2>Ваш текст лишається вашим.</h2>
-        <p>Klavko працює повністю на вашому Mac. Те, що ви набираєте й диктуєте, переклади й історія буфера нікуди не надсилаються. Інтернет потрібен лише раз, щоб завантажити модель розпізнавання мовлення та мови перекладу, і ще щоб перевіряти на GitHub нову версію. Єдиний виняток — голосовий ввід через Google AI, якщо ви самі його ввімкнете.</p>
+        <p>Klavko працює повністю на вашому Mac. Те, що ви набираєте й диктуєте, переклади й історія буфера нікуди не надсилаються. Інтернет потрібен лише раз, щоб завантажити модель розпізнавання мовлення та мови перекладу, а ще щоб перевіряти на GitHub нову версію та ключ Pro чи пробний період (надсилається лише анонімний код вашого Mac, ніколи не текст). Єдиний виняток — голосовий ввід через Google AI, якщо ви самі його ввімкнете.</p>
       </div>
     </div>
   </section>
 
-  <section class="soft" id="faq">
+  <section id="faq">
     <div class="wrap">
       <div class="center"><h2>Питання</h2></div>
       <div class="faq">
@@ -352,8 +393,20 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
           <p>Потрібні щонайменше дві розкладки підтримуваних мов. Найкраще працюють стандартні розкладки macOS (Системні параметри → Клавіатура → Джерела вводу). Китайська, японська й корейська вводяться методами вводу, тому не підтримуються.</p>
         </details>
         <details>
-          <summary>Це справді безкоштовно?</summary>
-          <p>Так, повністю. Якщо Klavko вам допомагає, можна подякувати автору, але це не обов'язково.</p>
+          <summary>Klavko безкоштовний?</summary>
+          <p>Так. Перемикання розкладки, виправлення помилок, голосовий ввід, переклад, текст з екрана й історія буфера за тиждень безкоштовні назавжди. Klavko Pro додає більше за одноразові $9.99.</p>
+        </details>
+        <details>
+          <summary>Хто отримує Pro безкоштовно?</summary>
+          <p>Усі, хто встановить Klavko до 1 січня 2027 року, отримують Pro безкоштовно назавжди, без ключа. Нові користувачі мають усі функції Pro на 14 днів.</p>
+        </details>
+        <details>
+          <summary>Як активувати Pro?</summary>
+          <p>Після покупки ключ з'явиться на сторінці замовлення й прийде листом. Вставте його в Klavko → Налаштування → Klavko Pro і натисніть <b>Активувати</b>. Ключ працює на двох Mac.</p>
+        </details>
+        <details>
+          <summary>Чи можна повернути гроші?</summary>
+          <p>Так. Якщо Klavko Pro вам не підійшов, напишіть на <a href="mailto:stepsergius@gmail.com">stepsergius@gmail.com</a> протягом 14 днів після покупки, і ми повернемо гроші.</p>
         </details>
         <details>
           <summary>Куди написати про помилку чи з питанням?</summary>
@@ -363,11 +416,11 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     </div>
   </section>
 
-  <section>
+  <section class="soft">
     <div class="wrap">
       <div class="center">
         <h2>Подобається Klavko?</h2>
-        <p>Його робить одна людина в Україні. Подяка допомагає йому лишатися безкоштовним і рости.</p>
+        <p>Його робить одна людина в Україні. Подяка чи Pro допомагають йому рости.</p>
         <div class="ctas">
           <a class="btn primary" href="https://send.monobank.ua/jar/2CKJVz8jam">❤️ Подякувати</a>
           <a class="btn" href="https://t.me/klavko">Telegram-група</a>

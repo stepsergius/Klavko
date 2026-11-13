@@ -188,6 +188,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
 .doc ol { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 6px; }
 .doc strong { color: var(--fg); font-weight: 600; }
 .doc a { color: var(--accent); }
+.note { text-align: center; color: var(--muted); font-size: 15px; max-width: 60ch; margin: 22px auto 0; }
 </style>
 <script>
 /* Remembers the chosen language and opens that version on later visits. English is the default. */
@@ -211,6 +212,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     <nav aria-label="Sections">
       <a href="#features">Features</a>
       <a href="#download">Download</a>
+      <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </nav>
     <div class="lang" role="group" aria-label="Language">
@@ -325,17 +327,56 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     </div>
   </section>
 
-  <section id="privacy">
+  <section id="pricing">
+    <div class="wrap">
+      <div class="center">
+        <h2>Free to use. <em class="hl">Pro for more.</em></h2>
+        <p>Every new install gets all Pro features for 14 days, no key or card needed. Then pay once, or keep the free version.</p>
+      </div>
+      <div class="plans">
+        <div class="plan">
+          <h3>Free</h3>
+          <div class="price">$0</div>
+          <ul>
+            <li>Layout switching in 13 languages</li>
+            <li>Typo fixes and tidy text</li>
+            <li>Voice input</li>
+            <li>Translation and text from the screen</li>
+            <li>7 days of clipboard history</li>
+            <li>14 days of Pro included</li>
+          </ul>
+          <a class="btn" href="#download">Download free</a>
+        </div>
+        <div class="plan pro">
+          <h3>Pro</h3>
+          <div class="price">$9.99<small>one time</small></div>
+          <ul>
+            <li>Spelling and grammar check</li>
+            <li>Voice input in one language and with translation</li>
+            <li>Emoji and calculations at the cursor</li>
+            <li>A layout per app, layout keys and key remapping</li>
+            <li>Clipboard history beyond 7 days</li>
+            <li>More Quick Actions: AI, YouTube, Read Aloud…</li>
+            <li>Up to 2 Macs, free updates</li>
+          </ul>
+          <a class="btn primary" href="https://www.creem.io/product/prod_1bPuvj0cdggWYXUZ277SP9">Buy Pro</a>
+        </div>
+      </div>
+      <p class="note">Installed Klavko before January 1, 2027? Pro is free for you for good, no key needed. Pro is for Mac; Klavko for Windows stays free.</p>
+    </div>
+  </section>
+
+  <section class="soft" id="privacy">
     <div class="wrap">
       <div class="center">
         <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
         <h2>Your text stays yours.</h2>
-        <p>Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, and to check GitHub for a new version. The one exception is Google AI voice input, if you turn it on yourself.</p>
+        <p>Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, to check GitHub for a new version, and to check the Pro key or trial (only an anonymous code of your Mac is sent, never your text). The one exception is Google AI voice input, if you turn it on yourself.</p>
       </div>
     </div>
   </section>
 
-  <section class="soft" id="faq">
+  <section id="faq">
     <div class="wrap">
       <div class="center"><h2>Questions</h2></div>
       <div class="faq">
@@ -352,8 +393,20 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
           <p>You need at least two keyboard layouts of the supported languages. Standard macOS layouts work best (System Settings → Keyboard → Input Sources). Chinese, Japanese and Korean use input methods and aren't supported.</p>
         </details>
         <details>
-          <summary>Is it really free?</summary>
-          <p>Yes, all of it. If Klavko helps you, you can thank the author, but you don't have to.</p>
+          <summary>Is Klavko free?</summary>
+          <p>Yes. Layout switching, typo fixes, voice input, translation, text from the screen and a week of clipboard history are free for good. Klavko Pro adds more for a one-time $9.99.</p>
+        </details>
+        <details>
+          <summary>Who gets Pro free?</summary>
+          <p>Everyone who installs Klavko before January 1, 2027 gets Pro free for good, with no key. New users get all Pro features for 14 days.</p>
+        </details>
+        <details>
+          <summary>How do I activate Pro?</summary>
+          <p>After you buy, you get a license key on the order page and by email. Paste it in Klavko → Settings → Klavko Pro and click <b>Activate</b>. The key works on up to 2 Macs.</p>
+        </details>
+        <details>
+          <summary>Can I get a refund?</summary>
+          <p>Yes. If Klavko Pro doesn't work for you, write to <a href="mailto:stepsergius@gmail.com">stepsergius@gmail.com</a> within 14 days of purchase and you'll get your money back.</p>
         </details>
         <details>
           <summary>Where do I report a bug or ask a question?</summary>
@@ -363,11 +416,11 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     </div>
   </section>
 
-  <section>
+  <section class="soft">
     <div class="wrap">
       <div class="center">
         <h2>Like Klavko?</h2>
-        <p>It's made by one person in Ukraine. A thank-you helps keep it free and growing.</p>
+        <p>It's made by one person in Ukraine. A thank-you or Pro helps keep it growing.</p>
         <div class="ctas">
           <a class="btn primary" href="https://send.monobank.ua/jar/2CKJVz8jam">❤️ Say thanks</a>
           <a class="btn" href="https://t.me/klavko">Telegram group</a>
