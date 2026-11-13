@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="uk" data-alt="../thanks.html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дякуємо · Klavko Pro</title>
+<meta name="description" content="Дякуємо за покупку Klavko Pro. Ось як його активувати.">
+<meta name="robots" content="noindex">
+<link rel="alternate" hreflang="en" href="https://klavko.stepanix.com/thanks.html">
+<link rel="alternate" hreflang="uk" href="https://klavko.stepanix.com/uk/thanks.html">
+<link rel="alternate" hreflang="x-default" href="https://klavko.stepanix.com/thanks.html">
+<link rel="icon" href="../assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,500;0,700;0,800;1,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one calm centered column, hero with the real settings window, then examples, features, downloads and FAQ. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f5f7fb;
+  --fg: #12151c;
+  --muted: #5b6272;
+  --line: #e4e8f0;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent-ink: #ffffff;
+  --accent-soft: #eaf1ff;
+  --display: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --body: "Inter", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1116; --bg-soft: #161a22; --fg: #eef1f7; --muted: #9aa3b5; --line: #262c38; --card: #161a22;
+    --accent: #5b8cff; --accent-ink: #0b1020; --accent-soft: #1b2540; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1116; --bg-soft: #161a22; --fg: #eef1f7; --muted: #9aa3b5; --line: #262c38; --card: #161a22;
+  --accent: #5b8cff; --accent-ink: #0b1020; --accent-soft: #1b2540; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h1 { font-size: clamp(42px, 7vw, 76px); font-weight: 800; line-height: 1.04; }
+h2 { font-size: clamp(30px, 4.4vw, 46px); font-weight: 800; line-height: 1.1; }
+h3 { font-size: 19px; font-weight: 700; }
+em.hl { font-style: italic; color: var(--accent); }
+p { margin: 0; }
+.lead { font-size: clamp(18px, 2vw, 21px); color: var(--muted); max-width: 40ch; margin-inline: auto; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 999px; font: 600 16px/1 var(--body); text-decoration: none; border: 1px solid var(--line); background: var(--card); color: var(--fg); transition: transform .15s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn svg { width: 18px; height: 18px; }
+
+/* Nav */
+header.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.nav .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 20px var(--display); text-decoration: none; }
+.brand img { width: 32px; height: 32px; }
+.nav nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; color: var(--muted); }
+.nav nav a { text-decoration: none; }
+.nav nav a:hover { color: var(--fg); }
+.nav .btn { padding: 10px 16px; font-size: 14px; }
+@media (max-width: 640px) { .nav nav { display: none; } .nav .btn { margin-left: auto; } }
+
+/* Hero */
+.hero { text-align: center; padding-block: 72px 40px; display: grid; gap: 22px; justify-items: center; }
+.hero .icon { width: 96px; height: 96px; }
+.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.hero small { color: var(--muted); font-size: 14px; }
+
+/* Mac window frame around the screenshot */
+.window { max-width: 980px; margin: 8px auto 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-soft); box-shadow: 0 30px 80px -30px rgb(20 40 90 / 0.35); }
+.window .bar { height: 36px; display: flex; align-items: center; gap: 8px; padding-inline: 14px; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
+.window .bar i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.window .bar i:nth-child(1) { background: #ff5f57; } .window .bar i:nth-child(2) { background: #febc2e; } .window .bar i:nth-child(3) { background: #28c840; }
+.window .bar span { margin-inline: auto; font: 600 13px var(--body); color: var(--muted); padding-right: 60px; }
+.window picture, .window img { display: block; width: 100%; height: auto; }
+
+section { padding-block: 88px; }
+.center { text-align: center; display: grid; gap: 14px; justify-items: center; margin-bottom: 44px; }
+.center p { color: var(--muted); max-width: 52ch; font-size: 18px; }
+
+/* Gesture → action examples */
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.pair { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-size: 16px; min-width: 0; }
+.pair b { font-weight: 600; }
+.pair .arrow { color: var(--accent); flex: none; }
+.pair span:last-child { color: var(--muted); }
+
+/* Features */
+.soft { background: var(--bg-soft); border-block: 1px solid var(--line); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card p { color: var(--muted); font-size: 16px; }
+.badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.badge svg { width: 22px; height: 22px; }
+.num { font: 800 34px/1 var(--display); color: var(--accent); }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; counter-reset: step; }
+.step { padding: 24px; border-radius: var(--radius); border: 1px solid var(--line); display: grid; gap: 8px; }
+.step::before { counter-increment: step; content: counter(step); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font: 700 14px var(--body); }
+.step p { color: var(--muted); font-size: 16px; }
+
+/* Pricing */
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; max-width: 760px; margin-inline: auto; }
+.plan { border: 1px solid var(--line); border-radius: 22px; padding: 30px; display: grid; gap: 16px; align-content: start; background: var(--card); }
+.plan.pro { border: 2px solid var(--accent); }
+.price { font: 800 44px/1 var(--display); }
+.price small { font: 500 15px var(--body); color: var(--muted); margin-left: 6px; }
+.plan ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.plan li { display: flex; gap: 10px; font-size: 16px; }
+.plan li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+.plan .btn { justify-content: center; }
+
+/* FAQ */
+.faq { max-width: 760px; margin-inline: auto; display: grid; gap: 10px; }
+details { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: var(--card); }
+summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::after { content: "+"; color: var(--accent); font-weight: 700; }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin-top: 10px; font-size: 16px; }
+kbd { font: 500 14px var(--mono); padding: 1px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-soft); }
+
+footer { border-top: 1px solid var(--line); padding-block: 36px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+footer .links { display: flex; gap: 20px; margin-left: auto; flex-wrap: wrap; }
+footer a { text-decoration: none; } footer a:hover { color: var(--fg); }
+/* Language switcher (EN / UA) */
+.lang { display: flex; flex: none; padding: 3px; border: 1px solid var(--line); border-radius: 999px; font: 600 13px/1 var(--body); }
+.lang a { padding: 6px 10px; border-radius: 999px; text-decoration: none; color: var(--muted); }
+.lang a:hover { color: var(--fg); }
+.lang a[aria-current] { background: var(--accent-soft); color: var(--accent); }
+.lang a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) { .nav .wrap { gap: 14px; } .nav .lang { margin-left: auto; } .nav .btn { margin-left: 0; } }
+@media (max-width: 480px) { .nav .btn { display: none; } }
+
+/* Before → after examples */
+.pair code { font: 500 15px var(--mono); padding: 3px 8px; border-radius: 8px; background: var(--bg-soft); border: 1px solid var(--line); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.pair { flex-wrap: wrap; row-gap: 6px; }
+.pair span:last-child { flex-basis: 100%; font-size: 14px; }
+
+/* Hotkeys */
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.key { display: flex; align-items: center; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); min-width: 0; }
+.key kbd { font-size: 16px; padding: 4px 9px; min-width: 32px; text-align: center; }
+.key span { margin-left: 8px; color: var(--muted); font-size: 16px; }
+
+/* Downloads */
+.plan p { color: var(--muted); font-size: 16px; }
+.plan h3.sub { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+pre { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--bg-soft); border: 1px solid var(--line); overflow-x: auto; }
+pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.center .badge { margin-bottom: 4px; }
+.center .ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+
+/* Also by Stepanix */
+.also { display: flex; align-items: center; gap: 16px; max-width: 560px; margin: 56px auto 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius); text-decoration: none; background: var(--card); }
+.also:hover { border-color: var(--accent); }
+.also img { width: 48px; height: 48px; flex: none; }
+.also > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+.also small { color: var(--muted); font-size: 13px; }
+.also b { font: 700 17px var(--display); }
+.also span span { color: var(--muted); font-size: 15px; }
+.also .arrow { margin-left: auto; color: var(--accent); font-weight: 700; }
+
+/* The icon file is a full square tile */
+.hero .icon, .brand img { border-radius: 22%; }
+
+/* Document pages (thank-you): one readable column. */
+.doc { max-width: 720px; padding-block: 56px 80px; }
+.doc h1 { font-size: clamp(34px, 5vw, 48px); }
+.doc .updated { color: var(--muted); font-size: 15px; margin-top: 10px; }
+.doc h2 { font-size: 22px; margin-top: 40px; }
+.doc p, .doc li { color: var(--muted); font-size: 17px; }
+.doc p { margin-top: 12px; }
+.doc ol { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 6px; }
+.doc strong { color: var(--fg); font-weight: 600; }
+.doc a { color: var(--accent); }
+</style>
+<script>
+/* Remembers the chosen language and opens that version on later visits. English is the default. */
+(function () {
+  try {
+    var root = document.documentElement, saved = localStorage.getItem("klavko-lang");
+    if (saved && saved !== root.lang && root.dataset.alt) location.replace(root.dataset.alt + location.search + location.hash);
+    document.addEventListener("click", function (e) {
+      var link = e.target.closest && e.target.closest("[data-set-lang]");
+      if (link) localStorage.setItem("klavko-lang", link.getAttribute("data-set-lang"));
+    });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../assets/icon.png" alt="">Klavko</a>
+    <nav aria-label="Розділи">
+      <a href="./#features">Можливості</a>
+      <a href="./#download">Завантажити</a>
+      <a href="./#faq">Питання</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Мова">
+      <a href="../thanks.html" hreflang="en" lang="en" data-set-lang="en" title="English">EN</a>
+      <a href="thanks.html" aria-current="true" lang="uk" data-set-lang="uk">UA</a>
+    </div>
+    <a class="btn primary" href="./#download">Завантажити</a>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <h1>Дякуємо за покупку Klavko Pro!</h1>
+  <p class="updated">Ваш ліцензійний ключ — на сторінці замовлення й у листі з квитанцією.</p>
+
+  <h2>Активуйте Pro за три кроки</h2>
+  <ol>
+    <li><strong>Скопіюйте ліцензійний ключ</strong> з листа з квитанцією.</li>
+    <li><strong>Відкрийте налаштування Klavko:</strong> клацніть значок Klavko в рядку меню, оберіть «Налаштування» й відкрийте <strong>Klavko Pro</strong>.</li>
+    <li><strong>Вставте ключ</strong> і натисніть <strong>Активувати</strong>. Усі функції Pro відразу запрацюють.</li>
+  </ol>
+
+  <h2>Ще не маєте Klavko?</h2>
+  <p><a href="https://github.com/stepsergius/Klavko/releases/latest">Завантажте Klavko для Mac</a>. Потрібна macOS 14 Sonoma або новіша.</p>
+
+  <h2>Користуєтеся кількома Mac?</h2>
+  <p>Ключ працює на двох комп'ютерах Mac. Щоб перенести його на інший Mac, натисніть <strong>Деактивувати на цьому Mac</strong> на сторінці Klavko Pro в налаштуваннях Klavko.</p>
+
+  <h2>Потрібна допомога?</h2>
+  <p>Не отримали листа або ключ не активується? Напишіть на <a href="mailto:stepsergius@gmail.com">stepsergius@gmail.com</a>, і ми все владнаємо.</p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Stepanix</span>
+    <div class="links">
+      <a href="./#privacy">Конфіденційність</a>
+      <a href="https://t.me/klavko">Telegram</a>
+      <a href="mailto:stepsergius@gmail.com">stepsergius@gmail.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
