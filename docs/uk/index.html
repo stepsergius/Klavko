@@ -168,6 +168,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
 /* Also by Stepanix */
 .also { display: flex; align-items: center; gap: 16px; max-width: 560px; margin: 56px auto 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius); text-decoration: none; background: var(--card); }
 .also:hover { border-color: var(--accent); }
+.also + .also { margin-top: 12px; }
 .also img { width: 48px; height: 48px; flex: none; }
 .also > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
 .also small { color: var(--muted); font-size: 13px; }
@@ -428,6 +429,11 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
       <a class="also" href="https://tapko.stepanix.com/uk/">
         <img src="../assets/tapko.png" alt="" width="48" height="48">
         <span><small>Ще від Stepanix</small><b>Tapko</b><span>Власні жести трекпада на Mac: середній клік, закрити вікно, відкрити програму.</span></span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="also" href="https://duesko.stepanix.com/uk/">
+        <img src="../assets/duesko.png" alt="" width="48" height="48">
+        <span><small>Ще від Stepanix</small><b>Duesko</b><span>Облік підписок на Mac: нагадування перед кожним списанням, без акаунта й без доступу до банку.</span></span>
         <span class="arrow" aria-hidden="true">→</span>
       </a>
     </div>
