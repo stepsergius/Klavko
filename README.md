@@ -2,9 +2,9 @@
 
 [🇺🇦 Українська](README.uk.md) · 🇬🇧 **English**
 
-A free typing assistant for Mac (and, in beta, Windows) — in Ukrainian, English and 11 more languages.
+A typing assistant for Mac (and, in beta, Windows) — in Ukrainian, English and 11 more languages. The basics are free; more features come with Klavko Pro.
 
-Klavko switches the keyboard layout by itself when a word was typed in the wrong one (`ghbdsn` → `привіт`), fixes obvious typos and tidies up your text. It also has voice input, translation of selected text, text recognition from the screen and a clipboard history. Everything runs on your Mac: no accounts, keys or online services, and nothing you type is sent anywhere.
+Klavko switches the keyboard layout by itself when a word was typed in the wrong one (`ghbdsn` → `привіт`), fixes obvious typos and tidies up your text. It also has voice input, translation of selected text, text recognition from the screen and a clipboard history. Everything runs on your Mac: no accounts or online services, and nothing you type is sent anywhere.
 
 ## Download
 
@@ -103,11 +103,13 @@ A hotkey can be a key with modifiers (⌃⇧Space), modifiers alone together (�
 
 ## Privacy
 
-Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere; while you type, only the text since the last click or Return is kept in memory. The one exception is voice input through Google AI, if you turn it on yourself: then the recording is sent to Google. The internet is needed only once — to download the speech recognition model (from Hugging Face) and the translation languages (from Apple). Klavko also checks GitHub now and then for a new version (can be turned off in Settings).
+Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere; while you type, only the text since the last click or Return is kept in memory. The one exception is voice input through Google AI, if you turn it on yourself: then the recording is sent to Google. The internet is needed only once — to download the speech recognition model (from Hugging Face) and the translation languages (from Apple). Klavko also checks GitHub now and then for a new version (can be turned off in Settings), and talks to its license server about Pro: the trial start and founder status (known only by an anonymous fingerprint of the device) and checking a Pro key.
 
-## Support
+## Price
 
-Klavko is free. If it helps you, you can [thank the author](https://send.monobank.ua/jar/2CKJVz8jam) ❤️
+Everything basic in Klavko is free, with no time limit. **Klavko Pro** is a one-time $9.99 for two computers, Mac or Windows; new users get a 14-day Pro trial. **Everyone who installs Klavko before January 1, 2027 gets Pro free for good**, with no key. What Pro includes: [klavko.stepanix.com](https://klavko.stepanix.com/#pricing).
+
+If Klavko helps you, you can also [thank the author](https://send.monobank.ua/jar/2CKJVz8jam) ❤️
 
 ## Credits
 
