@@ -169,6 +169,8 @@ footer a { text-decoration: none; } footer a:hover { color: var(--fg); }
 
 /* Downloads */
 .plan p { color: var(--muted); font-size: 16px; }
+.plan p.small { font-size: 14px; margin-top: -6px; }
+.plan p.small a { color: var(--accent); }
 .plan h3.sub { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
 pre { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--bg-soft); border: 1px solid var(--line); overflow-x: auto; }
 pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -363,14 +365,16 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
           <h3>Mac</h3>
           <p>macOS 14 або новіша. Для перекладу потрібна macOS 15.</p>
           <a class="btn primary" href="https://stepanix-license.stepsergius.workers.dev/dl/klavko/mac?from=uk" rel="nofollow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg>Завантажити для Mac</a>
+          <p class="small">Розпакуйте файл і дотримуйтеся інструкції «Як встановити Klavko.txt» з архіву.</p>
           <h3 class="sub">Homebrew</h3>
           <p>Встановлення й оновлення з Термінала.</p>
           <pre><code>brew install --cask stepsergius/klavko/klavko</code></pre>
         </div>
         <div class="plan">
           <h3>Windows (бета)</h3>
-          <p>Windows 10 і 11. Для більшості комп'ютерів файл x64, для ноутбуків на Snapdragon — arm64.</p>
+          <p>Windows 10 і 11. Klavko поки не підписаний, тому Windows попередить про нього: відкрийте подробиці в попередженні й виберіть запуск.</p>
           <a class="btn" href="https://stepanix-license.stepsergius.workers.dev/dl/klavko/windows?from=uk" rel="nofollow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg>Завантажити для Windows</a>
+          <p class="small">Ноутбук на процесорі Snapdragon? <a href="https://stepanix-license.stepsergius.workers.dev/dl/klavko/windows-arm64?from=uk" rel="nofollow">Завантажте версію arm64</a>.</p>
         </div>
       </div>
     </div>
