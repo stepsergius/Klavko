@@ -96,6 +96,13 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .window .bar i:nth-child(1) { background: #ff5f57; } .window .bar i:nth-child(2) { background: #febc2e; } .window .bar i:nth-child(3) { background: #28c840; }
 .window .bar span { margin-inline: auto; font: 600 13px var(--body); color: var(--muted); padding-right: 60px; }
 .window picture, .window img { display: block; width: 100%; height: auto; }
+.video { position: relative; display: block; max-width: 980px; margin: 0 auto; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #0b1020; box-shadow: 0 30px 80px -30px rgb(20 40 90 / 0.35); }
+.video img, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: cover; }
+.video .play { position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; display: grid; place-items: center; background: rgb(255 255 255 / 0.94); color: #2563eb; box-shadow: 0 12px 40px -8px rgb(0 0 0 / 0.5); transition: transform .15s ease, background .15s ease; }
+.video .play svg { width: 38px; height: 38px; margin-left: 5px; fill: currentColor; }
+.video:hover .play, .video:focus-visible .play { transform: scale(1.08); background: #fff; }
+.video:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 600px) { .video .play { width: 64px; height: 64px; margin: -32px 0 0 -32px; } .video .play svg { width: 28px; height: 28px; } }
 
 section { padding-block: 88px; }
 .center { text-align: center; display: grid; gap: 14px; justify-items: center; margin-bottom: 44px; }
@@ -257,6 +264,19 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
       </picture>
     </div>
   </div>
+
+  <section id="video">
+    <div class="wrap">
+      <div class="center">
+        <h2>See Klavko <em class="hl">in action</em></h2>
+        <p>A short video: the layout switches itself, typos get fixed, and voice, translation and emoji are a shortcut away.</p>
+      </div>
+      <a class="video" href="https://www.youtube.com/watch?v=_7o3Q9F70mY" data-video="_7o3Q9F70mY" data-title="Klavko — the keyboard layout that switches itself" aria-label="Play the video about Klavko">
+        <img src="assets/video-en.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+        <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
+      </a>
+    </div>
+  </section>
 
   <section>
     <div class="wrap">
@@ -465,5 +485,24 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
     </div>
   </div>
 </footer>
+<script>
+/* The video loads from YouTube (privacy-enhanced mode) only once it's played. */
+document.addEventListener("click", function (e) {
+  var link = e.target.closest && e.target.closest("a[data-video]");
+  if (!link || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+  e.preventDefault();
+  var frame = document.createElement("iframe");
+  frame.src = "https://www.youtube-nocookie.com/embed/" + link.dataset.video + "?autoplay=1&rel=0&playsinline=1";
+  frame.title = link.dataset.title;
+  frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  frame.allowFullscreen = true;
+  frame.referrerPolicy = "strict-origin-when-cross-origin";
+  var box = document.createElement("div");
+  box.className = "video";
+  box.appendChild(frame);
+  link.replaceWith(box);
+  frame.focus();
+});
+</script>
 </body>
 </html>
