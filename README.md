@@ -6,6 +6,8 @@ A typing assistant for Mac (and, in beta, Windows) — in Ukrainian, English and
 
 Klavko switches the keyboard layout by itself when a word was typed in the wrong one (`ghbdsn` → `привіт`), fixes obvious typos and tidies up your text. It also has voice input, translation of selected text, text recognition from the screen and a clipboard history. Everything runs on your Mac: no accounts or online services, and nothing you type is sent anywhere.
 
+⭐ **Like Klavko? Star this repository.** At 75 stars Klavko can join Homebrew’s main catalog, and installing becomes just `brew install --cask klavko`.
+
 ## Download
 
 **With [Homebrew](https://brew.sh):**
