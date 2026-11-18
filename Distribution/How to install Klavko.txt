@@ -26,13 +26,9 @@ INSTALLING
 2. Drag Klavko.app into the Applications folder.
    There exactly — then Klavko starts together with your Mac.
 
-3. First launch. The app isn’t from the App Store, so macOS first warns that
-   it can’t check the developer. This is expected.
-   • Right-click Klavko.app → Open → Open.
-   • If there is no such button (macOS 15 and later): try to open the app,
-     close the warning, then open System Settings → Privacy & Security,
-     scroll down and click “Open Anyway” next to the line about Klavko,
-     enter your password and open Klavko again.
+3. Open Klavko. It is signed by its developer and checked by Apple, so
+   macOS only asks once whether to open an app downloaded from the
+   internet: click Open.
 
 4. Allow keyboard access. Klavko asks for Accessibility:
    System Settings → Privacy & Security → Accessibility → turn on Klavko.

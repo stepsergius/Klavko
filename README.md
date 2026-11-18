@@ -16,7 +16,7 @@ brew install --cask stepsergius/klavko/klavko
 
 **Or by hand:** **[⬇︎ Latest version](../../releases/latest)** — download `Klavko-….zip`, unzip it and follow “How to install Klavko.txt” in the archive (Ukrainian: «Як встановити Klavko.txt»).
 
-Requirements: macOS 14 or later (translation needs macOS 15), at least two keyboard layouts of the supported languages (see “Layout languages”). The app isn’t notarized by Apple, so macOS warns on the first launch — the guide explains how to open it.
+Requirements: macOS 14 or later (translation needs macOS 15), at least two keyboard layouts of the supported languages (see “Layout languages”). The app is signed with a Developer ID and notarized by Apple, so macOS only asks once whether to open an app downloaded from the internet.
 
 ### Windows (beta)
 

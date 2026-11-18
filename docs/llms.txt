@@ -46,9 +46,9 @@ Typed a word in the wrong layout? Klavko switches it as you type. It also fixes 
 
 ## Questions
 
-### macOS says it can't verify Klavko. What do I do?
+### Is Klavko safe to install?
 
-Klavko isn't distributed through the App Store. The first time you open it, macOS may block it: open System Settings → Privacy & Security, scroll down and click Open Anyway. You do this only once; updates install with one click.
+Yes. Klavko is signed with its developer's Developer ID certificate and notarized by Apple: Apple checks every version for malware before it reaches you. The first time you open it, macOS only asks whether to open an app downloaded from the internet: click Open. Updates install with one click.
 
 ### Why does Klavko need Accessibility access?
 
