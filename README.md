@@ -37,7 +37,15 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - The current layout’s flag (🇺🇦, 🇺🇸, 🇩🇪…) in the menu bar and a soft sound after switching (can be changed or turned off). The menu lists the layouts with their flags: a click switches by hand.
 - A word you went back into with Backspace (or retyped after deleting Klavko’s fix) is left as you write it.
 - Off by default in terminals and code editors; any app can be excluded from the menu.
-- **The Caps Lock light can show the language** (optional): lit for the language you choose, off for the others.
+- **A layout for each app** (Pro): Klavko switches to the one you typed in that app (Ukrainian in Telegram, English in Terminal). You can also pin a layout to an app: Settings → Layout or the menu.
+- **A hotkey for each layout** (Pro), even a lone modifier by its side: left ⌘ for Ukrainian, right ⌘ for English.
+- **The Caps Lock light can show the language** (Pro, optional): lit for the language you choose, off for the others.
+
+### The language flag at the cursor
+- A small flag of the current language shows at the text cursor when you go to a text field, and goes away as soon as you start typing. It sits just above the cursor (below it when there’s no room above).
+- When the layout changes (by you or by Klavko), the flag flashes for a second and a half; after a while without typing (15 seconds by default) it shows again.
+- Next to the mouse pointer: the flag appears when you switch to another app and goes away after the pause.
+- Esc hides the flag. Where it shows (at the text, at the pointer, in both places or nowhere) and a pause for each place, from 0 (always shown) to 60 seconds — Settings → General.
 
 ### Layout languages
 - Switching works between any enabled macOS layouts of 13 languages, including Ukrainian, English, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Greek, Hebrew and Arabic.
@@ -52,16 +60,25 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 - A missing space after punctuation: `Hi,there` → `Hi, there`.
 - A capital at the start of a sentence; `...` → `…`, `"` → `“”` / `«»`, ` - ` → ` — `, `(c)` → `©`; lists `- ` and `1. ` continue after Return. Each of these has its own switch in Settings.
 - Your own replacements: `ty` → `thank you`, `:)` → `🙂`.
+- **The answer after “=”** (Pro): type `2+3*4=` or `Price 25*4=` and the answer appears at the cursor; Return or Tab inserts it.
+- **Emoji by name** (Pro): a space, a colon and a name (`:laugh`, `:heart`) show emoji at the cursor; after some words Klavko suggests emoji by itself.
+
+### Spelling and grammar check (Pro)
+- [LanguageTool](https://languagetool.org) right on your Mac (~300 MB, downloaded once): **⌃⌥G** checks the selected text, and, if you like, mistakes are underlined while you type, also in Obsidian and Google Docs.
+- Add to Dictionary next to an underlined word, and it’s no longer taken for a mistake.
 
 ### Voice input
 - Press **fn (🌐)**, speak in the languages chosen in Settings (“I speak”: Ukrainian, English, German and more), press it again or Return — the text appears at the cursor. Esc cancels.
 - A panel with a live wave shows what you say while you speak.
 - Speech is recognized by the NVIDIA Parakeet Ultra model right on your Mac — with punctuation and automatic language detection. The model (~600 MB) is downloaded once; until then the built-in macOS recognition is used. Languages not chosen in “I speak” are never inserted. Turkish, Hebrew and Arabic are recognized by macOS.
-- **One language:** each language can get a key of its own (for example, right ⌘ for Ukrainian, right ⌥ for English). Klavko then listens for that language only, so English spoken with an accent isn’t written in Cyrillic. For this input you can choose the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (~2.2 GB): it recognizes English better but knows only 14 languages, without Ukrainian or Russian.
+- **One language** (Pro): each language can get a key of its own (for example, right ⌘ for Ukrainian, right ⌥ for English). Klavko then listens for that language only, so English spoken with an accent isn’t written in Cyrillic. For this input you can choose the [Cohere Transcribe](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026) model (~2.9 GB): it recognizes English better but knows only 14 languages, without Ukrainian or Russian.
 - **Google AI (optional):** in the voice settings you can choose “Google AI” and paste your own key from [aistudio.google.com](https://aistudio.google.com/apikey). The recording is then sent to Google when you finish and any language is recognized; the “smart” mode removes fillers and self-corrections. The key is kept in the Keychain. If Google can’t be reached, your Mac recognizes the text.
+- **With translation** (Pro): **fn + ⌃** — speak in one language, and the translated text is inserted (the macOS translator, offline).
+- **Voice commands:** “comma”, “period”, “question mark”, “new line”, “new paragraph” put the mark, and “literally comma” the word itself.
 - **Vocabulary:** fix a dictated word by hand and Klavko offers to remember how you write it. Your replacements apply to voice input too.
 - **History:** what you dictate is kept with its date and time (on your Mac only, can be turned off) — search it, copy or delete each entry.
 - Choose the microphone; music and videos are turned down while you dictate (to a volume you set) and come back gradually.
+- The look while dictating: an island by the camera, a small panel with the text, or no window. Statistics of what you dictated by day, month and year.
 
 ### Translation
 - Select text anywhere and press **⌘** twice — the translation appears in a panel: Return replaces the selection, ⌘C copies.
@@ -77,12 +94,22 @@ It’s a beta: if something doesn’t work or works wrong, please tell us in the
 
 ### Clipboard history
 - **⌥⌘V** shows everything you copied: text, links, pictures, files — with search and preview.
-- Return pastes into the app you came from; ⌘P pins, ⌘⌫ deletes, ⌘1…⌘9 paste right away. Links in copied text are clickable.
-- Kept on your Mac only (30 days by default). Passwords from password managers are never recorded. The copy sound can be changed or turned off.
+- Return pastes into the app you came from; ⌘P pins, ⌘⌫ deletes, digits 1…9 pick an item (or paste it at once, as you choose in Settings). Links in copied text are clickable.
+- Kept on your Mac only (30 days by default; without Pro the last 7 show). Passwords from password managers are never recorded, and you can list apps to record nothing from. The copy sound can be changed or turned off.
+
+### Quick Actions
+- Select text with the mouse and a bar appears over it: copy, search, translate, change case, wrap in quotes or brackets, bold and italic.
+- With Pro also AI (ChatGPT, Claude, Perplexity), YouTube, Read Aloud, Transliterate by each language’s official system, Calculate (`1,250 * 3 + 15%`), Character Count and more.
+- Choose the actions and their order in Settings → Quick Actions; point at an icon to see its name.
+
+### Key remapping (Pro)
+- Any key or combination can act as another, in every app and layout: Settings → Hotkeys.
 
 ### Interface and updates
-- Settings with a sidebar: General, Layout, Text, Voice, Clipboard, Hotkeys, About — and Say Thanks and What’s New at the bottom.
-- The menu: the layouts with their flags, the main switches, Check for Updates, Settings.
+- Settings with a sidebar: General, Layout, Text, Voice, Quick Actions, Clipboard, Hotkeys, Klavko Pro, About — and Say Thanks and What’s New at the bottom.
+- The menu: the layouts with their flags, the main switches, Check for Updates, How to Use (a short welcome tour), Report a Problem…, Settings.
+- **Report a problem:** describe what happened and Klavko sends it to the author with technical details you can see before sending. No typed text goes with it.
+- **Move your settings:** Settings → General → Save to File…, and on another Mac Restore from File…
 - Klavko tells you about a new version and updates with one “Update” button — nothing to download or install by hand.
 - Interface languages: Українська, English, español, français, Deutsch, italiano, português, polski, Türkçe, 简体中文, 日本語 and 한국어.
 
@@ -100,12 +127,14 @@ All can be changed in Settings (Hotkeys tab).
 | Text from the screen (read and translate) | ⌃Q |
 | Clipboard history | ⌥⌘V |
 | Voice input | fn |
+| Voice input with translation (Pro) | fn + ⌃ |
+| Check the spelling and grammar of the selection (Pro) | ⌃⌥G |
 
-A hotkey can be a key with modifiers (⌃⇧Space), modifiers alone together (⌥⌘) or a double press (⇧⇧). With “Tell left and right ⌃ ⌥ ⇧ ⌘ apart” on, a hotkey can use one side only, for example “twice right ⌘”.
+A hotkey can be a key with modifiers (⌃⇧Space), modifiers alone together (⌥⌘), a double press (⇧⇧) or a double press within a combination (⌘C C: the first press copies as always, a quick second one runs the action). With “Tell left and right ⌃ ⌥ ⇧ ⌘ apart” on, a hotkey can use one side only, for example “twice right ⌘”.
 
 ## Privacy
 
-Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere; while you type, only the text since the last click or Return is kept in memory. The one exception is voice input through Google AI, if you turn it on yourself: then the recording is sent to Google. The internet is needed only once — to download the speech recognition model (from Hugging Face) and the translation languages (from Apple). Klavko also checks GitHub now and then for a new version (can be turned off in Settings), and talks to its license server about Pro: the trial start and founder status (known only by an anonymous fingerprint of the device) and checking a Pro key.
+Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere; while you type, only the text since the last click or Return is kept in memory. The one exception is voice input through Google AI, if you turn it on yourself: then the recording is sent to Google. The internet is needed only once — to download the speech recognition model (from Hugging Face) and the translation languages (from Apple). Klavko also checks GitHub now and then for a new version (can be turned off in Settings), and talks to its license server about Pro: the trial start and founder status (known only by an anonymous fingerprint of the device) and checking a Pro key. A problem report is sent only when you click Send in Report a Problem, and you see everything in it first.
 
 ## Price
 

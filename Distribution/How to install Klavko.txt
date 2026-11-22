@@ -3,19 +3,26 @@ KLAVKO — keyboard layout switcher and typing assistant for Mac
 
 Klavko fixes words typed in the wrong keyboard layout by itself
 (ghbdsn → привіт), fixes obvious typos, adds “quotes”, dashes and capitals,
-and has voice input, translation of selected text, text from the screen and
-a clipboard history. The app is free and runs entirely on your Mac: what you
-type and dictate is never sent anywhere.
+and has voice input, translation of selected text, text from the screen,
+a clipboard history, Quick Actions for selected text and a language flag
+at the cursor. Everything runs on your Mac: what you type and dictate is
+never sent anywhere.
+
+The basics are free with no time limit. Klavko Pro adds more (those
+features are marked “Pro” below): $9.99 once, for two computers. Everyone
+who installs Klavko before January 1, 2027 gets Pro free for good, with
+no key.
 
 
 REQUIREMENTS
 ------------
-• macOS 14 Sonoma or later.
+• macOS 14 Sonoma or later (translation needs macOS 15).
 • A Mac with an Apple processor (M1, M2, M3, M4…). It works on Intel Macs
   too, but voice input is slower there.
 • At least two keyboard layouts, for example English (ABC or U.S.) and
-  Ukrainian (Ukrainian or Ukrainian – PC). German, French, Spanish, Polish
-  and others are supported too. Add them in System Settings → Keyboard →
+  Ukrainian (Ukrainian or Ukrainian – PC). German, French, Spanish,
+  Italian, Portuguese, Polish, Turkish, Greek, Hebrew, Arabic and others
+  are supported too. Add them in System Settings → Keyboard →
   Input Sources → Edit.
 
 
@@ -24,66 +31,126 @@ INSTALLING
 1. Unzip the archive (double-click it).
 
 2. Drag Klavko.app into the Applications folder.
-   There exactly — then Klavko starts together with your Mac.
 
 3. Open Klavko. It is signed by its developer and checked by Apple, so
    macOS only asks once whether to open an app downloaded from the
    internet: click Open.
 
-4. Allow keyboard access. Klavko asks for Accessibility:
-   System Settings → Privacy & Security → Accessibility → turn on Klavko.
-   Without this permission the app can’t see what you type.
+4. Choose the app language and go through the short welcome. On the
+   Permissions page allow Accessibility: System Settings → Privacy &
+   Security → Accessibility → turn on Klavko. Without this permission the
+   app can’t see what you type. The microphone and screen recording can
+   be allowed later, when you need them.
 
 5. Done. The flag of the current layout appears in the menu bar 🇺🇦 / 🇺🇸.
    If you see a keyboard icon with an exclamation mark instead, the
    permission from step 4 isn’t there yet.
 
+Klavko tells you about new versions and updates itself with the Update
+button. You can also install it with Homebrew:
+  brew install --cask stepsergius/klavko/klavko
+
 
 USING IT
 --------
 • Just type. Typed a word in the wrong layout — Klavko fixes it and
-  switches the layout.
-• Settings: click the flag in the menu bar → Settings.
-  A short tour of what Klavko does is there too: How to Use.
-  They are arranged in tabs at the top. The app language (English,
-  Українська and others) is on the General tab.
+  switches the layout, often while the word is still being typed.
+• The menu: click the flag in the menu bar. It has the layouts, the main
+  switches, Settings, How to Use (a short welcome tour), Check for
+  Updates and Report a Problem…
+• Settings are listed in the sidebar: General, Layout, Text, Voice,
+  Quick Actions, Clipboard, Hotkeys, Klavko Pro, About; at the bottom,
+  Say Thanks and What’s New (the changes of each version). The app
+  language (English, Українська and others) is on the General tab.
 
-Hotkeys (can be changed in Settings):
+Hotkeys (change them on the Hotkeys tab):
 • ⇧ ⇧ (Shift twice) — switch the layout of the word.
 • ⌥ ⌥ (Option twice) — switch the layout of the selected text or of
   everything you just typed.
 • ⌘ ⌘ (Command twice) — translate the selected text.
 • ⌃Q — text from the screen: select an area, Klavko reads and translates it.
-• ⌥⌘V — clipboard history: find something copied earlier, ↩ — paste.
+• ⌥⌘V — clipboard history.
 • fn (🌐) — voice input: press, speak, press again — the text appears at
   the cursor. Return inserts too. Esc — cancel.
-• fn + ⌃ — voice input with translation: speak in one language, the
-  translated text is inserted.
-• ⌃⌥G — check the spelling and grammar of the selected text (LanguageTool).
+• fn + ⌃ — voice input with translation (Pro).
+• ⌃⌥G — check the spelling and grammar of the selected text (Pro).
+A hotkey can be a combination (⌃⇧Space), modifiers alone (⌥⌘), a double
+press (⇧⇧) or a double press within a combination (⌘C C: the first press
+copies as always, a quick second one runs the action). With “Tell left
+and right ⌃ ⌥ ⇧ ⌘ apart” on, a hotkey works from one side only, for
+example “right ⌘”.
 
-Voice input:
+Layout:
+• Undo a fix — Backspace right after it, or ⇧ ⇧ again.
+• A word you fixed by hand is left alone. If you undo the change of the
+  same word twice, Klavko offers to add it to the exceptions — words it
+  never changes (Layout tab).
+• With three or more layouts, a language you rarely write in can be
+  “only by hand”: Klavko then never switches to it by itself.
+• A layout for each app (Pro): Klavko switches to the layout you typed in
+  that app. You can also pin one layout to an app: Layout tab or the menu.
+• A hotkey for each layout (Pro): for example, left ⌘ for Ukrainian,
+  right ⌘ for English. Hotkeys tab.
+• The Caps Lock light can show the language (Pro): it is lit for the
+  language you choose. General tab.
+
+The language flag at the cursor:
+• A small flag of the current language shows just above the text cursor
+  (below it when there's no room above) when you go to a text field, and
+  goes away as soon as you start typing. When the layout changes it flashes
+  for a second and a half, and after a while without typing (15 seconds
+  by default) it shows again.
+• It can also show next to the mouse pointer: there it appears when you
+  switch to another app and goes away after the pause.
+• Esc hides the flag. Where it shows (at the text, at the pointer, in both
+  places or nowhere) and after how many seconds (0 — always shown) —
+  General tab.
+
+Typos and tidy text (Text tab):
+• Obvious typos are fixed after the word: teh → the, HEllo → Hello.
+  A missing space after a comma appears by itself too.
+• A capital at the start of a sentence, “quotes”, dashes, … and lists
+  that go on with “- ” and “1. ” after Return — each one can be turned on
+  or off.
+• Your own replacements: “ty” → “thank you”, “nato” → “NATO”.
+• The answer after “=” (Pro): type 2+3*4= or “Price 25*4=” and the answer
+  appears at the cursor; Return or Tab inserts it.
+
+Voice input (Voice tab):
 • On the first recording macOS asks for access to the microphone and to
   speech recognition — allow it.
-• The microphone, turning music down while dictating and the history of
-  what you dictated (with search) are on the Voice tab in Settings.
 • So that the fn (🌐) key does nothing else:
   System Settings → Keyboard → “Press 🌐 key to” → “Do Nothing”.
-• For much better quality (punctuation, automatic language detection):
-  Settings → Voice tab → “Download (~600 MB)”.
-  This is the NVIDIA Parakeet model; it is downloaded once and then works
-  offline. Without it the built-in macOS recognition is used.
+• “I speak” — the languages you dictate in. Only they are inserted.
+• For much better quality (punctuation, automatic language detection)
+  click “Download (~600 MB)”: this is the NVIDIA Parakeet model, it is
+  downloaded once and then works offline. Without it the built-in macOS
+  recognition is used.
+• In one language (Pro): each language can have a key of its own, for
+  example right ⌘ for Ukrainian, right ⌥ for English. Klavko then listens
+  for that language only. For English and 13 more languages you can
+  download the more accurate Cohere Transcribe model (~2.9 GB).
+• With translation (Pro): fn + ⌃ — speak in one language, and the text is
+  inserted in the language chosen in “Translate into”.
+• Voice commands: “comma”, “period”, “question mark”, “new line”,
+  “new paragraph” put the mark; “literally comma” — the word itself.
 • If you fix a word by hand after dictating, Klavko offers for 5 seconds to
   remember how to write it (Return — yes, Esc — no).
   The vocabulary is on the Voice tab, where it can be changed.
+• Also there: the microphone, the look while dictating (an island by the
+  camera, a small panel with the text, or no window), turning music down,
+  the history of what you dictated with search, and statistics by day,
+  month and year. Voice input can be turned off altogether.
 
 Translation:
 • Select text anywhere and press ⌘ twice. Text in your language is
-  translated into the chosen one, any other text into yours. The language
-  pair (Ukrainian ↔ English at first) is set on the Text tab, and the
-  languages at the top of the translation panel can be changed right there.
-  Return — replace the selection, ⌘C — copy, Esc — close.
-• The macOS translator does the work on your Mac (needs macOS 15 or later).
-  The first time, macOS offers to download the languages — agree.
+  translated into the chosen one, any other text into yours; Klavko
+  recognizes the source language by itself. The language pair
+  (Ukrainian ↔ English at first) is set on the Text tab, and the
+  languages at the top of the translation panel can be changed right
+  there. Return — replace the selection, ⌘C — copy, Esc — close.
+• The macOS translator does the work on your Mac. If a language is
+  missing, Klavko shows a Download Language button.
 
 Text from the screen:
 • Press ⌃Q and select an area of the screen with the mouse (Esc — cancel).
@@ -96,49 +163,73 @@ Text from the screen:
   System Settings → Privacy & Security → Screen & System Audio Recording →
   turn on Klavko, then restart it.
 
-Clipboard history:
+Clipboard history (Clipboard tab):
 • Press ⌥⌘V: everything you copied appears (text, links, pictures, files).
-  Type to search; ↑↓ — choose; Return — paste; ⌘P — pin; ⌘⌫ — delete;
-  Esc — close.
-• The history stays on your Mac only (30 days by default). Passwords from
-  password managers are never recorded. Settings — Clipboard tab.
+  Type to search; ↑↓ — choose; Return — paste; a digit 1…9 — pick an item;
+  ⌘P — pin; ⌘⌫ — delete; Esc — close.
+• The history stays on your Mac only (30 days by default; without Pro the
+  last 7 days show). Passwords from password managers are never recorded.
+  Apps to record nothing from can be listed in Settings.
 
-Quick Actions:
-• Select text and a bar appears over it: copy, search, translate, change
-  case, wrap in quotes or brackets, bold and italic, send to ChatGPT,
-  Claude or Perplexity. Which actions and their order — Quick Actions tab.
+Quick Actions (Quick Actions tab):
+• Select text with the mouse and a bar appears over it: copy, search,
+  translate, change case, wrap in quotes or brackets, bold and italic.
+  With Pro also AI (ChatGPT, Claude, Perplexity), YouTube, Read Aloud,
+  Transliterate, Calculate, Character Count and more. Point at an icon to
+  see its name. Which actions and their order — Quick Actions tab.
 
-Emoji:
+Emoji (Pro):
 • A space, a colon and a name — “:laugh”, “:heart” — show emoji at the
   cursor. ← → — choose, Return or Tab — insert, Esc — close.
+  After some words Klavko suggests emoji by itself (turn it off on the
+  Text tab).
 
-Spelling and grammar check:
+Spelling and grammar check (Pro):
 • LanguageTool checks the text right on your Mac. It is downloaded once
-  in Settings; underlining mistakes while you type is turned on there too.
+  on the Text tab (~300 MB); underlining mistakes while you type is
+  turned on there too. Add to Dictionary next to an underlined word, and
+  it’s no longer taken for a mistake.
 
-Key remapping:
+Key remapping (Pro):
 • Any key or combination can act as another, in every app: Hotkeys tab →
   Key…, What it becomes… → Add.
 
+Moving your settings:
+• General tab → Save to File…, and on another Mac → Restore from File…
+
+Klavko Pro:
+• What Pro includes, the key and the trial — Klavko Pro tab. If Pro is
+  free for you for good, your founder key is there: keep it, and on a new
+  Mac just enter this key.
+
+
 QUESTIONS AND IDEAS
 -------------------
-The Klavko group on Telegram: https://t.me/klavko — write about bugs,
-ideas and questions.
+• Klavko’s menu → Report a Problem…: describe what happened and Klavko
+  sends it to the author with technical details you can see before
+  sending. No typed text goes with it.
+• The Klavko group on Telegram: https://t.me/klavko — write about bugs,
+  ideas and questions.
+• Website: https://klavko.stepanix.com
+
 
 IF SOMETHING DOESN’T WORK
 -------------------------
 • Nothing gets fixed: check the permission from step 4 and that you have
   at least two layouts (for example English and Ukrainian).
+• ⚠️ next to a layout in the menu: Klavko couldn’t tell its language
+  (usually a layout installed from a file). The standard macOS layouts
+  work best: System Settings → Keyboard → Input Sources.
 • Klavko gets in the way in some app: click the flag → Don’t Fix in
   “app name”.
 • A lock icon instead of the flag: another app has secure input on right
-  now (for example a password field) — this is temporary.
+  now (for example a password field). Klavko’s menu says which app to quit.
 
 
 UNINSTALLING
 ------------
 Click the flag → Quit Klavko, then drag Klavko.app from Applications to the
-Trash. The voice model (if you downloaded it) is in
-~/Library/Application Support/FluidAudio/Models/parakeet-ultra, and the
-clipboard history in ~/Library/Application Support/Klavko. You can delete
-them too.
+Trash. The Parakeet voice model (if you downloaded it) is in
+~/Library/Application Support/FluidAudio/Models, and the clipboard history,
+the Cohere model, LanguageTool and other data in
+~/Library/Application Support/Klavko. You can delete them too.

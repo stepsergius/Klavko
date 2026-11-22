@@ -18,7 +18,7 @@ Typed a word in the wrong layout? Klavko switches it as you type. It also fixes 
 
 ## What it does
 
-- Keyboard layout: Switches between the layouts of 13 languages, including Ukrainian, English, German, French, Polish and Turkish. ⇧⇧ switches a word by hand.
+- Keyboard layout: Switches between the layouts of 13 languages, including Ukrainian, English, German, French, Polish and Turkish. ⇧⇧ switches a word by hand, and a small flag at the text cursor shows the language.
 - Typos and tidy text: Fixes obvious typos, adds a capital at the start of a sentence, turns ... into … and " into “” or «».
 - Voice input: Press fn, speak, press it again: the text appears at the cursor, with punctuation. Recognized on your Mac.
 - Translation: Select text anywhere and press ⌘ twice. Return replaces the selection with the translation.
