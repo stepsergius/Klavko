@@ -10,7 +10,7 @@ Typed a word in the wrong layout? Klavko switches it as you type. It also fixes 
 - Made by: Stepanix (https://stepanix.com/), which also makes Tapko and Duesko
 - Needs: macOS 14 or later. Translation needs macOS 15. Windows 10 and 11 are in beta. Linux (GNOME and KDE Plasma) is coming soon.
 - Price: free with no time limit; Klavko Pro is $9.99 once, not a subscription
-- Privacy: Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, to check GitHub for a new version, and to check the Pro key or trial (only an anonymous code of your Mac is sent, never your text). The one exception is Google AI voice input, if you turn it on yourself.
+- Privacy: Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, to check GitHub for a new version, and to check the Pro key or trial (only an anonymous code of your Mac is sent, never your text). The one exception is Google AI voice input, if you turn it on yourself. This site counts visits without cookies: only the page, the country and the site you came from.
 - Download: https://github.com/stepsergius/Klavko/releases/latest
 - Install with Homebrew: brew install --cask stepsergius/klavko/klavko
 - Website: https://klavko.stepanix.com/ (English), https://klavko.stepanix.com/uk/ (Ukrainian)

@@ -219,7 +219,12 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
 (function () {
   try {
     var root = document.documentElement, saved = localStorage.getItem("klavko-lang");
-    if (saved && saved !== root.lang && root.dataset.alt) location.replace(root.dataset.alt + location.search + location.hash);
+    if (saved && saved !== root.lang && root.dataset.alt) {
+      /* The visit is counted on the page opened next, with the site the visitor came from. */
+      window.klavkoLeaving = true;
+      try { sessionStorage.setItem("klavko-from", document.referrer); } catch (e) {}
+      location.replace(root.dataset.alt + location.search + location.hash);
+    }
     document.addEventListener("click", function (e) {
       var link = e.target.closest && e.target.closest("[data-set-lang]");
       if (link) localStorage.setItem("klavko-lang", link.getAttribute("data-set-lang"));
@@ -410,7 +415,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
       <div class="center">
         <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
         <h2>Your text stays yours.</h2>
-        <p>Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, to check GitHub for a new version, and to check the Pro key or trial (only an anonymous code of your Mac is sent, never your text). The one exception is Google AI voice input, if you turn it on yourself.</p>
+        <p>Klavko runs entirely on your Mac. What you type and dictate, translations and the clipboard history are never sent anywhere. The internet is needed only to download the speech model and translation languages once, to check GitHub for a new version, and to check the Pro key or trial (only an anonymous code of your Mac is sent, never your text). The one exception is Google AI voice input, if you turn it on yourself. This site counts visits without cookies: only the page, the country and the site you came from.</p>
       </div>
     </div>
   </section>
@@ -508,6 +513,22 @@ document.addEventListener("click", function (e) {
   link.replaceWith(box);
   frame.focus();
 });
+</script>
+<script>
+/* Counts the visit: which page and from which site, without cookies. */
+(function () {
+  try {
+    if (window.klavkoLeaving || !navigator.sendBeacon) return;
+    var from = document.referrer;
+    try {
+      var kept = sessionStorage.getItem("klavko-from");
+      if (kept !== null) { from = kept; sessionStorage.removeItem("klavko-from"); }
+    } catch (e) {}
+    var host = from ? new URL(from).hostname : "";
+    if (host === location.hostname) host = "";
+    navigator.sendBeacon("https://stepanix-license.stepsergius.workers.dev/hit/klavko?p=en&r=" + encodeURIComponent(host));
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>

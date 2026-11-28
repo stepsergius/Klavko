@@ -219,7 +219,12 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
 (function () {
   try {
     var root = document.documentElement, saved = localStorage.getItem("klavko-lang");
-    if (saved && saved !== root.lang && root.dataset.alt) location.replace(root.dataset.alt + location.search + location.hash);
+    if (saved && saved !== root.lang && root.dataset.alt) {
+      /* The visit is counted on the page opened next, with the site the visitor came from. */
+      window.klavkoLeaving = true;
+      try { sessionStorage.setItem("klavko-from", document.referrer); } catch (e) {}
+      location.replace(root.dataset.alt + location.search + location.hash);
+    }
     document.addEventListener("click", function (e) {
       var link = e.target.closest && e.target.closest("[data-set-lang]");
       if (link) localStorage.setItem("klavko-lang", link.getAttribute("data-set-lang"));
@@ -410,7 +415,7 @@ pre code { font: 500 14px var(--mono); white-space: pre-wrap; overflow-wrap: any
       <div class="center">
         <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
         <h2>Ваш текст лишається вашим.</h2>
-        <p>Klavko працює повністю на вашому Mac. Те, що ви набираєте й диктуєте, переклади й історія буфера нікуди не надсилаються. Інтернет потрібен лише раз, щоб завантажити модель розпізнавання мовлення та мови перекладу, а ще щоб перевіряти на GitHub нову версію та ключ Pro чи пробний період (надсилається лише анонімний код вашого Mac, ніколи не текст). Єдиний виняток — голосовий ввід через Google AI, якщо ви самі його ввімкнете.</p>
+        <p>Klavko працює повністю на вашому Mac. Те, що ви набираєте й диктуєте, переклади й історія буфера нікуди не надсилаються. Інтернет потрібен лише раз, щоб завантажити модель розпізнавання мовлення та мови перекладу, а ще щоб перевіряти на GitHub нову версію та ключ Pro чи пробний період (надсилається лише анонімний код вашого Mac, ніколи не текст). Єдиний виняток — голосовий ввід через Google AI, якщо ви самі його ввімкнете. Цей сайт рахує відвідування без cookies: лише сторінку, країну й сайт, з якого ви прийшли.</p>
       </div>
     </div>
   </section>
@@ -508,6 +513,22 @@ document.addEventListener("click", function (e) {
   link.replaceWith(box);
   frame.focus();
 });
+</script>
+<script>
+/* Counts the visit: which page and from which site, without cookies. */
+(function () {
+  try {
+    if (window.klavkoLeaving || !navigator.sendBeacon) return;
+    var from = document.referrer;
+    try {
+      var kept = sessionStorage.getItem("klavko-from");
+      if (kept !== null) { from = kept; sessionStorage.removeItem("klavko-from"); }
+    } catch (e) {}
+    var host = from ? new URL(from).hostname : "";
+    if (host === location.hostname) host = "";
+    navigator.sendBeacon("https://stepanix-license.stepsergius.workers.dev/hit/klavko?p=uk&r=" + encodeURIComponent(host));
+  } catch (e) {}
+})();
 </script>
 </body>
 </html>
